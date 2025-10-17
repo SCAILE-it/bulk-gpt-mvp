@@ -109,7 +109,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         error: null,
       }))
 
-      const { error: resultsError } = await supabase
+      const { error: resultsError } = await supabaseAdmin
         .from('batch_results')
         .insert(batchResults)
 
@@ -194,7 +194,7 @@ async function invokeModalAsync(
 async function markBatchFailed(batchId: string): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    supabase
+    supabaseAdmin
       .from('batches')
       .update({ status: 'failed' })
       .eq('id', batchId)
