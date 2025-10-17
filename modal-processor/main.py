@@ -14,6 +14,18 @@ import os
 from typing import List, Dict, Any
 import time
 from fastapi import FastAPI, Request
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception,
+    before_sleep_log,
+)
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create Modal app
 app = modal.App("bulk-gpt-processor-mvp")
@@ -24,6 +36,7 @@ image = modal.Image.debian_slim().pip_install(
     "supabase>=2.0.0",
     "python-dotenv>=1.0.0",
     "fastapi[standard]>=0.115.0",
+    "tenacity>=8.2.0",  # For retry logic with exponential backoff
 )
 
 # Create FastAPI app for HTTP endpoints
@@ -46,6 +59,71 @@ Guidelines:
 
 Remember: You're processing data in bulk, so consistency and accuracy are critical.
 """
+
+
+def is_retryable_error(exception: Exception) -> bool:
+    """
+    Determine if an exception is retryable (rate limits, timeouts, transient errors).
+    
+    Args:
+        exception: The exception to check
+    
+    Returns:
+        True if the exception should trigger a retry, False otherwise
+    """
+    error_str = str(exception).lower()
+    
+    # Retry on rate limit errors (429)
+    if '429' in error_str or 'rate limit' in error_str or 'quota' in error_str:
+        return True
+    
+    # Retry on timeout errors
+    if 'timeout' in error_str or 'timed out' in error_str:
+        return True
+    
+    # Retry on temporary network errors
+    if 'connection' in error_str or 'network' in error_str:
+        return True
+    
+    # Retry on 500-level server errors
+    if '500' in error_str or '502' in error_str or '503' in error_str or '504' in error_str:
+        return True
+    
+    return False
+
+
+@retry(
+    retry=retry_if_exception(is_retryable_error),
+    stop=stop_after_attempt(3),  # Max 3 attempts
+    wait=wait_exponential(multiplier=2, min=4, max=60),  # 4s, 8s, 16s, ...
+    before_sleep=before_sleep_log(logger, logging.INFO),
+    reraise=True,
+)
+def call_gemini_with_retry(model, prompt: str) -> str:
+    """
+    Call Gemini API with automatic retry on transient failures.
+    
+    Implements exponential backoff:
+    - Attempt 1: Immediate
+    - Attempt 2: Wait 4s
+    - Attempt 3: Wait 8s
+    
+    Args:
+        model: Gemini GenerativeModel instance
+        prompt: The prompt to send to Gemini
+    
+    Returns:
+        The generated text response
+    
+    Raises:
+        Exception: If all retry attempts fail
+    """
+    response = model.generate_content(prompt)
+    
+    if not response or not response.text:
+        raise ValueError("No response generated from Gemini API")
+    
+    return response.text
 
 
 def _process_single_row(
@@ -106,14 +184,14 @@ def _process_single_row(
             schema_hint = f"\n\nExpected output format: {', '.join(output_schema)}"
             final_prompt = final_prompt + schema_hint
         
-        # Call Gemini API
+        # Call Gemini API with automatic retry
         model = genai.GenerativeModel(
             model_name="gemini-2.0-flash-exp",
             system_instruction=SYSTEM_PROMPT,
         )
         
-        response = model.generate_content(final_prompt)
-        output = response.text if response and response.text else "No response generated"
+        # Use retry wrapper for resilient API calls
+        output = call_gemini_with_retry(model, final_prompt)
         status = "success"
         error_msg = None
         
