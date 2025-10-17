@@ -13,6 +13,7 @@ import json
 import os
 from typing import List, Dict, Any
 import time
+from fastapi import FastAPI, Request
 
 # Create Modal app
 app = modal.App("bulk-gpt-processor-mvp")
@@ -22,7 +23,11 @@ image = modal.Image.debian_slim().pip_install(
     "google-generativeai>=0.8.5",
     "supabase>=2.0.0",
     "python-dotenv>=1.0.0",
+    "fastapi[standard]>=0.115.0",
 )
+
+# Create FastAPI app for HTTP endpoints
+web_app = FastAPI()
 
 # Gemini system prompt for consistent, high-quality output
 SYSTEM_PROMPT = """You are a specialized AI assistant for bulk data processing.
@@ -43,12 +48,7 @@ Remember: You're processing data in bulk, so consistency and accuracy are critic
 """
 
 
-@app.function(
-    image=image,
-    timeout=86400,  # 24 hours in seconds
-    memory=2048,  # 2GB RAM
-)
-def process_batch(
+def _process_batch_internal(
     batch_id: str,
     rows: List[Dict[str, str]],
     prompt: str,
@@ -56,7 +56,7 @@ def process_batch(
     output_schema: List[str] = None,
 ) -> Dict[str, Any]:
     """
-    Process a batch of CSV rows through Gemini API with web search grounding.
+    Internal function to process a batch of CSV rows through Gemini API.
     
     Args:
         batch_id: Unique identifier for this batch
@@ -226,6 +226,50 @@ def process_batch(
     )
     
     return summary
+
+
+# FastAPI endpoint for HTTP POST requests
+@web_app.post("/")
+async def process_batch_endpoint(request: Request):
+    """HTTP endpoint for batch processing requests."""
+    body = await request.json()
+    
+    # Spawn Modal function to process batch
+    result = await process_batch_modal.remote.aio(
+        batch_id=body.get("batch_id"),
+        rows=body.get("rows", []),
+        prompt=body.get("prompt", ""),
+        context=body.get("context", ""),
+        output_schema=body.get("output_schema"),
+    )
+    
+    return result
+
+
+# Modal function that wraps the processing
+@app.function(
+    image=image,
+    timeout=86400,  # 24 hours
+    memory=2048,  # 2GB RAM
+    secrets=[modal.Secret.from_name("bulk-gpt-env")],
+)
+def process_batch_modal(
+    batch_id: str,
+    rows: List[Dict[str, str]],
+    prompt: str,
+    context: str = "",
+    output_schema: List[str] = None,
+) -> Dict[str, Any]:
+    """Modal function that processes batches."""
+    return _process_batch_internal(batch_id, rows, prompt, context, output_schema)
+
+
+# Expose FastAPI app as ASGI
+@app.function(image=image, secrets=[modal.Secret.from_name("bulk-gpt-env")])
+@modal.asgi_app()
+def fastapi_app():
+    """Expose FastAPI app."""
+    return web_app
 
 
 @app.function(image=image, timeout=60)

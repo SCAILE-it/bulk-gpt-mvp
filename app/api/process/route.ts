@@ -102,7 +102,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     // (Supabase PostgREST schema cache issues prevent reliable pre-creation)
 
     // Invoke Modal processor asynchronously (fire and forget)
-    const modalUrl = process.env.MODAL_API_URL || 'https://bulk-gpt-processor-mvp--process-batch.modal.run'
+    const modalUrl = process.env.MODAL_API_URL || 'https://scaile--bulk-gpt-processor-mvp-fastapi-app.modal.run'
     
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns).catch((error) => {
