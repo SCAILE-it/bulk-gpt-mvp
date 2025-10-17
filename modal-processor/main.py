@@ -123,12 +123,11 @@ def _process_batch_internal(
                 schema_hint = f"\n\nExpected output format: {', '.join(output_schema)}"
                 final_prompt = final_prompt + schema_hint
             
-            # Call Gemini API with web search grounding
+            # Call Gemini API (without web search for now - requires specific API access)
             try:
                 model = genai.GenerativeModel(
-                    model_name="gemini-2.0-flash",
+                    model_name="gemini-2.0-flash-exp",
                     system_instruction=SYSTEM_PROMPT,
-                    tools=[{"google_search": {}}],  # Enable web search grounding
                 )
                 
                 response = model.generate_content(final_prompt)
