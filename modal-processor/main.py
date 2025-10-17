@@ -149,10 +149,10 @@ def _process_batch_internal(
                         "id": row_id,
                         "batch_id": batch_id,
                         "row_index": idx,
-                        "input": json.dumps(row),  # Convert dict to JSON string
-                        "output": output,
+                        "input_data": json.dumps(row),  # Use input_data column name
+                        "output_data": output,          # Use output_data column name
                         "status": status,
-                        "error_message": error_msg,  # Use error_message instead of error
+                        "error_message": error_msg,
                     }
                 ).execute()
             except Exception as db_error:
