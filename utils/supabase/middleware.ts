@@ -45,8 +45,7 @@ export async function updateSession(request: NextRequest) {
   // Redirect to login if no user and trying to access protected route
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    request.nextUrl.pathname !== '/' // Allow homepage without auth for now
+    !request.nextUrl.pathname.startsWith('/auth')
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth'
