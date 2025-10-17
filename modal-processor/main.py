@@ -48,6 +48,163 @@ Remember: You're processing data in bulk, so consistency and accuracy are critic
 """
 
 
+def _process_single_row(
+    batch_id: str,
+    row: Dict[str, str],
+    row_index: int,
+    prompt: str,
+    context: str,
+    output_schema: List[str],
+    gemini_api_key: str,
+    supabase_url: str,
+    supabase_key: str,
+) -> Dict[str, Any]:
+    """
+    Process a single CSV row through Gemini API.
+    
+    This is a pure function that processes one row independently.
+    It's designed to be called in parallel via Modal's .starmap().
+    
+    Args:
+        batch_id: Unique identifier for the batch
+        row: CSV row as dictionary
+        row_index: Index of this row in the batch
+        prompt: Template prompt with {{column}} placeholders
+        context: Additional context for the task
+        output_schema: Expected output columns/format
+        gemini_api_key: Gemini API key
+        supabase_url: Supabase project URL
+        supabase_key: Supabase service role key
+    
+    Returns:
+        Dict with row_id, output, status, and optional error
+    """
+    import google.generativeai as genai
+    from supabase import create_client
+    
+    # Generate row ID
+    row_id = row.get("id", f"{batch_id}-row-{row_index}")
+    
+    # Initialize clients (Modal handles connection pooling)
+    genai.configure(api_key=gemini_api_key)
+    supabase = create_client(supabase_url, supabase_key)
+    
+    try:
+        # Replace template variables in prompt
+        final_prompt = prompt
+        for key, value in row.items():
+            if key != "id" and value:
+                placeholder = f"{{{{{key}}}}}"
+                final_prompt = final_prompt.replace(placeholder, str(value))
+        
+        # Add context if provided
+        if context:
+            final_prompt = f"Context: {context}\n\n{final_prompt}"
+        
+        # Add output schema hint if provided
+        if output_schema:
+            schema_hint = f"\n\nExpected output format: {', '.join(output_schema)}"
+            final_prompt = final_prompt + schema_hint
+        
+        # Call Gemini API
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash-exp",
+            system_instruction=SYSTEM_PROMPT,
+        )
+        
+        response = model.generate_content(final_prompt)
+        output = response.text if response and response.text else "No response generated"
+        status = "success"
+        error_msg = None
+        
+    except Exception as api_error:
+        output = ""
+        status = "error"
+        error_msg = str(api_error)
+        print(f"[{batch_id}] Error on row {row_index + 1}: {error_msg}")
+    
+    # Insert result into database
+    try:
+        supabase.table("batch_results").insert(
+            {
+                "id": row_id,
+                "batch_id": batch_id,
+                "row_index": row_index,
+                "input_data": json.dumps(row),
+                "output_data": output,
+                "status": status,
+                "error_message": error_msg,
+            }
+        ).execute()
+    except Exception as db_error:
+        print(f"[{batch_id}] Warning: Could not insert result {row_id}: {db_error}")
+    
+    return {
+        "id": row_id,
+        "output": output,
+        "status": status,
+        "error": error_msg,
+    }
+
+
+@app.function(
+    image=image,
+    timeout=3600,  # 1 hour per row (generous for API calls)
+    memory=1024,  # 1GB per worker
+    secrets=[modal.Secret.from_name("bulk-gpt-env")],
+)
+def process_row(
+    batch_id: str,
+    row: Dict[str, str],
+    row_index: int,
+    prompt: str,
+    context: str,
+    output_schema: List[str],
+) -> Dict[str, Any]:
+    """
+    Modal function to process a single row in parallel.
+    
+    This function is called via .starmap() to enable parallel processing.
+    Each invocation runs in its own container.
+    
+    Args:
+        batch_id: Unique identifier for the batch
+        row: CSV row as dictionary
+        row_index: Index of this row in the batch
+        prompt: Template prompt with {{column}} placeholders
+        context: Additional context for the task
+        output_schema: Expected output columns/format
+    
+    Returns:
+        Dict with row_id, output, status, and optional error
+    """
+    # Get environment variables from Modal secret
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    
+    if not all([gemini_api_key, supabase_url, supabase_key]):
+        return {
+            "id": f"{batch_id}-row-{row_index}",
+            "output": "",
+            "status": "error",
+            "error": "Missing required environment variables",
+        }
+    
+    # Call the pure processing function
+    return _process_single_row(
+        batch_id=batch_id,
+        row=row,
+        row_index=row_index,
+        prompt=prompt,
+        context=context,
+        output_schema=output_schema,
+        gemini_api_key=gemini_api_key,
+        supabase_url=supabase_url,
+        supabase_key=supabase_key,
+    )
+
+
 def _process_batch_internal(
     batch_id: str,
     rows: List[Dict[str, str]],
@@ -56,7 +213,7 @@ def _process_batch_internal(
     output_schema: List[str] = None,
 ) -> Dict[str, Any]:
     """
-    Internal function to process a batch of CSV rows through Gemini API.
+    Internal function to orchestrate parallel batch processing.
     
     Args:
         batch_id: Unique identifier for this batch
@@ -68,33 +225,27 @@ def _process_batch_internal(
     Returns:
         Dict with processing results and statistics
     """
-    import google.generativeai as genai
     from supabase import create_client
     
-    # Initialize clients
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    # Get Supabase credentials for batch status updates
     supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL") or os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     
-    if not all([gemini_api_key, supabase_url, supabase_key]):
-        raise ValueError("Missing required environment variables: GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY")
+    if not all([supabase_url, supabase_key]):
+        raise ValueError("Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY")
     
-    # Create clients
+    # Create Supabase client for orchestrator
     try:
-        genai.configure(api_key=gemini_api_key)
         supabase = create_client(supabase_url, supabase_key)
     except Exception as e:
-        raise RuntimeError(f"Failed to initialize clients: {str(e)}")
+        raise RuntimeError(f"Failed to initialize Supabase client: {str(e)}")
     
     # Initialize tracking
-    results = []
-    successful_count = 0
-    error_count = 0
     start_time = time.time()
     
-    print(f"[{batch_id}] Starting batch processing with {len(rows)} rows")
+    print(f"[{batch_id}] Starting parallel batch processing with {len(rows)} rows")
     
-    # Mark batch as processing
+    # Mark batch as processing (batch must be pre-created by Next.js API)
     try:
         supabase.table("batches").update(
             {"status": "processing", "updated_at": "now()"}
@@ -102,98 +253,19 @@ def _process_batch_internal(
     except Exception as e:
         print(f"[{batch_id}] Warning: Could not update batch status: {e}")
     
-    # Process each row
-    for idx, row in enumerate(rows):
-        try:
-            # Replace template variables in prompt
-            final_prompt = prompt
-            row_id = row.get("id", f"{batch_id}-row-{idx}")
-            
-            for key, value in row.items():
-                if key != "id" and value:
-                    placeholder = f"{{{{{key}}}}}"
-                    final_prompt = final_prompt.replace(placeholder, str(value))
-            
-            # Add context if provided
-            if context:
-                final_prompt = f"Context: {context}\n\n{final_prompt}"
-            
-            # Add output schema hint if provided
-            if output_schema:
-                schema_hint = f"\n\nExpected output format: {', '.join(output_schema)}"
-                final_prompt = final_prompt + schema_hint
-            
-            # Call Gemini API (without web search for now - requires specific API access)
-            try:
-                model = genai.GenerativeModel(
-                    model_name="gemini-2.0-flash-exp",
-                    system_instruction=SYSTEM_PROMPT,
-                )
-                
-                response = model.generate_content(final_prompt)
-                output = response.text if response and response.text else "No response generated"
-                status = "success"
-                error_msg = None
-                successful_count += 1
-            except Exception as api_error:
-                output = ""
-                status = "error"
-                error_msg = str(api_error)
-                error_count += 1
-                print(f"[{batch_id}] Error on row {idx + 1}: {error_msg}")
-            
-            # Insert result into database
-            try:
-                supabase.table("batch_results").insert(
-                    {
-                        "id": row_id,
-                        "batch_id": batch_id,
-                        "row_index": idx,
-                        "input_data": json.dumps(row),  # Use input_data column name
-                        "output_data": output,          # Use output_data column name
-                        "status": status,
-                        "error_message": error_msg,
-                    }
-                ).execute()
-            except Exception as db_error:
-                print(f"[{batch_id}] Warning: Could not insert result {row_id}: {db_error}")
-            
-            # Track result
-            results.append(
-                {
-                    "id": row_id,
-                    "output": output,
-                    "status": status,
-                    "error": error_msg,
-                }
-            )
-            
-            # Progress logging every 100 rows
-            if (idx + 1) % 100 == 0:
-                elapsed = time.time() - start_time
-                rate = (idx + 1) / elapsed
-                remaining = (len(rows) - idx - 1) / rate if rate > 0 else 0
-                print(
-                    f"[{batch_id}] Processed {idx + 1}/{len(rows)} rows "
-                    f"({rate:.1f} rows/sec, ~{remaining:.0f}s remaining)"
-                )
-            
-            # Rate limit: Sleep briefly between API calls to respect Gemini rate limits
-            time.sleep(0.1)  # 100ms between calls
-        
-        except Exception as row_error:
-            error_count += 1
-            print(f"[{batch_id}] Unexpected error on row {idx}: {row_error}")
-            results.append(
-                {
-                    "id": f"{batch_id}-row-{idx}",
-                    "output": "",
-                    "status": "error",
-                    "error": str(row_error),
-                }
-            )
+    # Process all rows in parallel using Modal's .starmap()
+    try:
+        results = list(process_row.starmap([
+            (batch_id, row, idx, prompt, context or "", output_schema or [])
+            for idx, row in enumerate(rows)
+        ]))
+    except Exception as parallel_error:
+        print(f"[{batch_id}] Error during parallel processing: {parallel_error}")
+        results = []
     
     # Calculate statistics
+    successful_count = sum(1 for r in results if r.get("status") == "success")
+    error_count = sum(1 for r in results if r.get("status") == "error")
     total_time = time.time() - start_time
     avg_time_per_row = total_time / len(rows) if rows else 0
     
@@ -224,7 +296,7 @@ def _process_batch_internal(
     
     print(
         f"[{batch_id}] Batch complete: {successful_count} success, "
-        f"{error_count} errors in {total_time:.1f}s"
+        f"{error_count} errors in {total_time:.1f}s (parallel processing)"
     )
     
     return summary
