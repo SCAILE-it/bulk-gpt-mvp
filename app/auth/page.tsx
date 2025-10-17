@@ -44,6 +44,13 @@ export default function LoginPage() {
       }
 
       if (data?.user) {
+        // Ensure user record exists in public.users table
+        await fetch('/api/auth/ensure-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: data.user.id, email: data.user.email })
+        })
+        
         // Successfully signed in, redirect to home
         router.push("/")
         router.refresh()

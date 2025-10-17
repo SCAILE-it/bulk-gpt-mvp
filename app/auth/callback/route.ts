@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
@@ -11,11 +11,30 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     console.error("Auth error:", error)
     return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`)
+  }
+
+  const user = data?.user
+  if (user?.id && user?.email) {
+    // Ensure user exists in public.users table (upsert to handle existing users)
+    try {
+      await supabaseAdmin
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          created_at: new Date().toISOString(),
+        }, {
+          onConflict: 'id'
+        })
+    } catch (err) {
+      console.error('Error creating user record:', err)
+      // Don't fail the auth flow, just log the error
+    }
   }
 
   // Successful authentication, redirect to app
