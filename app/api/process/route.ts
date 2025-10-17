@@ -98,29 +98,8 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    // Create batch results records (all as 'pending' initially)
-    try {
-      const batchResults = rows.map((row, idx) => ({
-        id: `${batchId}-row-${idx}`,
-        batch_id: batchId,
-        input: JSON.stringify(row),
-        status: 'pending',
-        output: '',
-        error: null,
-      }))
-
-      const { error: resultsError } = await supabaseAdmin
-        .from('batch_results')
-        .insert(batchResults)
-
-      if (resultsError) {
-        console.error('Failed to create batch results:', resultsError)
-        // Continue anyway, Modal will create them on demand
-      }
-    } catch (resultsDbError) {
-      console.error('Batch results insertion error:', resultsDbError)
-      // Continue anyway, not fatal
-    }
+    // Skip batch_results pre-creation - Modal will create them as it processes
+    // (Supabase PostgREST schema cache issues prevent reliable pre-creation)
 
     // Invoke Modal processor asynchronously (fire and forget)
     const modalUrl = process.env.MODAL_API_URL || 'https://bulk-gpt-processor-mvp--process-batch.modal.run'
