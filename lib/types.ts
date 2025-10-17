@@ -45,6 +45,11 @@ export interface SchemaColumn {
 }
 
 /**
+ * Processing mode type
+ */
+export type ProcessingMode = 'sample' | 'full'
+
+/**
  * Main application state
  */
 export interface AppState {
@@ -53,6 +58,7 @@ export interface AppState {
   prompt: string
   context: string
   outputColumns: string[]
+  processingMode: ProcessingMode
   results: Array<{
     id: string
     input: Record<string, string> | string

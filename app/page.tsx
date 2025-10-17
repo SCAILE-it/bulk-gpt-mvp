@@ -36,6 +36,7 @@ export default function HomePage() {
     prompt: '',
     context: '',
     outputColumns: [],
+    processingMode: 'sample',
     results: [],
     isProcessing: false,
     progress: {
@@ -95,6 +96,7 @@ export default function HomePage() {
       prompt: '',
       context: '',
       outputColumns: [],
+      processingMode: 'sample',
       results: [],
     }))
   }, [])
@@ -213,7 +215,13 @@ export default function HomePage() {
 
     try {
       // Convert CSV rows to plain objects
-      const csvRows = appState.currentFile.rows.map(row => row.data)
+      const allRows = appState.currentFile.rows.map(row => row.data)
+      
+      // Use sample (first 5 rows) or all rows based on processing mode
+      const SAMPLE_SIZE = 5
+      const csvRows = appState.processingMode === 'sample' 
+        ? allRows.slice(0, SAMPLE_SIZE)
+        : allRows
 
       // Call POST /api/process to create batch and start processing
       const response = await fetch('/api/process', {
@@ -460,6 +468,41 @@ export default function HomePage() {
                   )}
                 </div>
 
+                {/* Processing Mode Selector */}
+                <div className="space-y-2">
+                  <Label>Processing Mode</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="processingMode"
+                        value="sample"
+                        checked={appState.processingMode === 'sample'}
+                        onChange={(e) => setAppState(prev => ({ ...prev, processingMode: e.target.value as 'sample' }))}
+                        disabled={appState.isProcessing}
+                        className="w-4 h-4 text-primary border-gray-300 focus:ring-2 focus:ring-primary"
+                      />
+                      <span className="text-sm">
+                        Sample <span className="text-muted-foreground">(first 5 rows)</span>
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="processingMode"
+                        value="full"
+                        checked={appState.processingMode === 'full'}
+                        onChange={(e) => setAppState(prev => ({ ...prev, processingMode: e.target.value as 'full' }))}
+                        disabled={appState.isProcessing}
+                        className="w-4 h-4 text-primary border-gray-300 focus:ring-2 focus:ring-primary"
+                      />
+                      <span className="text-sm">
+                        Full {appState.currentFile && `(${appState.currentFile.totalRows} rows)`}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
                 <Button
                   onClick={handleProcess}
                   disabled={!appState.currentFile || !appState.prompt || appState.isProcessing}
@@ -474,7 +517,13 @@ export default function HomePage() {
                   ) : (
                     <>
                       <Activity className="mr-2 h-4 w-4" />
-                      Start Processing
+                      Start Processing{' '}
+                      {appState.processingMode === 'sample' && appState.currentFile
+                        ? `(${Math.min(5, appState.currentFile.totalRows)} rows)`
+                        : appState.currentFile
+                        ? `(${appState.currentFile.totalRows} rows)`
+                        : ''
+                      }
                     </>
                   )}
                 </Button>

@@ -142,18 +142,21 @@ def _process_batch_internal(
                 error_count += 1
                 print(f"[{batch_id}] Error on row {idx + 1}: {error_msg}")
             
-            # Update row in database
+            # Insert result into database
             try:
-                supabase.table("batch_results").update(
+                supabase.table("batch_results").insert(
                     {
+                        "id": row_id,
+                        "batch_id": batch_id,
+                        "row_index": idx,
+                        "input": json.dumps(row),  # Convert dict to JSON string
                         "output": output,
                         "status": status,
-                        "error": error_msg,
-                        "updated_at": "now()",
+                        "error_message": error_msg,  # Use error_message instead of error
                     }
-                ).eq("id", row_id).execute()
+                ).execute()
             except Exception as db_error:
-                print(f"[{batch_id}] Warning: Could not update row {row_id}: {db_error}")
+                print(f"[{batch_id}] Warning: Could not insert result {row_id}: {db_error}")
             
             # Track result
             results.append(
