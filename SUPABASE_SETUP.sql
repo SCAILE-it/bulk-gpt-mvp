@@ -155,3 +155,5 @@ CREATE TRIGGER update_batch_results_updated_at BEFORE UPDATE ON public.batch_res
 SELECT 'BULK-GPT database schema created successfully!' as status;
 
 
+
+

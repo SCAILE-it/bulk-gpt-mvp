@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Activity, Loader2, Download, Moon, Sun, X, Plus } from 'lucide-react'
+import { Activity, Loader2, Download, Moon, Sun, X, Plus, LogOut } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import type { AppState, ParsedCSV } from '@/lib/types'
 import { CSVUpload } from '@/components/upload/csv-upload'
 import { CSVPreview } from '@/components/upload/csv-preview'
@@ -24,7 +26,9 @@ interface BatchStatus {
 
 export default function HomePage() {
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const promptRef = useRef<HTMLTextAreaElement>(null)
   const [appState, setAppState] = useState<AppState>({
     currentFile: null,
@@ -43,6 +47,25 @@ export default function HomePage() {
 
   const [batchId, setBatchId] = useState<string | null>(null)
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
+
+  // Get current user on mount
+  useEffect(() => {
+    const supabase = createClient()
+    if (supabase) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        setUserEmail(user?.email || null)
+      })
+    }
+  }, [])
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    if (supabase) {
+      await supabase.auth.signOut()
+      router.push('/auth')
+      router.refresh()
+    }
+  }
 
   const handleCSVUpload = (data: ParsedCSV) => {
     setAppState(prev => ({
@@ -247,19 +270,35 @@ export default function HomePage() {
             <Activity className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold text-foreground">Bulk GPT</h1>
           </div>
-          {mounted && (
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              aria-label="Toggle theme"
-              className="rounded-lg p-2 hover:bg-muted transition-colors"
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <Moon className="h-5 w-5 text-muted-foreground" />
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {userEmail && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{userEmail}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            )}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                aria-label="Toggle theme"
+                className="rounded-lg p-2 hover:bg-muted transition-colors"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <Moon className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">Batch process CSV data through Gemini AI (async, fire-and-forget)</p>
       </header>

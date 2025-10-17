@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { validatePrompt } from '@/lib/validation'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
@@ -27,6 +27,17 @@ export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
  */
 export async function POST(request: NextRequest): Promise<Response> {
   try {
+    // Get user from session
+    const supabase = await createServerSupabaseClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - please sign in' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
 
     // Validate required fields
@@ -60,10 +71,11 @@ export async function POST(request: NextRequest): Promise<Response> {
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('batches')
         .insert({
           id: batchId,
+          user_id: user.id,
           csv_filename: csvFilename,
           total_rows: rows.length,
           status: 'pending',

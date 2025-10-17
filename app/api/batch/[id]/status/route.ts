@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export const maxDuration = 60
 
@@ -41,7 +41,7 @@ export async function GET(
     }
 
     // Get batch info
-    const { data: batchData, error: batchError } = await supabase
+    const { data: batchData, error: batchError } = await supabaseAdmin
       .from('batches')
       .select('*')
       .eq('id', batchId)
@@ -56,7 +56,7 @@ export async function GET(
     }
 
     // Get batch results
-    const { data: results, error: resultsError } = await supabase
+    const { data: results, error: resultsError } = await supabaseAdmin
       .from('batch_results')
       .select('*')
       .eq('batch_id', batchId)
@@ -144,5 +144,7 @@ export async function POST(): Promise<Response> {
     { status: 405 }
   )
 }
+
+
 
 
