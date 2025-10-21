@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { validatePrompt } from '@/lib/validation'
+import type { OutputColumn } from '@/lib/types'
+import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
 
 /**
  * POST /api/process
  * Create batch and invoke Modal processor asynchronously
- * 
+ *
  * Request body:
  * {
  *   csvFilename: string,
  *   rows: Array<Record<string, string>>,
  *   prompt: string,
  *   context?: string,
- *   outputColumns?: string[]
+ *   outputColumns?: OutputColumn[],
+ *   webhookUrl?: string
  * }
- * 
+ *
  * Returns:
  * {
  *   batchId: string,
@@ -26,17 +29,38 @@ export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
  * }
  */
 export async function POST(request: NextRequest): Promise<Response> {
+  let userId: string | null = null
+  
   try {
-    // Get user from session
+    // Get user from session (cookie-based) or Bearer token
+    const authHeader = request.headers.get('Authorization')
     const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    let user = null
+    let authError = null
+
+    if (authHeader?.startsWith('Bearer ')) {
+      // API token auth (for curl/n8n)
+      const token = authHeader.slice(7)
+      const { data, error } = await supabase.auth.getUser(token)
+      user = data.user
+      authError = error
+    } else {
+      // Cookie-based auth (for browser)
+      const { data, error } = await supabase.auth.getUser()
+      user = data.user
+      authError = error
+    }
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized - please sign in' },
+        { error: 'Unauthorized - please sign in or provide valid Bearer token' },
         { status: 401 }
       )
     }
+    
+    // Store userId for error handling
+    userId = user.id
 
     const body = await request.json()
 
@@ -65,7 +89,21 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    const { csvFilename, rows, prompt, context = '', outputColumns = [] } = body
+    const { csvFilename, rows, prompt, context = '', outputColumns = [], webhookUrl } = body
+
+    // Check rate limits
+    const rateLimitCheck = checkRateLimits(user.id, rows.length)
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: rateLimitCheck.reason,
+          limit: rateLimitCheck.limit,
+          current: rateLimitCheck.current,
+          beta: true 
+        },
+        { status: 429 }
+      )
+    }
 
     // Create batch record in Supabase
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -105,11 +143,13 @@ export async function POST(request: NextRequest): Promise<Response> {
     const modalUrl = process.env.MODAL_API_URL || 'https://scaile--bulk-gpt-processor-mvp-fastapi-app.modal.run'
     
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns).catch((error) => {
+    invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns, webhookUrl).catch((error) => {
       // eslint-disable-next-line no-console
       console.error(`Failed to invoke Modal for batch ${batchId}:`, error)
       // Mark batch as failed (best effort, don't block response)
       markBatchFailed(batchId)
+      // Release rate limit on failure
+      releaseBatch(user.id)
     })
 
     // Return immediately with batch ID
@@ -126,6 +166,10 @@ export async function POST(request: NextRequest): Promise<Response> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('POST /api/process error:', error)
+    // Release rate limit on error
+    if (userId) {
+      releaseBatch(userId)
+    }
     return NextResponse.json(
       {
         error: 'Failed to create batch',
@@ -145,26 +189,41 @@ async function invokeModalAsync(
   rows: Record<string, string>[],
   prompt: string,
   context: string,
-  outputColumns: string[]
+  outputColumns: OutputColumn[],
+  webhookUrl?: string
 ): Promise<void> {
-  // Fire request without awaiting
-  fetch(modalUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Batch-ID': batchId,
-    },
-    body: JSON.stringify({
-      batch_id: batchId,
-      rows,
-      prompt,
-      context,
-      output_schema: outputColumns,
-    }),
-  }).catch((error) => {
+  // Actually await the fetch to ensure request completes before function exits
+  // This prevents ClientDisconnect errors when serverless function terminates
+  try {
+    const response = await fetch(modalUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Batch-ID': batchId,
+      },
+      body: JSON.stringify({
+        batch_id: batchId,
+        rows,
+        prompt,
+        context,
+        output_schema: outputColumns,
+        webhook_url: webhookUrl,
+      }),
+      // Timeout after 30 seconds (Modal should respond quickly with 202 Accepted)
+      signal: AbortSignal.timeout(30000),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Modal returned ${response.status}: ${await response.text()}`)
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(`Modal request successful for batch ${batchId}, status: ${response.status}`)
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error(`Modal request failed for batch ${batchId}:`, error)
-  })
+    throw error // Re-throw to trigger catch in line 109
+  }
 }
 
 /**

@@ -6,11 +6,25 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Activity } from "lucide-react"
+
+// Validate returnUrl to prevent open redirect attacks
+function isValidReturnUrl(url: string): boolean {
+  // Must start with / but not //
+  if (!url.startsWith('/') || url.startsWith('//')) {
+    return false
+  }
+  // No protocol (prevents http://evil.com)
+  if (url.includes(':')) {
+    return false
+  }
+  return true
+}
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [email, setEmail] = useState("")
@@ -50,9 +64,18 @@ export default function LoginPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: data.user.id, email: data.user.email })
         })
-        
-        // Successfully signed in, redirect to home
-        router.push("/")
+
+        // Get returnUrl from query params with validation
+        const returnUrl = searchParams.get('returnUrl') || '/wizard'
+
+        // Validate before redirecting (SECURITY - prevent open redirect)
+        if (isValidReturnUrl(returnUrl)) {
+          router.push(returnUrl)
+        } else {
+          // Invalid returnUrl, use safe fallback
+          router.push('/wizard')
+        }
+
         router.refresh()
       }
     } catch (err: unknown) {

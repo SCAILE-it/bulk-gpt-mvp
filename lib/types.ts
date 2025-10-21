@@ -37,6 +37,7 @@ export interface Progress {
 
 /**
  * Output schema column definition
+ * @deprecated Use OutputColumn instead
  */
 export interface SchemaColumn {
   name: string
@@ -45,27 +46,93 @@ export interface SchemaColumn {
 }
 
 /**
+ * Output column with individual prompt
+ * Supports structured output with multiple AI-generated fields per row
+ */
+export interface OutputColumn {
+  /** Column name in output CSV */
+  name: string
+  /** Prompt template for this specific column */
+  prompt: string
+  /** Expected output format */
+  format?: 'text' | 'number' | 'enum' | 'json'
+  /** For enum format, valid values */
+  enumValues?: string[]
+  /** Whether this field is required */
+  required?: boolean
+  /** Maximum length for text outputs */
+  maxLength?: number
+}
+
+/**
  * Processing mode type
  */
 export type ProcessingMode = 'sample' | 'full'
+
+/**
+ * Saved context for reuse across batches
+ */
+export interface SavedContext {
+  id: string
+  name: string
+  content: string
+  createdAt: Date
+  lastUsed: Date
+  usageCount: number
+  tags?: string[]
+}
+
+/**
+ * Template for prompt configuration
+ */
+export interface Template {
+  id: string
+  name: string
+  description?: string
+  outputColumns: OutputColumn[]
+  globalContext: string
+  requiredCsvColumns?: string[]
+  createdAt: Date
+  lastUsed: Date
+  usageCount: number
+  tags?: string[]
+}
+
+/**
+ * Batch processing status response
+ */
+export interface BatchStatus {
+  batchId: string
+  status: 'pending' | 'processing' | 'completed' | 'completed_with_errors' | 'failed'
+  totalRows: number
+  processedRows: number
+  progressPercent: number
+  results: ProcessingResult[]
+  message: string
+}
+
+/**
+ * Individual row processing result
+ */
+export interface ProcessingResult {
+  id: string
+  input: Record<string, string> | string
+  output: string
+  status: 'pending' | 'processing' | 'success' | 'error'
+  error?: string
+}
 
 /**
  * Main application state
  */
 export interface AppState {
   currentFile: ParsedCSV | null
-  selectedTemplate: string | null
+  selectedTemplate: Template | null
   prompt: string
   context: string
-  outputColumns: string[]
+  outputColumns: OutputColumn[]
   processingMode: ProcessingMode
-  results: Array<{
-    id: string
-    input: Record<string, string> | string
-    output: string
-    status: 'pending' | 'processing' | 'success' | 'error'
-    error?: string
-  }>
+  results: ProcessingResult[]
   isProcessing: boolean
   progress: Progress
 }

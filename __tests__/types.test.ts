@@ -78,44 +78,47 @@ describe('CSVRow', () => {
 })
 
 describe('ParsedCSV', () => {
-  it('should contain rows, headers, and row count', () => {
+  it('should contain rows, columns, and total rows', () => {
     const parsed: ParsedCSV = {
+      filename: 'test.csv',
       rows: [
         { data: { name: 'John' }, rowIndex: 0 },
         { data: { name: 'Jane' }, rowIndex: 1 },
       ],
-      headers: ['name'],
-      rowCount: 2,
+      columns: ['name'],
+      totalRows: 2,
     }
-    
+
     expect(parsed.rows.length).toBe(2)
-    expect(parsed.headers).toEqual(['name'])
-    expect(parsed.rowCount).toBe(2)
+    expect(parsed.columns).toEqual(['name'])
+    expect(parsed.totalRows).toBe(2)
   })
 
   it('should have consistent row count', () => {
     const parsed: ParsedCSV = {
+      filename: 'data.csv',
       rows: [
         { data: { col1: 'val1', col2: 'val2' }, rowIndex: 0 },
         { data: { col1: 'val3', col2: 'val4' }, rowIndex: 1 },
         { data: { col1: 'val5', col2: 'val6' }, rowIndex: 2 },
       ],
-      headers: ['col1', 'col2'],
-      rowCount: 3,
+      columns: ['col1', 'col2'],
+      totalRows: 3,
     }
-    
-    expect(parsed.rowCount).toBe(parsed.rows.length)
+
+    expect(parsed.totalRows).toBe(parsed.rows.length)
   })
 
   it('should allow empty rows', () => {
     const parsed: ParsedCSV = {
+      filename: 'empty.csv',
       rows: [],
-      headers: ['col1', 'col2'],
-      rowCount: 0,
+      columns: ['col1', 'col2'],
+      totalRows: 0,
     }
-    
+
     expect(parsed.rows.length).toBe(0)
-    expect(parsed.rowCount).toBe(0)
+    expect(parsed.totalRows).toBe(0)
   })
 })
 
@@ -156,15 +159,19 @@ describe('AppState', () => {
       selectedTemplate: null,
       prompt: '',
       context: '',
+      outputColumns: [],
+      processingMode: 'sample',
       results: [],
       isProcessing: false,
       progress: { current: 0, total: 0 },
     }
-    
+
     expect(state.currentFile).toBeNull()
     expect(state.selectedTemplate).toBeNull()
     expect(state.prompt).toBe('')
     expect(state.context).toBe('')
+    expect(state.outputColumns).toEqual([])
+    expect(state.processingMode).toBe('sample')
     expect(state.results).toEqual([])
     expect(state.isProcessing).toBe(false)
     expect(state.progress).toEqual({ current: 0, total: 0 })
@@ -172,21 +179,24 @@ describe('AppState', () => {
 
   it('should store parsed CSV in currentFile', () => {
     const parsedCSV: ParsedCSV = {
+      filename: 'test.csv',
       rows: [{ data: { col: 'val' }, rowIndex: 0 }],
-      headers: ['col'],
-      rowCount: 1,
+      columns: ['col'],
+      totalRows: 1,
     }
-    
+
     const state: AppState = {
       currentFile: parsedCSV,
       selectedTemplate: null,
       prompt: 'Test prompt',
       context: '',
+      outputColumns: [],
+      processingMode: 'full',
       results: [],
       isProcessing: false,
       progress: { current: 0, total: 0 },
     }
-    
+
     expect(state.currentFile).toEqual(parsedCSV)
   })
 
@@ -206,17 +216,19 @@ describe('AppState', () => {
         error: 'Processing failed',
       },
     ]
-    
+
     const state: AppState = {
       currentFile: null,
       selectedTemplate: null,
       prompt: '',
       context: '',
+      outputColumns: [],
+      processingMode: 'sample',
       results,
       isProcessing: false,
       progress: { current: 2, total: 2 },
     }
-    
+
     expect(state.results.length).toBe(2)
     expect(state.results[0].status).toBe('success')
     expect(state.results[1].status).toBe('error')
@@ -228,11 +240,13 @@ describe('AppState', () => {
       selectedTemplate: null,
       prompt: 'Test',
       context: '',
+      outputColumns: [],
+      processingMode: 'full',
       results: [],
       isProcessing: true,
       progress: { current: 5, total: 10 },
     }
-    
+
     expect(state.isProcessing).toBe(true)
     expect(state.progress.current).toBe(5)
   })

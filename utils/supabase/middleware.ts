@@ -45,10 +45,14 @@ export async function updateSession(request: NextRequest) {
   // Redirect to login if no user and trying to access protected route
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/prototype')
   ) {
     const url = request.nextUrl.clone()
+    // Preserve the original URL to return to after login
+    const returnUrl = request.nextUrl.pathname + request.nextUrl.search
     url.pathname = '/auth'
+    url.searchParams.set('returnUrl', returnUrl)
     return NextResponse.redirect(url)
   }
 
