@@ -98,7 +98,10 @@ export const ANALYTICS_EVENTS = {
   BATCH_STARTED: 'batch_started',
   BATCH_COMPLETED: 'batch_completed',
   BATCH_FAILED: 'batch_failed',
+  BATCH_ERROR: 'batch_error',
+  BATCH_CANCELLED: 'batch_cancelled',
   BATCH_EXPORTED: 'batch_exported',
+  RESULTS_EXPORTED: 'results_exported',
   
   // Rate limit events
   RATE_LIMIT_HIT: 'rate_limit_hit',
