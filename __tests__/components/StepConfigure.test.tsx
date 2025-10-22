@@ -16,6 +16,7 @@ import { renderWithProviders, screen, waitFor, fireEvent } from '../utils/test-u
 import StepConfigure from '@/components/wizard/StepConfigure'
 
 const SAMPLE_CSV_DATA = {
+  file: new File(['name,email,company,industry'], 'test.csv', { type: 'text/csv' }),
   headers: ['name', 'email', 'company', 'industry'],
   rowCount: 3,
   preview: [

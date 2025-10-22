@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, type Mock } from 'vitest'
 /**
  * Tests for useCSVParser hook
  * Ensures CSV parsing state management works correctly
@@ -94,7 +94,7 @@ describe('useCSVParser', () => {
         resolvePromise = resolve
       })
 
-      ;(csvParser.parseCSV as jest.Mock).mockReturnValue(parsePromise)
+      ;(csvParser.parseCSV as Mock).mockReturnValue(parsePromise)
 
       const { result } = renderHook(() => useCSVParser())
       const file = new File(['data'], 'test.csv', { type: 'text/csv' })
@@ -111,6 +111,7 @@ describe('useCSVParser', () => {
 
       // Complete parsing
       act(() => {
+        resolvePromise!({
           filename: 'test.csv',
           rows: [],
           columns: [],
@@ -120,7 +121,9 @@ describe('useCSVParser', () => {
 
       await parseFilePromise!
 
-      expect(result.current.isParsing).toBe(false)
+      await waitFor(() => {
+        expect(result.current.isParsing).toBe(false)
+      })
     })
   })
 

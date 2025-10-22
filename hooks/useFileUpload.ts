@@ -144,21 +144,23 @@ export function useFileUpload(): UseFileUploadReturn {
       rowCount,
     }
 
-    // Add to beginning, remove duplicates, limit to MAX_RECENT_FILES
-    const updated = [
-      recent,
-      ...recentFiles.filter(f => f.name !== file.name)
-    ].slice(0, MAX_RECENT_FILES)
+    setRecentFiles(prevFiles => {
+      // Add to beginning, remove duplicates, limit to MAX_RECENT_FILES
+      const updated = [
+        recent,
+        ...prevFiles.filter(f => f.name !== file.name)
+      ].slice(0, MAX_RECENT_FILES)
 
-    setRecentFiles(updated)
-    
-    // Persist to localStorage
-    try {
-      localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(updated))
-    } catch (e) {
-      console.error('Failed to save recent files:', e)
-    }
-  }, [recentFiles])
+      // Persist to localStorage
+      try {
+        localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(updated))
+      } catch (e) {
+        console.error('Failed to save recent files:', e)
+      }
+
+      return updated
+    })
+  }, [])
 
   // Clear current file
   const clearFile = useCallback(() => {

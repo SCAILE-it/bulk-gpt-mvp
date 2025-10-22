@@ -110,7 +110,8 @@ export const ANALYTICS_EVENTS = {
   BETA_BANNER_DISMISSED: 'beta_banner_dismissed',
   BETA_UPGRADE_CLICKED: 'beta_upgrade_clicked',
   API_TOKEN_REVEALED: 'api_token_revealed',
-  
+  BULK_TEMPLATE_USED: 'bulk_template_used',
+
   // Error events
   ERROR_BOUNDARY_TRIGGERED: 'error_boundary_triggered',
 } as const

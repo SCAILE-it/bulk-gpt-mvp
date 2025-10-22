@@ -38,7 +38,8 @@ describe('useFileUpload Integration', () => {
     // Check localStorage
     const stored = localStorage.getItem('bulk-gpt-recent-files')
     expect(stored).toBeTruthy()
-    
+
+    const parsed = JSON.parse(stored!)
     expect(parsed[0].name).toBe('test.csv')
     expect(parsed[0].rowCount).toBe(100)
   })

@@ -77,7 +77,7 @@ export function useWizardSession() {
   /**
    * Validate restored session data structure
    */
-  const validateSessionData = (data: any): data is WizardSessionData => {
+  const validateSessionData = (data: unknown): data is WizardSessionData => {
     if (!data || typeof data !== 'object') return false
     if (typeof data.currentStep !== 'number') return false
     if (typeof data.timestamp !== 'number') return false
