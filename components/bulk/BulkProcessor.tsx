@@ -18,6 +18,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { features } from '@/lib/features'
 import { useFileUpload, type RecentFile } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
+import { useBatchProcessor } from '@/hooks/useBatchProcessor'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
@@ -34,9 +35,11 @@ export default function BulkProcessor() {
   // === FILE STATE (V2: Use hooks if feature flags enabled) ===
   const useV2FileUpload = features.useNewFileUpload
   const useV2CSVParser = features.useNewCSVParser
+  const useV2BatchProcessor = features.useNewBatchProcessor
   
   const v2FileUpload = useFileUpload()
   const v2CSVParser = useCSVParser()
+  const v2BatchProcessor = useBatchProcessor()
   
   // V1 (Legacy) file state
   const [file, setFile] = useState<File | null>(null)
@@ -48,7 +51,7 @@ export default function BulkProcessor() {
   const currentFile = useV2FileUpload ? v2FileUpload.file : file
   const currentCsvData = useV2CSVParser ? v2CSVParser.csvData : csvData
   const currentRecentFiles = useV2FileUpload ? v2FileUpload.recentFiles : recentFiles
-  const currentError = useV2FileUpload ? v2FileUpload.error : (useV2CSVParser ? v2CSVParser.error : null)
+  const currentError = useV2FileUpload ? v2FileUpload.error : (useV2CSVParser ? v2CSVParser.error : (useV2BatchProcessor ? v2BatchProcessor.error : null))
 
   // === CONFIG STATE ===
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
@@ -66,6 +69,13 @@ export default function BulkProcessor() {
   const [isTesting, setIsTesting] = useState(false)
   const [results, setResults] = useState<Result[]>([])
   const [error, setError] = useState<string | null>(null)
+  
+  // Use V2 or V1 processing state
+  const currentBatchId = useV2BatchProcessor ? v2BatchProcessor.batchId : batchId
+  const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
+  const currentIsTesting = useV2BatchProcessor ? v2BatchProcessor.isTesting : isTesting
+  const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
+  const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : null
 
   // === LOAD RECENT FILES ===
   useEffect(() => {
