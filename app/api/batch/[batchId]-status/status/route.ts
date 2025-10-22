@@ -28,10 +28,10 @@ export const maxDuration = 60
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { batchId: string } }
 ): Promise<Response> {
   try {
-    const batchId = params.id
+    const batchId = params.batchId
 
     if (!batchId) {
       return NextResponse.json(

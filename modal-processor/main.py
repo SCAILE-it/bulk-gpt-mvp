@@ -37,6 +37,7 @@ image = modal.Image.debian_slim().pip_install(
     "python-dotenv>=1.0.0",
     "fastapi[standard]>=0.115.0",
     "tenacity>=8.2.0",  # For retry logic with exponential backoff
+    "requests>=2.31.0",  # For webhook HTTP calls
 )
 
 # Create FastAPI app for HTTP endpoints
@@ -126,6 +127,34 @@ def call_gemini_with_retry(model, prompt: str) -> str:
     return response.text
 
 
+def fire_webhook(webhook_url: str, payload: Dict[str, Any]) -> bool:
+    """
+    Fire webhook with batch completion data.
+
+    Args:
+        webhook_url: URL to POST results to (n8n, Zapier, etc.)
+        payload: Batch summary data
+
+    Returns:
+        True if webhook fired successfully, False otherwise
+    """
+    import requests
+
+    try:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=10,  # 10 second timeout
+        )
+        response.raise_for_status()
+        print(f"[{payload.get('batch_id')}] Webhook fired successfully: {webhook_url}")
+        return True
+    except Exception as e:
+        print(f"[{payload.get('batch_id')}] Webhook failed: {e}")
+        return False
+
+
 def _process_single_row(
     batch_id: str,
     row: Dict[str, str],
@@ -186,7 +215,7 @@ def _process_single_row(
         
         # Call Gemini API with automatic retry
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash-exp",
+            model_name="gemini-2.5-flash",
             system_instruction=SYSTEM_PROMPT,
         )
         
@@ -207,9 +236,9 @@ def _process_single_row(
             {
                 "id": row_id,
                 "batch_id": batch_id,
-                "row_index": row_index,
                 "input_data": json.dumps(row),
                 "output_data": output,
+                "row_index": row_index,
                 "status": status,
                 "error_message": error_msg,
             }
@@ -289,17 +318,19 @@ def _process_batch_internal(
     prompt: str,
     context: str = "",
     output_schema: List[str] = None,
+    webhook_url: str = None,
 ) -> Dict[str, Any]:
     """
     Internal function to orchestrate parallel batch processing.
-    
+
     Args:
         batch_id: Unique identifier for this batch
         rows: List of CSV rows as dictionaries
         prompt: Template prompt with {{column}} placeholders
         context: Additional context for the task
         output_schema: Expected output columns/format
-    
+        webhook_url: Optional webhook URL to POST results to when complete
+
     Returns:
         Dict with processing results and statistics
     """
@@ -376,7 +407,11 @@ def _process_batch_internal(
         f"[{batch_id}] Batch complete: {successful_count} success, "
         f"{error_count} errors in {total_time:.1f}s (parallel processing)"
     )
-    
+
+    # Fire webhook if configured
+    if webhook_url:
+        fire_webhook(webhook_url, summary)
+
     return summary
 
 
@@ -385,7 +420,7 @@ def _process_batch_internal(
 async def process_batch_endpoint(request: Request):
     """HTTP endpoint for batch processing requests."""
     body = await request.json()
-    
+
     # Spawn Modal function to process batch
     result = await process_batch_modal.remote.aio(
         batch_id=body.get("batch_id"),
@@ -393,8 +428,9 @@ async def process_batch_endpoint(request: Request):
         prompt=body.get("prompt", ""),
         context=body.get("context", ""),
         output_schema=body.get("output_schema"),
+        webhook_url=body.get("webhook_url"),
     )
-    
+
     return result
 
 
@@ -411,9 +447,10 @@ def process_batch_modal(
     prompt: str,
     context: str = "",
     output_schema: List[str] = None,
+    webhook_url: str = None,
 ) -> Dict[str, Any]:
     """Modal function that processes batches."""
-    return _process_batch_internal(batch_id, rows, prompt, context, output_schema)
+    return _process_batch_internal(batch_id, rows, prompt, context, output_schema, webhook_url)
 
 
 # Expose FastAPI app as ASGI
@@ -428,4 +465,167 @@ def fastapi_app():
 def health_check() -> Dict[str, str]:
     """Health check endpoint for Modal."""
     return {"status": "healthy", "service": "bulk-gpt-processor", "version": "1.0.0"}
+
+
+@app.function(
+    image=image,
+    timeout=60,
+    memory=512,
+    secrets=[modal.Secret.from_name("bulk-gpt-env")],
+)
+def generate_output_columns(prompt: str) -> Dict[str, Any]:
+    """
+    Analyze a user's prompt and suggest appropriate output columns.
+
+    Uses Gemini to intelligently determine what columns the AI should generate
+    based on the task described in the prompt.
+
+    Args:
+        prompt: The user's prompt template (e.g., "Analyze {{company}} and rate innovation")
+
+    Returns:
+        Dict with:
+        - columns: List of {name, description} objects
+        - status: 'success' or 'error'
+        - error: Error message if status is 'error'
+    """
+    import google.generativeai as genai
+
+    # Get Gemini API key
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_api_key:
+        return {
+            "columns": [],
+            "status": "error",
+            "error": "Missing GEMINI_API_KEY environment variable",
+        }
+
+    # Configure Gemini
+    genai.configure(api_key=gemini_api_key)
+
+    try:
+        # Create model with system instruction
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction="""You are an AI that generates output column definitions for bulk data processing.
+
+Analyze the user's prompt and determine what output columns should be generated.
+
+Respond with ONLY valid JSON (no markdown, no explanation):
+{
+  "columns": [
+    {
+      "name": "column_name_snake_case",
+      "description": "What this column contains"
+    }
+  ]
+}
+
+Rules:
+1. Return 1-3 columns that make sense for the task
+2. Column names MUST be snake_case (no spaces, lowercase, underscores only)
+3. Descriptions should be clear and specific
+4. Return ONLY the JSON object (no code blocks, no explanations)""",
+        )
+
+        # Generate columns
+        analysis_prompt = f'Analyze this prompt and generate appropriate output columns:\n\n"{prompt}"'
+        response = model.generate_content(analysis_prompt)
+
+        if not response or not response.text:
+            return {
+                "columns": [],
+                "status": "error",
+                "error": "Empty response from Gemini",
+            }
+
+        # Parse JSON response
+        response_text = response.text.strip()
+
+        # Remove markdown code blocks if present
+        if response_text.startswith('```json'):
+            response_text = response_text.replace('```json\n', '').replace('```', '')
+        elif response_text.startswith('```'):
+            response_text = response_text.replace('```\n', '').replace('```', '')
+
+        # Parse JSON
+        parsed = json.loads(response_text)
+
+        if not parsed.get("columns") or not isinstance(parsed["columns"], list):
+            return {
+                "columns": [],
+                "status": "error",
+                "error": "Invalid response format - missing 'columns' array",
+            }
+
+        # Validate column structure
+        columns = []
+        for col in parsed["columns"]:
+            if isinstance(col, dict) and "name" in col and "description" in col:
+                # Validate snake_case
+                name = col["name"].lower().replace(" ", "_").replace("-", "_")
+                columns.append({
+                    "name": name,
+                    "description": col["description"]
+                })
+
+        if not columns:
+            return {
+                "columns": [],
+                "status": "error",
+                "error": "No valid columns generated",
+            }
+
+        return {
+            "columns": columns[:3],  # Max 3 columns
+            "status": "success",
+            "error": None,
+        }
+
+    except json.JSONDecodeError as e:
+        return {
+            "columns": [],
+            "status": "error",
+            "error": f"Failed to parse JSON response: {str(e)}",
+        }
+    except Exception as e:
+        return {
+            "columns": [],
+            "status": "error",
+            "error": f"Gemini API error: {str(e)}",
+        }
+
+
+# Add HTTP endpoint for auto-column generation
+@web_app.post("/generate-columns")
+async def generate_columns_endpoint(request: Request):
+    """
+    HTTP endpoint for auto-column generation.
+
+    POST /generate-columns
+    Request: {"prompt": "Your prompt with {{variables}}"}
+    Response: {
+        "columns": [
+            {"name": "column_name", "description": "What this column contains"}
+        ],
+        "status": "success" | "error",
+        "error": null | "Error message"
+    }
+
+    Example:
+        curl -X POST https://scaile--bulk-gpt-processor-mvp-fastapi-app.modal.run/generate-columns \
+          -H "Content-Type: application/json" \
+          -d '{"prompt": "Rate {{company}} on innovation (1-10)"}'
+
+    Used by wizard UI to intelligently suggest output columns based on user's prompt.
+    """
+    body = await request.json()
+    prompt = body.get("prompt", "")
+
+    if not prompt:
+        return {"columns": [], "status": "error", "error": "Missing 'prompt' parameter"}
+
+    # Call Modal function
+    result = await generate_output_columns.remote.aio(prompt)
+    return result
 

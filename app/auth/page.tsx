@@ -5,12 +5,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Activity } from "lucide-react"
 
-export default function LoginPage() {
+// Validate returnUrl to prevent open redirect attacks
+function isValidReturnUrl(url: string): boolean {
+  // Must start with / but not //
+  if (!url.startsWith('/') || url.startsWith('//')) {
+    return false
+  }
+  // No protocol (prevents http://evil.com)
+  if (url.includes(':')) {
+    return false
+  }
+  return true
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [email, setEmail] = useState("")
@@ -50,9 +64,18 @@ export default function LoginPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: data.user.id, email: data.user.email })
         })
-        
-        // Successfully signed in, redirect to home
-        router.push("/")
+
+        // Get returnUrl from query params with validation
+        const returnUrl = searchParams.get('returnUrl') || '/wizard'
+
+        // Validate before redirecting (SECURITY - prevent open redirect)
+        if (isValidReturnUrl(returnUrl)) {
+          router.push(returnUrl)
+        } else {
+          // Invalid returnUrl, use safe fallback
+          router.push('/wizard')
+        }
+
         router.refresh()
       }
     } catch (err: unknown) {
@@ -125,6 +148,25 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Activity className="h-6 w-6 text-primary animate-pulse" />
+            </div>
+            <CardTitle className="text-2xl">Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
 

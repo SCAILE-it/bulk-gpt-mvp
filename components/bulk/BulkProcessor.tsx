@@ -1,0 +1,1294 @@
+/**
+ * ABOUTME: Single-page bulk processor - power-user optimized interface
+ * ABOUTME: Full-width layout, keyboard shortcuts, inline results, no wizard steps
+ */
+
+'use client'
+
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { useHotkeys } from 'react-hotkeys-hook'
+import {
+  Upload, FileText, Play, CheckCircle, XCircle,
+  Loader2, Download, Plus, X, ChevronDown, HelpCircle
+} from 'lucide-react'
+import { parseCSV } from '@/lib/csv-parser'
+import type { ParsedCSV } from '@/lib/types'
+import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { features } from '@/lib/features'
+import { useFileUpload, type RecentFile } from '@/hooks/useFileUpload'
+import { useCSVParser } from '@/hooks/useCSVParser'
+import { useBatchProcessor } from '@/hooks/useBatchProcessor'
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
+
+// PROMPT TEMPLATES
+interface PromptTemplate {
+  id: string
+  name: string
+  description: string
+  prompt: string
+  exampleVariables: string[]
+  category: 'content' | 'data' | 'analysis'
+}
+
+const PROMPT_TEMPLATES: PromptTemplate[] = [
+  {
+    id: 'write-bio',
+    name: 'Professional Bio',
+    description: 'Generate professional bios for team members, speakers, or clients',
+    prompt: 'Write a professional bio (2-3 sentences) for {{name}} who works as {{title}} at {{company}}. {{name}} specializes in {{expertise}}. Keep it engaging and suitable for a conference website.',
+    exampleVariables: ['name', 'title', 'company', 'expertise'],
+    category: 'content'
+  },
+  {
+    id: 'summarize-content',
+    name: 'Content Summarizer',
+    description: 'Summarize long text into concise bullet points',
+    prompt: 'Summarize the following text into 3-5 key bullet points. Focus on the main ideas and actionable insights:\n\n{{text}}',
+    exampleVariables: ['text'],
+    category: 'analysis'
+  },
+  {
+    id: 'extract-data',
+    name: 'Data Extractor',
+    description: 'Extract structured information from unstructured text',
+    prompt: 'Extract the following information from this text and return as JSON:\n- Company name\n- Industry\n- Location\n- Key products/services\n\nText: {{description}}',
+    exampleVariables: ['description'],
+    category: 'data'
+  }
+]
+
+interface Result {
+  id: string
+  input: Record<string, string>
+  output: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  error?: string
+}
+
+export default function BulkProcessor() {
+  // === FILE STATE (V2: Use hooks if feature flags enabled) ===
+  const useV2FileUpload = features.useNewFileUpload
+  const useV2CSVParser = features.useNewCSVParser
+  const useV2BatchProcessor = features.useNewBatchProcessor
+  
+  const v2FileUpload = useFileUpload()
+  const v2CSVParser = useCSVParser()
+  const v2BatchProcessor = useBatchProcessor()
+  
+  // V1 (Legacy) file state
+  const [file, setFile] = useState<File | null>(null)
+  const [csvData, setCsvData] = useState<ParsedCSV | null>(null)
+  const [recentFiles, setRecentFiles] = useState<RecentFile[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Use V2 or V1 state based on feature flags
+  const currentFile = useV2FileUpload ? v2FileUpload.file : file
+  const currentCsvData = useV2CSVParser ? v2CSVParser.csvData : csvData
+  const currentRecentFiles = useV2FileUpload ? v2FileUpload.recentFiles : recentFiles
+  const currentError = useV2FileUpload ? v2FileUpload.error : (useV2CSVParser ? v2CSVParser.error : (useV2BatchProcessor ? v2BatchProcessor.error : null))
+
+  // === CONFIG STATE ===
+  const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
+  const [outputFields, setOutputFields] = useState<string[]>(['bio'])
+  const [newField, setNewField] = useState('')
+  const [webhookUrl, setWebhookUrl] = useState('')
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
+
+  // === API ACCESS ===
+  const [apiToken, setApiToken] = useState<string | null>(null)
+  const [showApiAccess, setShowApiAccess] = useState(false)
+  const [isFetchingToken, setIsFetchingToken] = useState(false)
+
+  // === TIMEOUT REFS (for cleanup) ===
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // === BETA BANNER ===
+  const [showBetaBanner, setShowBetaBanner] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('bulk-beta-banner-dismissed') !== 'true'
+  })
+
+  // === TEST RESULT MODAL ===
+  const [showTestModal, setShowTestModal] = useState(false)
+  const [testResult, setTestResult] = useState<{ input: Record<string, string>, output: Record<string, string> } | null>(null)
+
+  // === TEMPLATE GALLERY ===
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false)
+
+  // === PROCESSING STATE ===
+  const [batchId, setBatchId] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isTesting, setIsTesting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [results, setResults] = useState<Result[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Use V2 or V1 processing state
+  const currentBatchId = useV2BatchProcessor ? v2BatchProcessor.batchId : batchId
+  const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
+  const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
+  const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : null
+
+  // === LOAD RECENT FILES ===
+  useEffect(() => {
+    const stored = localStorage.getItem(RECENT_FILES_KEY)
+    if (stored) {
+      try {
+        setRecentFiles(JSON.parse(stored))
+      } catch (e) {
+        console.error('Failed to load recent files:', e)
+      }
+    }
+  }, [])
+
+  // === VARIABLE VALIDATION ===
+  const variableValidation = useMemo(() => {
+    if (!csvData || !prompt) {
+      return { missing: [], unused: [], isValid: true }
+    }
+
+    // Extract variables from prompt ({{variable}} syntax)
+    const variablePattern = /\{\{([^}]+)\}\}/g
+    const matches = Array.from(prompt.matchAll(variablePattern))
+    const promptVars = new Set<string>()
+    for (const match of matches) {
+      promptVars.add(match[1].trim())
+    }
+
+    // Compare with CSV columns
+    const csvColumns = new Set(csvData.columns)
+    const missing = Array.from(promptVars).filter(v => !csvColumns.has(v))
+    const unused = Array.from(csvColumns).filter(c => !promptVars.has(c))
+
+    return {
+      missing,
+      unused,
+      isValid: missing.length === 0
+    }
+  }, [csvData, prompt])
+
+  // === WEBHOOK URL VALIDATION ===
+  const webhookValidation = useMemo(() => {
+    if (!webhookUrl || webhookUrl.trim() === '') {
+      return { isValid: true, error: null } // Empty is valid (optional field)
+    }
+
+    try {
+      const url = new URL(webhookUrl)
+
+      // Must use HTTPS for security
+      if (url.protocol !== 'https:') {
+        return { isValid: false, error: 'Webhook URL must use HTTPS (not HTTP) for security' }
+      }
+
+      // Valid HTTPS URL
+      return { isValid: true, error: null }
+    } catch {
+      return { isValid: false, error: 'Invalid URL format (must start with https://)' }
+    }
+  }, [webhookUrl])
+
+  // === FILE UPLOAD ===
+  const handleFileUpload = useCallback(async (uploadedFile: File) => {
+    // IMMEDIATE feedback (within 100ms)
+    setIsUploading(true)
+    setError(null)
+
+    // V2: Use new hooks if feature flags enabled
+    if (useV2FileUpload && useV2CSVParser) {
+      try {
+        await v2FileUpload.uploadFile(uploadedFile)
+
+        // If successful, parse CSV
+        if (!v2FileUpload.error && v2FileUpload.file) {
+          await v2CSVParser.parseFile(uploadedFile)
+
+          // Add to recent if parse succeeded
+          if (!v2CSVParser.error && v2CSVParser.csvData) {
+            v2FileUpload.addToRecent(uploadedFile, v2CSVParser.csvData.totalRows)
+          }
+        }
+      } finally {
+        setIsUploading(false)
+      }
+      return
+    }
+
+    // V1: Legacy implementation
+    try {
+      // Validate
+      if (!uploadedFile.name.endsWith('.csv')) {
+        setError(`File type not supported. Please upload a CSV file (found: ${uploadedFile.name.split('.').pop()}). Export your spreadsheet as CSV from Excel or Google Sheets.`)
+        return
+      }
+      if (uploadedFile.size > MAX_FILE_SIZE) {
+        setError(`File is too large (${(uploadedFile.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB. Try reducing the number of rows or removing unnecessary columns.`)
+        return
+      }
+      if (uploadedFile.size === 0) {
+        setError(`File "${uploadedFile.name}" is empty (0 bytes). Please check your file and try again.`)
+        return
+      }
+
+      // Parse CSV
+      const parsed = await parseCSV(uploadedFile)
+
+      // Validate parsed data - EDGE CASES
+      if (parsed.columns.length === 0) {
+        setError(`CSV has no column headers. Please ensure the first row contains column names (e.g., "name", "email", "company").`)
+        return
+      }
+      if (parsed.totalRows === 0) {
+        setError(`CSV has no data rows. The file only contains headers. Please add at least one row of data below the headers.`)
+        return
+      }
+      if (parsed.totalRows > 1000) {
+        setError(`CSV has too many rows (${parsed.totalRows}). Beta version is limited to 1,000 rows per batch. Try splitting your file or request full access.`)
+        return
+      }
+
+      // Check for duplicate column names
+      const duplicateCols = parsed.columns.filter((col, index) => parsed.columns.indexOf(col) !== index)
+      if (duplicateCols.length > 0) {
+        const uniqueDuplicates = Array.from(new Set(duplicateCols))
+        setError(`Duplicate column names found: ${uniqueDuplicates.join(', ')}. Each column must have a unique name.`)
+        return
+      }
+
+      // Check for empty column names
+      const emptyColumns = parsed.columns.filter(col => !col || col.trim() === '')
+      if (emptyColumns.length > 0) {
+        setError(`Found ${emptyColumns.length} column(s) with no name. All columns must have names in the header row.`)
+        return
+      }
+
+      setFile(uploadedFile)
+      setCsvData(parsed)
+
+      // Track successful upload
+      trackEvent(ANALYTICS_EVENTS.FILE_UPLOADED, {
+        fileName: uploadedFile.name,
+        fileSize: uploadedFile.size,
+        rowCount: parsed.totalRows,
+        columnCount: parsed.columns.length,
+      })
+
+      // Add to recent files
+      const recent: RecentFile = {
+        name: uploadedFile.name,
+        timestamp: Date.now(),
+        rowCount: parsed.totalRows,
+      }
+      const updated = [recent, ...recentFiles.filter(f => f.name !== uploadedFile.name)].slice(0, 5)
+      setRecentFiles(updated)
+      localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(updated))
+
+      // Show success message
+      setSuccessMessage(`✓ Successfully loaded ${parsed.totalRows} rows from ${uploadedFile.name}`)
+
+      // Clear any existing timeout
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current)
+      }
+
+      // Set new timeout with cleanup
+      successTimeoutRef.current = setTimeout(() => {
+        setSuccessMessage(null)
+        successTimeoutRef.current = null
+      }, 3000)
+
+    } catch (err) {
+      let errorMessage = 'Failed to parse CSV file'
+      if (err instanceof Error) {
+        // Make error messages more user-friendly
+        if (err.message.includes('column') || err.message.includes('header')) {
+          errorMessage = `CSV format error: ${err.message}. Make sure your file has column headers in the first row.`
+        } else if (err.message.includes('encoding')) {
+          errorMessage = `File encoding issue: ${err.message}. Try saving your CSV with UTF-8 encoding.`
+        } else if (err.message.includes('quote') || err.message.includes('delimiter')) {
+          errorMessage = `CSV structure error: ${err.message}. Check for unmatched quotes or unusual delimiters.`
+        } else {
+          errorMessage = `Parse error: ${err.message}. Please ensure your CSV file is properly formatted.`
+        }
+      }
+      setError(errorMessage)
+
+      // Track parse error
+      trackEvent(ANALYTICS_EVENTS.FILE_PARSE_ERROR, {
+        fileName: uploadedFile.name,
+        fileSize: uploadedFile.size,
+        error: errorMessage,
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }, [recentFiles, useV2FileUpload, useV2CSVParser, v2FileUpload, v2CSVParser])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles[0]) handleFileUpload(acceptedFiles[0])
+    },
+    multiple: false,
+    accept: { 'text/csv': ['.csv'] },
+  })
+
+  // === KEYBOARD SHORTCUTS ===
+  useHotkeys('mod+o', (e) => {
+    e.preventDefault()
+    fileInputRef.current?.click()
+  })
+
+  useHotkeys('mod+t', (e) => {
+    e.preventDefault()
+    if (currentCsvData && prompt) handleTest()
+  })
+
+  useHotkeys('mod+enter', (e) => {
+    e.preventDefault()
+    if (currentCsvData && prompt) handleProcess()
+  })
+
+  // === OUTPUT FIELDS ===
+  const addOutputField = useCallback(() => {
+    if (newField.trim() && !outputFields.includes(newField.trim())) {
+      setOutputFields([...outputFields, newField.trim()])
+      setNewField('')
+    }
+  }, [newField, outputFields])
+
+  const removeOutputField = useCallback((field: string) => {
+    setOutputFields(outputFields.filter(f => f !== field))
+  }, [outputFields])
+
+  // === TEST (1 ROW) ===
+  const handleTest = useCallback(async () => {
+    if (!currentCsvData || !prompt) return
+
+    // Variable validation check
+    if (!variableValidation.isValid) {
+      setError(`Cannot test: Missing variables in CSV: ${variableValidation.missing.join(', ')}`)
+      return
+    }
+
+    // Webhook validation check
+    if (!webhookValidation.isValid) {
+      setError(`Cannot test: ${webhookValidation.error}`)
+      return
+    }
+
+    setIsTesting(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          csvFilename: currentCsvData.filename,
+          rows: [currentCsvData.rows[0].data], // Only first row
+          prompt,
+          context: '',
+          outputColumns: outputFields,
+          webhookUrl: webhookUrl || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Test failed')
+      }
+
+      const data = await response.json()
+
+      // Show result in modal
+      setTestResult({
+        input: currentCsvData.rows[0].data,
+        output: data.results?.[0]?.output || data
+      })
+      setShowTestModal(true)
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setError(`Test failed: ${message}. Check your prompt and try again. If the issue persists, check the API status.`)
+    } finally {
+      setIsTesting(false)
+    }
+  }, [currentCsvData, prompt, outputFields, webhookUrl, variableValidation, webhookValidation])
+
+  // === PROCESS ALL ===
+  const handleProcess = useCallback(async () => {
+    if (!currentCsvData || !prompt) return
+
+    // Variable validation check
+    if (!variableValidation.isValid) {
+      setError(`Cannot process: Missing variables in CSV: ${variableValidation.missing.join(', ')}`)
+      return
+    }
+
+    // Webhook validation check
+    if (!webhookValidation.isValid) {
+      setError(`Cannot process: ${webhookValidation.error}`)
+      return
+    }
+
+    // V2: Use new batch processor hook
+    if (useV2BatchProcessor) {
+      await v2BatchProcessor.startBatch({
+        csvData: currentCsvData,
+        prompt,
+        context: '',
+        outputColumns: outputFields,
+        webhookUrl: webhookUrl || undefined,
+      })
+      return
+    }
+
+    // V1: Legacy implementation
+    setIsProcessing(true)
+    setError(null)
+    setResults([])
+
+    try {
+      const response = await fetch('/api/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          csvFilename: currentCsvData.filename,
+          rows: currentCsvData.rows.map(r => r.data),
+          prompt,
+          context: '',
+          outputColumns: outputFields,
+          webhookUrl: webhookUrl || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Processing failed')
+      }
+
+      const data = await response.json()
+      setBatchId(data.batchId)
+      
+      // Track batch start
+      trackEvent(ANALYTICS_EVENTS.BATCH_STARTED, {
+        batchId: data.batchId,
+        rowCount: currentCsvData.rows.length,
+        promptLength: prompt.length,
+        outputFieldCount: outputFields.length,
+      })
+
+      // Initialize results
+      const initialResults: Result[] = currentCsvData.rows.map((row, index) => ({
+        id: `${data.batchId}-${index}`,
+        input: row.data,
+        output: '',
+        status: 'pending' as const,
+      }))
+      setResults(initialResults)
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setError(`Batch processing failed: ${message}. Your data has not been processed. Please try again or contact support if the issue persists.`)
+      setIsProcessing(false)
+    }
+  }, [currentCsvData, prompt, outputFields, webhookUrl, useV2BatchProcessor, v2BatchProcessor, variableValidation, webhookValidation])
+
+  // === STREAMING (EventSource) - V1 ONLY ===
+  useEffect(() => {
+    // V2: useBatchProcessor handles streaming internally
+    if (useV2BatchProcessor) return
+    
+    if (!batchId || !isProcessing) return
+
+    const eventSource = new EventSource(`/api/batch/${batchId}/stream`)
+
+    // Handle new result
+    eventSource.addEventListener('result', (e) => {
+      const result = JSON.parse(e.data)
+      setResults(prev => {
+        const updated = [...prev]
+        const index = result.row_index
+        if (index >= 0 && index < updated.length) {
+          updated[index] = {
+            id: result.id,
+            input: typeof result.input_data === 'string' ? JSON.parse(result.input_data) : result.input_data,
+            output: result.output_data || '',
+            status: result.status === 'success' ? 'completed' : result.status === 'error' ? 'failed' : result.status,
+            error: result.error_message,
+          }
+        }
+        return updated
+      })
+    })
+
+    // Handle progress update
+    eventSource.addEventListener('progress', (e) => {
+      const { completed, total } = JSON.parse(e.data)
+      // Progress tracking (can be displayed in UI)
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log(`Progress: ${completed}/${total}`)
+      }
+    })
+
+    // Handle completion
+    eventSource.addEventListener('complete', (e) => {
+      const { status } = JSON.parse(e.data)
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Batch complete:', status)
+      }
+      setIsProcessing(false)
+      eventSource.close()
+    })
+
+    // Handle errors
+    eventSource.addEventListener('error', (e) => {
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Stream error:', e)
+      }
+      setError('Stream connection failed')
+      setIsProcessing(false)
+      eventSource.close()
+    })
+
+    // Cleanup on unmount
+    return () => {
+      eventSource.close()
+    }
+  }, [batchId, isProcessing, useV2BatchProcessor])
+
+  // === CLEANUP TIMEOUTS ON UNMOUNT ===
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // === EXPORT ===
+  const handleExport = useCallback(() => {
+    if (currentResults.length === 0) return
+
+    const csv = [
+      // Header
+      [...Object.keys(currentResults[0].input), ...outputFields, 'status'].join(','),
+      // Rows
+      ...currentResults.map(r => [
+        ...Object.values(r.input).map(v => `"${v}"`),
+        ...outputFields.map(() => `"${r.output}"`),
+        r.status,
+      ].join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `results-${currentBatchId || Date.now()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [currentResults, outputFields, currentBatchId])
+
+  // === FETCH API TOKEN ===
+  const handleFetchToken = useCallback(async () => {
+    setIsFetchingToken(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/tokens')
+      if (!response.ok) throw new Error('Failed to fetch token')
+      const data = await response.json()
+      setApiToken(data.token)
+      setShowApiAccess(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch API token')
+    } finally {
+      setIsFetchingToken(false)
+    }
+  }, [])
+
+  const dismissBetaBanner = useCallback(() => {
+    localStorage.setItem('bulk-beta-banner-dismissed', 'true')
+    setShowBetaBanner(false)
+  }, [])
+
+  const applyTemplate = useCallback((template: PromptTemplate) => {
+    setPrompt(template.prompt)
+    setShowTemplateGallery(false)
+
+    // Track template usage
+    trackEvent(ANALYTICS_EVENTS.BULK_TEMPLATE_USED, {
+      templateId: template.id,
+      templateName: template.name,
+      category: template.category
+    })
+  }, [])
+
+  // === RENDER ===
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Beta Banner */}
+      {showBetaBanner && (
+        <div className="bg-blue-600/10 border-b border-blue-500/20 px-6 py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[11px] font-medium rounded">BETA</span>
+              <p className="text-xs text-blue-300">
+                Limited to 1,000 rows per batch • 5 batches per day •
+                <a href="#" className="ml-1 underline hover:text-blue-200">Request full access →</a>
+              </p>
+            </div>
+            <button className="text-blue-400 hover:text-blue-300" onClick={dismissBetaBanner}>
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-zinc-950/95 backdrop-blur-md supports-[backdrop-filter]:bg-zinc-950/60">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-6">
+            <h1 className="text-[15px] font-medium tracking-tight">Bulk Processor</h1>
+            <div className="h-4 w-px bg-zinc-800" />
+            <div className="flex items-center gap-3 text-xs text-zinc-500">
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-[11px]">⌘O</kbd>
+                <span>Upload</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-[11px]">⌘T</kbd>
+                <span>Test</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-[11px]">⌘↵</kbd>
+                <span>Run</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {currentCsvData && (
+              <div className="text-xs text-zinc-500">
+                {currentCsvData.totalRows} rows • {currentCsvData.columns.length} cols
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="grid grid-cols-2 h-[calc(100vh-49px)]">
+        {/* LEFT PANEL - Configuration */}
+        <div className="border-r border-white/5 overflow-y-auto bg-zinc-900">
+          <div className="p-6 space-y-6">
+            {/* Error - Use V2 error if available */}
+            {(currentError || error) && (
+              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-sm text-red-400">
+                {currentError || error}
+              </div>
+            )}
+
+            {/* Success Message */}
+            {successMessage && (
+              <div className="px-3 py-2 bg-green-500/10 border border-green-500/20 rounded text-sm text-green-400 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                {successMessage}
+              </div>
+            )}
+
+            {/* WORKFLOW STEPS */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 ${currentCsvData ? 'text-green-400' : 'text-blue-400'}`}>
+                  {currentCsvData ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : (
+                    <div className="h-4 w-4 rounded-full border-2 border-current" />
+                  )}
+                  <span className="text-xs font-medium">1. Upload CSV</span>
+                </div>
+                <div className="flex-1 h-px bg-zinc-800" />
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 ${currentCsvData && prompt ? 'text-green-400' : currentCsvData ? 'text-blue-400' : 'text-zinc-600'}`}>
+                  {currentCsvData && prompt ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : currentCsvData ? (
+                    <div className="h-4 w-4 rounded-full border-2 border-current flex items-center justify-center">
+                      <div className="h-1.5 w-1.5 rounded-full bg-current" />
+                    </div>
+                  ) : (
+                    <div className="h-4 w-4 rounded-full border-2 border-current" />
+                  )}
+                  <span className="text-xs font-medium">2. Configure Prompt</span>
+                </div>
+                <div className="flex-1 h-px bg-zinc-800" />
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 ${currentIsProcessing ? 'text-blue-400' : currentResults.length > 0 ? 'text-green-400' : 'text-zinc-600'}`}>
+                  {currentIsProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : currentResults.length > 0 ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : (
+                    <div className="h-4 w-4 rounded-full border-2 border-current" />
+                  )}
+                  <span className="text-xs font-medium">3. Process Data</span>
+                </div>
+                <div className="flex-1 h-px bg-zinc-800" />
+              </div>
+            </div>
+
+            <div className="h-px bg-zinc-800/50" />
+
+            {/* FILE UPLOAD */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-zinc-400">Dataset</label>
+              <div
+                {...getRootProps()}
+                className={`border border-dashed rounded-lg p-8 text-center cursor-pointer transition ${
+                  isDragActive
+                    ? 'border-blue-500 bg-blue-500/5'
+                    : currentFile
+                    ? 'border-white/10 bg-zinc-900/70'
+                    : 'border-white/5 hover:border-white/10 hover:bg-zinc-900/30'
+                }`}
+              >
+                <input {...getInputProps()} ref={fileInputRef} />
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mx-auto mb-2 text-blue-400 animate-spin" />
+                    <p className="text-sm text-zinc-400">Uploading and parsing...</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-5 w-5 mx-auto mb-2 text-zinc-600" />
+                    <p className="text-sm text-zinc-400">
+                      {isDragActive ? 'Drop here' : currentFile ? currentFile.name : 'Drop CSV file'}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* RECENT */}
+            {currentRecentFiles.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-zinc-400">Recent</label>
+                <div className="space-y-1">
+                  {currentRecentFiles.slice(0, 3).map((f, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-zinc-900/70 rounded cursor-pointer group"
+                      onClick={() => {
+                        // TODO: Implement recent file loading
+                        if (process.env.NODE_ENV === 'development') {
+                          // eslint-disable-next-line no-console
+                          console.log('Recent file:', f.name)
+                        }
+                      }}
+                    >
+                      <FileText className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-zinc-300 truncate font-mono">{f.name}</p>
+                        <p className="text-[11px] text-zinc-400">{f.rowCount} rows</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="h-px bg-zinc-800/50" />
+
+            {/* PROMPT */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="prompt" className="text-xs font-medium text-zinc-400">
+                  Prompt
+                </label>
+                <button
+                  onClick={() => setShowTemplateGallery(!showTemplateGallery)}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                >
+                  <FileText className="h-3 w-3" />
+                  {showTemplateGallery ? 'Hide Templates' : 'Browse Templates'}
+                </button>
+              </div>
+
+              {/* TEMPLATE GALLERY */}
+              {showTemplateGallery && (
+                <div className="grid grid-cols-1 gap-2 p-3 bg-zinc-900/50 border border-white/5 rounded-md">
+                  {PROMPT_TEMPLATES.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => applyTemplate(template)}
+                      className="text-left p-3 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-blue-500/30 rounded-md transition-all group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-zinc-200 group-hover:text-blue-400 transition-colors">
+                            {template.name}
+                          </h4>
+                          <p className="text-xs text-zinc-500 mt-0.5">
+                            {template.description}
+                          </p>
+                          <div className="mt-2 flex items-center gap-2 text-[10px]">
+                            <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded font-mono">
+                              {template.category}
+                            </span>
+                            <span className="text-zinc-600">
+                              Uses: {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-blue-400 rotate-[-90deg] transition-colors" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <textarea
+                id="prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="w-full min-h-[180px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:shadow-[0_0_4px_rgba(59,130,246,0.4)] focus:border-blue-500/50 transition-all duration-150 ease-out"
+                placeholder="Write a bio for {{name}} at {{company}}"
+              />
+              <div className="flex items-center justify-between text-[11px]">
+                {csvData && (
+                  <p className="text-zinc-400">
+                    Variables: {csvData.columns.map(h => `{{${h}}}`).join(', ')}
+                  </p>
+                )}
+                <p className={`${
+                  prompt.length === 0 ? 'text-zinc-600' :
+                  prompt.length < 20 ? 'text-orange-500' :
+                  prompt.length > 2000 ? 'text-yellow-500' :
+                  'text-zinc-500'
+                }`}>
+                  {prompt.length} characters
+                  {prompt.length > 0 && prompt.length < 20 && ' (too short)'}
+                  {prompt.length > 2000 && ' (may be too long)'}
+                </p>
+              </div>
+
+              {/* VARIABLE VALIDATION WARNING */}
+              {!variableValidation.isValid && variableValidation.missing.length > 0 && (
+                <div className="flex items-start gap-2 p-3 bg-orange-500/10 border border-orange-500/20 rounded-md">
+                  <XCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-orange-400">
+                      Missing variables in your CSV
+                    </p>
+                    <p className="text-[11px] text-orange-300/80">
+                      These variables are used in your prompt but don&apos;t exist in your CSV:{' '}
+                      <span className="font-mono font-semibold">
+                        {variableValidation.missing.map(v => `{{${v}}}`).join(', ')}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-orange-300/60">
+                      Please check your column names or remove these variables from your prompt.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* UNUSED VARIABLES INFO (subtle, informational only) */}
+              {csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
+                <div className="flex items-start gap-2 p-2 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
+                  <p className="text-[11px] text-zinc-500">
+                    💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ADVANCED SETTINGS (Collapsible) */}
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                className="flex items-center justify-between w-full px-3 py-2 hover:bg-zinc-900/50 rounded-md transition-colors group"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-300">
+                    Advanced Settings
+                  </span>
+                  <span className="text-[10px] text-zinc-600">
+                    (optional - most users skip this)
+                  </span>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${showAdvancedSettings ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showAdvancedSettings && (
+                <div className="space-y-4 px-3 py-2 border-l-2 border-zinc-800">
+                  {/* OUTPUT FIELDS */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-zinc-300">Output Column Names</label>
+                      <div className="group relative">
+                        <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
+                        <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-2 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300">
+                          By default, results go into a column called &quot;bio&quot;. Only change this if you need multiple output columns.
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-zinc-500">
+                      These will be the column headers in your results CSV (default: &quot;bio&quot;)
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {outputFields.map(field => (
+                        <div key={field} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-900 border border-white/5 rounded text-sm text-zinc-300 font-mono">
+                          {field}
+                          <button
+                            onClick={() => removeOutputField(field)}
+                            className="hover:text-red-400 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="inline-flex gap-1">
+                        <input
+                          value={newField}
+                          onChange={(e) => setNewField(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && addOutputField()}
+                          placeholder="field..."
+                          className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:shadow-[0_0_4px_rgba(59,130,246,0.4)] focus:border-blue-500/50 transition-all duration-150 ease-out"
+                        />
+                        <button
+                          onClick={addOutputField}
+                          className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                        >
+                          <Plus className="h-3 w-3 text-zinc-500" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* WEBHOOK */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="webhook" className="text-xs font-medium text-zinc-300">
+                        Webhook URL
+                      </label>
+                      <span className="text-[10px] text-zinc-600">(optional)</span>
+                    </div>
+                    <input
+                      id="webhook"
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      placeholder="https://hooks.n8n.cloud/..."
+                      className={`w-full px-3 py-1.5 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all duration-150 ease-out ${
+                        !webhookValidation.isValid
+                          ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40 focus:shadow-[0_0_4px_rgba(249,115,22,0.4)]'
+                          : 'border border-white/5 focus:ring-1 focus:ring-blue-500/40 focus:shadow-[0_0_4px_rgba(59,130,246,0.4)] focus:border-blue-500/50'
+                      }`}
+                    />
+                    {!webhookValidation.isValid && webhookValidation.error && (
+                      <p className="text-[11px] text-orange-400 flex items-center gap-1">
+                        <XCircle className="h-3 w-3" />
+                        {webhookValidation.error}
+                      </p>
+                    )}
+                    {webhookValidation.isValid && (
+                      <p className="text-[11px] text-zinc-500">POST results to this URL when batch completes</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* API ACCESS */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-zinc-400">API Access</label>
+              {!showApiAccess ? (
+                <button
+                  onClick={handleFetchToken}
+                  disabled={isFetchingToken}
+                  className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isFetchingToken && <Loader2 className="h-3 w-3 animate-spin" />}
+                  <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <pre className="p-3 bg-zinc-900 border border-white/5 rounded-lg text-[11px] text-zinc-400 font-mono overflow-x-auto">
+{`curl -X POST ${window.location.origin}/api/process \\
+  -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"csvFilename":"data.csv","rows":[...]}'`}
+                  </pre>
+                  <p className="text-[11px] text-zinc-400">Use in n8n, Zapier, Postman</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ACTIONS - Fixed Bottom */}
+          <div className="sticky bottom-0 p-6 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
+            <div className="flex gap-2">
+              <button
+                onClick={handleTest}
+                disabled={!csvData || !prompt || isTesting || !variableValidation.isValid || !webhookValidation.isValid}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                <span>Test (1 row)</span>
+              </button>
+              <button
+                onClick={handleProcess}
+                disabled={!csvData || !prompt || currentIsProcessing || !variableValidation.isValid || !webhookValidation.isValid}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {currentIsProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                <span>Run All {csvData ? `(${csvData.totalRows})` : ''}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT PANEL - Results */}
+        <div className="overflow-hidden flex flex-col">
+          {currentResults.length > 0 ? (
+            <>
+              {/* Results Header */}
+              <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-zinc-400">Results</span>
+                  <span className="text-[11px] text-zinc-600">
+                    {currentProgress 
+                      ? `${currentProgress.completed}/${currentProgress.total} completed (${currentProgress.percentage}%)`
+                      : `${currentResults.filter(r => r.status === 'completed').length}/${currentResults.length} completed`
+                    }
+                  </span>
+                </div>
+                <button
+                  onClick={handleExport}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Export</span>
+                </button>
+              </div>
+
+              {/* Results Table */}
+              <div className="flex-1 overflow-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-zinc-900/95 backdrop-blur-md border-b border-white/5">
+                    <tr>
+                      <th className="px-4 py-2 text-left w-8"></th>
+                      {csvData?.columns.map(h => (
+                        <th key={h} className="px-4 py-2 text-left font-medium text-zinc-500">{h}</th>
+                      ))}
+                      <th className="px-4 py-2 text-left font-medium text-zinc-500">Output</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentResults.map((result, i) => (
+                      <tr
+                        key={result.id}
+                        className={`
+                          relative border-b border-white/5
+                          hover:bg-zinc-800/40
+                          transition-colors duration-150
+                          cursor-pointer
+                          ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}
+                        `}
+                      >
+                        {/* Processing accent bar */}
+                        {result.status === 'processing' && (
+                          <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-blue-500/50" />
+                        )}
+
+                        <td className="px-4 py-3">
+                          {result.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                          {result.status === 'failed' && <XCircle className="h-4 w-4 text-red-400" />}
+                          {result.status === 'processing' && <Loader2 className="h-4 w-4 animate-spin text-blue-400" />}
+                          {result.status === 'pending' && <div className="h-4 w-4 rounded-full border border-zinc-700" />}
+                        </td>
+                        {csvData?.columns.map(h => (
+                          <td key={h} className="px-4 py-3 text-zinc-400 font-mono text-xs">
+                            {result.input[h] || '—'}
+                          </td>
+                        ))}
+                        <td className="px-4 py-3 text-zinc-300">
+                          {result.error ? (
+                            <span className="text-red-400 text-[11px]">{result.error}</span>
+                          ) : result.output ? (
+                            <span className="line-clamp-2 text-[11px] leading-relaxed">{result.output}</span>
+                          ) : (
+                            <span className="text-zinc-600">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : currentCsvData ? (
+            <div className="flex-1 overflow-auto p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-zinc-300">CSV Preview</h3>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {currentCsvData.totalRows} rows • {currentCsvData.columns.length} columns
+                    </p>
+                  </div>
+                </div>
+
+                {/* Preview Table */}
+                <div className="border border-white/5 rounded-lg overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-zinc-900/95 border-b border-white/5">
+                      <tr>
+                        {currentCsvData.columns.map(col => (
+                          <th key={col} className="px-4 py-2.5 text-left font-medium text-zinc-400">
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentCsvData.rows.slice(0, 5).map((row, i) => (
+                        <tr
+                          key={i}
+                          className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
+                        >
+                          {currentCsvData.columns.map(col => (
+                            <td key={col} className="px-4 py-2.5 text-zinc-300 font-mono">
+                              {row.data[col] || '—'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {currentCsvData.totalRows > 5 && (
+                    <div className="px-4 py-2 bg-zinc-900/60 border-t border-white/5 text-xs text-zinc-500">
+                      Showing first 5 of {currentCsvData.totalRows} rows
+                    </div>
+                  )}
+                </div>
+
+                {/* Prompt Preview */}
+                {prompt && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-medium text-zinc-400">Prompt Preview</h4>
+                    <div className="p-4 bg-zinc-900/70 border border-white/5 rounded-lg">
+                      <p className="text-xs text-zinc-300 leading-relaxed font-mono">
+                        {prompt.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+                          const value = currentCsvData.rows[0]?.data[key]
+                          return value ? `"${value}"` : `{{${key}}}`
+                        })}
+                      </p>
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                      Example with first row data
+                    </p>
+                  </div>
+                )}
+
+                {/* Next Steps */}
+                <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                  <p className="text-xs text-blue-300 leading-relaxed">
+                    ✓ CSV loaded • Configure your prompt above, then click <strong>Test</strong> to preview one result, or <strong>Run</strong> to process all rows.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center space-y-3 max-w-sm">
+                <div className="mx-auto w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-zinc-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-zinc-400 mb-1">No data yet</h3>
+                  <p className="text-sm text-zinc-500 leading-relaxed">
+                    Upload a CSV to get started
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* TEST RESULT MODAL */}
+      {showTestModal && testResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTestModal(false)}>
+          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-green-400" />
+                <h2 className="text-lg font-medium text-zinc-100">Test Result</h2>
+              </div>
+              <button onClick={() => setShowTestModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(80vh-8rem)]">
+              {/* Input */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Input (First Row)</label>
+                <div className="bg-zinc-950/70 border border-white/5 rounded-md p-4">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {Object.entries(testResult.input).map(([key, value]) => (
+                      <div key={key} className="flex flex-col">
+                        <span className="text-xs text-zinc-500 font-mono">{key}</span>
+                        <span className="text-sm text-zinc-300 font-mono">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Output */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">AI Output</label>
+                <div className="bg-zinc-950/70 border border-white/5 rounded-md p-4">
+                  {typeof testResult.output === 'object' ? (
+                    <div className="space-y-3">
+                      {Object.entries(testResult.output).map(([key, value]) => (
+                        <div key={key} className="space-y-1">
+                          <span className="text-xs text-zinc-500 font-medium">{key}</span>
+                          <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{String(value)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{String(testResult.output)}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-white/5 bg-zinc-900/50">
+              <p className="text-xs text-zinc-500">This shows the result for the first row only</p>
+              <button onClick={() => setShowTestModal(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

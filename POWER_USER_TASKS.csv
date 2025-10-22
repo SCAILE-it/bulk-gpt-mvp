@@ -1,0 +1,84 @@
+Task ID,Sprint,Day,Task Name,Description,Assignee,Status,Priority,Estimated Hours,Dependencies,Success Criteria
+COMP-001,Sprint 1,Day 1-2,Create spacing system variables,Define CSS custom properties for consistent spacing: --space-1: 4px through --space-6: 24px,-,TODO,P0,2,,Spacing system documented and implemented
+COMP-002,Sprint 1,Day 1-2,Update global padding,Change all p-6 to p-3 throughout the application,-,TODO,P0,3,COMP-001,All containers updated with new padding
+COMP-003,Sprint 1,Day 1-2,Update flexbox gaps,Change all gap-6 to gap-2,-,TODO,P0,2,COMP-001,Consistent gap spacing throughout
+COMP-004,Sprint 1,Day 1-2,Reduce vertical margins,Update my-4 to my-2 for vertical rhythm,-,TODO,P0,2,COMP-001,Vertical spacing reduced by 50%
+COMP-005,Sprint 1,Day 1-2,Compress sidebar width,Reduce sidebar from 400px to 320px,-,TODO,P0,3,,Grid template updated and responsive
+COMP-006,Sprint 1,Day 1-2,Reduce input heights,Change input heights from 36px to 28px,-,TODO,P0,2,,All form inputs compressed
+COMP-007,Sprint 1,Day 1-2,Reduce button heights,Change button heights from 40px to 32px,-,TODO,P0,2,,Buttons maintain click targets
+COMP-008,Sprint 1,Day 1-2,Remove decorative spacing,Audit and remove all unnecessary spacing,-,TODO,P0,4,"COMP-001,COMP-002,COMP-003",No decorative elements remain
+HIER-001,Sprint 1,Day 3-4,Design section header component,Create 10px uppercase section headers with letter-spacing: 0.1em,-,TODO,P0,3,,Component design approved
+HIER-002,Sprint 1,Day 3-4,Implement section headers,Build reusable SectionHeader component,-,TODO,P0,4,HIER-001,Component working across app
+HIER-003,Sprint 1,Day 3-4,Create collapsible sections,Build accordion for advanced settings,-,TODO,P0,5,,Advanced section collapsed by default
+HIER-004,Sprint 1,Day 3-4,Move API Access to settings,Remove from main flow to settings page,-,TODO,P0,2,,API access in profile/settings
+HIER-005,Sprint 1,Day 3-4,Add subtle divider lines,Add visual separation between sections,-,TODO,P0,2,HIER-002,Clear section boundaries
+HIER-006,Sprint 1,Day 3-4,Implement status bar,Fixed bottom bar showing usage stats,-,TODO,P0,6,,Status bar displays real data
+HIER-007,Sprint 1,Day 3-4,Add usage indicators,Show rate limit/cost/speed in status bar,-,TODO,P0,4,HIER-006,Live metrics displayed
+TYPE-001,Sprint 1,Day 5,Define type scale system,Create typography system: 10px/11px/12px/13px only,-,TODO,P0,2,,Type scale documented
+TYPE-002,Sprint 1,Day 5,Update all text sizes,Apply new type scale throughout app,-,TODO,P0,4,TYPE-001,Consistent typography
+TYPE-003,Sprint 1,Day 5,Remove ALL emoji/icons,Strip decorative elements from buttons and labels,-,TODO,P0,3,,Zero decorative elements
+TYPE-004,Sprint 1,Day 5,Implement text-zinc scale,Apply zinc-400/500/600 for hierarchy,-,TODO,P0,2,TYPE-001,Clear text hierarchy
+TYPE-005,Sprint 1,Day 5,Test readability,Ensure WCAG AA contrast ratios,-,TODO,P0,2,"TYPE-002,TYPE-004",All text passes contrast tests
+TYPE-006,Sprint 1,Day 5,Final compression audit,Measure and document space reduction,-,TODO,P0,2,ALL,40% vertical compression achieved
+UPLD-001,Sprint 2,Day 6-7,Design new dropzone component,Create component showing instant file stats,-,TODO,P0,4,,Design approved by team
+UPLD-002,Sprint 2,Day 6-7,Implement Web Worker parser,Non-blocking CSV parsing in worker thread,-,TODO,P0,8,,Parser handles 100MB files
+UPLD-003,Sprint 2,Day 6-7,Add instant preview,Show first 5 rows immediately on drop,-,TODO,P0,4,UPLD-002,Preview renders < 100ms
+UPLD-004,Sprint 2,Day 6-7,Auto-detect delimiter,Detect CSV/TSV/semicolon automatically,-,TODO,P0,3,UPLD-002,95% accuracy on detection
+UPLD-005,Sprint 2,Day 6-7,Remember recent files,Store last 10 files in LocalStorage,-,TODO,P0,3,,Recent files accessible
+UPLD-006,Sprint 2,Day 6-7,Add XLSX support,Integrate SheetJS for Excel files,-,TODO,P1,4,UPLD-002,Excel files parse correctly
+UPLD-007,Sprint 2,Day 6-7,Progress indicators,Show parsing progress bar,-,TODO,P0,2,UPLD-002,Real-time progress shown
+UPLD-008,Sprint 2,Day 6-7,Drag state animations,Visual feedback on drag over,-,TODO,P1,2,UPLD-001,Smooth drag animations
+EDIT-001,Sprint 2,Day 8-9,Research Monaco alternatives,Compare CodeMirror 6 vs Monaco for size/features,-,TODO,P0,3,,Decision documented
+EDIT-002,Sprint 2,Day 8-9,Implement code editor,Replace textarea with code editor,-,TODO,P0,8,EDIT-001,Editor fully functional
+EDIT-003,Sprint 2,Day 8-9,Add variable autocomplete,Suggest {{column}} names as user types,-,TODO,P0,5,EDIT-002,Autocomplete < 50ms
+EDIT-004,Sprint 2,Day 8-9,Live preview system,Process first row on blur,-,TODO,P0,6,EDIT-002,Preview updates < 200ms
+EDIT-005,Sprint 2,Day 8-9,Error squiggles,Show syntax errors inline,-,TODO,P0,4,"EDIT-002,EDIT-003",Errors highlighted correctly
+EDIT-006,Sprint 2,Day 8-9,Multi-cursor support,Cmd+D selects next occurrence,-,TODO,P1,3,EDIT-002,Multi-cursor working
+EDIT-007,Sprint 2,Day 8-9,Cost estimation,Show estimated cost per token,-,TODO,P0,3,EDIT-004,Cost updates live
+KEYB-001,Sprint 2,Day 10,Implement hotkey system,Global keyboard event handler,-,TODO,P0,4,,Hotkey system working
+KEYB-002,Sprint 2,Day 10,Add basic shortcuts,Cmd+O/Cmd+Enter/Cmd+T shortcuts,-,TODO,P0,3,KEYB-001,Shortcuts functional
+KEYB-003,Sprint 2,Day 10,Command palette base,Cmd+K opens command palette,-,TODO,P0,5,KEYB-001,Palette opens/closes
+KEYB-004,Sprint 2,Day 10,Fuzzy search,Integrate FuseJS for command search,-,TODO,P0,3,KEYB-003,Search works accurately
+KEYB-005,Sprint 2,Day 10,Tab navigation,Tab through all form fields,-,TODO,P0,2,KEYB-001,Tab order logical
+KEYB-006,Sprint 2,Day 10,Focus indicators,Clear visual focus rings,-,TODO,P0,2,,Focus visible on all elements
+KEYB-007,Sprint 2,Day 10,Shortcut tooltips,Show shortcuts on hover,-,TODO,P1,2,KEYB-002,Tooltips display correctly
+AUTO-001,Sprint 3,Day 11-12,Pattern detection system,Analyze CSV headers for patterns,-,TODO,P0,6,,Pattern detection accurate
+AUTO-002,Sprint 3,Day 11-12,Template matching,Match patterns to templates,-,TODO,P0,4,AUTO-001,80% match accuracy
+AUTO-003,Sprint 3,Day 11-12,Field type detection,Detect email/phone/date fields,-,TODO,P0,4,AUTO-001,Type detection working
+AUTO-004,Sprint 3,Day 11-12,Output field suggestions,Suggest output fields based on input,-,TODO,P0,4,"AUTO-001,AUTO-003",Relevant suggestions
+AUTO-005,Sprint 3,Day 11-12,Batch size optimizer,Recommend optimal batch size,-,TODO,P1,3,AUTO-001,Size recommendations accurate
+AUTO-006,Sprint 3,Day 11-12,Cost predictor,Estimate total processing cost,-,TODO,P0,3,"AUTO-004,AUTO-005",Cost estimate ±10%
+TMPL-001,Sprint 3,Day 13-14,Template data structure,Define JSON schema for templates,-,TODO,P0,2,,Schema documented
+TMPL-002,Sprint 3,Day 13-14,Default templates,Create 10 common-use templates,-,TODO,P0,6,TMPL-001,Templates cover 80% use cases
+TMPL-003,Sprint 3,Day 13-14,Template browser UI,Searchable grid of templates,-,TODO,P0,5,TMPL-001,UI intuitive and fast
+TMPL-004,Sprint 3,Day 13-14,One-click apply,Apply template instantly,-,TODO,P0,3,"TMPL-002,TMPL-003",Templates apply < 100ms
+TMPL-005,Sprint 3,Day 13-14,Save as template,Users can save configurations,-,TODO,P0,4,TMPL-001,Save functionality works
+TMPL-006,Sprint 3,Day 13-14,Template analytics,Track template usage,-,TODO,P1,3,TMPL-004,Analytics data collected
+STAT-001,Sprint 3,Day 15,URL state system,Sync all state to URL params,-,TODO,P0,5,,URL reflects full state
+STAT-002,Sprint 3,Day 15,LocalStorage backup,Auto-save work in progress,-,TODO,P0,3,,Drafts saved every 10s
+STAT-003,Sprint 3,Day 15,Crash recovery,Restore state on reload,-,TODO,P0,3,"STAT-001,STAT-002",Recovery works 100%
+STAT-004,Sprint 3,Day 15,Share functionality,Copy shareable link button,-,TODO,P0,2,STAT-001,Links work when shared
+STAT-005,Sprint 3,Day 15,Undo/redo system,Cmd+Z/Cmd+Shift+Z support,-,TODO,P1,4,,Undo/redo functional
+PROC-001,Sprint 4,Day 16-17,Streaming architecture,Implement SSE or WebSocket streaming,-,TODO,P0,8,,Streaming working reliably
+PROC-002,Sprint 4,Day 16-17,Live result updates,Update UI row by row,-,TODO,P0,6,PROC-001,Results appear instantly
+PROC-003,Sprint 4,Day 16-17,Progress indicators,Multi-level progress display,-,TODO,P0,3,PROC-002,Clear progress visibility
+PROC-004,Sprint 4,Day 16-17,Pause/resume,Control active processing,-,TODO,P0,5,"PROC-001,PROC-002",Pause/resume works
+PROC-005,Sprint 4,Day 16-17,Export partial,Export results anytime,-,TODO,P0,4,PROC-002,Export available always
+PROC-006,Sprint 4,Day 16-17,Error recovery,Retry failed rows option,-,TODO,P0,4,PROC-002,Retry mechanism works
+PROC-007,Sprint 4,Day 16-17,Cost accumulator,Live cost counter during processing,-,TODO,P0,3,PROC-002,Cost updates real-time
+TEAM-001,Sprint 4,Day 18-19,Presence system,Show who's online,-,TODO,P0,5,,Presence updates < 5s
+TEAM-002,Sprint 4,Day 18-19,Activity indicators,Show current processing by users,-,TODO,P0,4,TEAM-001,Activity visible
+TEAM-003,Sprint 4,Day 18-19,Shared templates,Team template library,-,TODO,P0,6,"TMPL-001,TEAM-001",Templates shareable
+TEAM-004,Sprint 4,Day 18-19,Usage dashboard,Per-user statistics,-,TODO,P0,5,TEAM-001,Dashboard accurate
+TEAM-005,Sprint 4,Day 18-19,Audit log,Track all user actions,-,TODO,P0,4,TEAM-001,Audit log complete
+TEAM-006,Sprint 4,Day 18-19,Role system,Admin vs user permissions,-,TODO,P1,5,TEAM-001,Roles enforced
+PERF-001,Sprint 4,Day 20,Virtual scrolling,Implement for results table,-,TODO,P0,6,,100k rows scrollable
+PERF-002,Sprint 4,Day 20,IndexedDB cache,Cache large datasets locally,-,TODO,P0,4,,Cache working offline
+PERF-003,Sprint 4,Day 20,Worker threads,Offload CPU intensive operations,-,TODO,P0,5,PERF-002,UI never blocks
+PERF-004,Sprint 4,Day 20,Memory profiling,Find and fix memory leaks,-,TODO,P0,3,,No memory leaks
+PERF-005,Sprint 4,Day 20,Load testing,Test with 100k row files,-,TODO,P0,3,"PERF-001,PERF-002,PERF-003",100k rows stable
+PERF-006,Sprint 4,Day 20,Final optimization,Achieve < 50ms UI response,-,TODO,P0,4,ALL,UI response < 50ms
+
+
+
+
