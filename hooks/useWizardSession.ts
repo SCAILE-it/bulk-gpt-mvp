@@ -79,8 +79,9 @@ export function useWizardSession() {
    */
   const validateSessionData = (data: unknown): data is WizardSessionData => {
     if (!data || typeof data !== 'object') return false
-    if (typeof data.currentStep !== 'number') return false
-    if (typeof data.timestamp !== 'number') return false
+    const obj = data as Record<string, unknown>
+    if (typeof obj.currentStep !== 'number') return false
+    if (typeof obj.timestamp !== 'number') return false
     return true
   }
 
@@ -92,7 +93,7 @@ export function useWizardSession() {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (!stored) return null
 
-      const data = JSON.parse(stored)
+      const data: unknown = JSON.parse(stored)
 
       if (!validateSessionData(data)) {
         console.warn('Invalid session data structure, resetting')

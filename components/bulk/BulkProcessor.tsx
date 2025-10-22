@@ -101,6 +101,9 @@ export default function BulkProcessor() {
   const [apiToken, setApiToken] = useState<string | null>(null)
   const [showApiAccess, setShowApiAccess] = useState(false)
 
+  // === TIMEOUT REFS (for cleanup) ===
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   // === BETA BANNER ===
   const [showBetaBanner, setShowBetaBanner] = useState(() => {
     if (typeof window === 'undefined') return true
@@ -285,7 +288,17 @@ export default function BulkProcessor() {
 
       // Show success message
       setSuccessMessage(`✓ Successfully loaded ${parsed.totalRows} rows from ${uploadedFile.name}`)
-      setTimeout(() => setSuccessMessage(null), 3000)
+
+      // Clear any existing timeout
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current)
+      }
+
+      // Set new timeout with cleanup
+      successTimeoutRef.current = setTimeout(() => {
+        setSuccessMessage(null)
+        successTimeoutRef.current = null
+      }, 3000)
 
     } catch (err) {
       let errorMessage = 'Failed to parse CSV file'
@@ -549,6 +562,15 @@ export default function BulkProcessor() {
       eventSource.close()
     }
   }, [batchId, isProcessing, useV2BatchProcessor])
+
+  // === CLEANUP TIMEOUTS ON UNMOUNT ===
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // === EXPORT ===
   const handleExport = useCallback(() => {
@@ -863,7 +885,7 @@ export default function BulkProcessor() {
                       Missing variables in your CSV
                     </p>
                     <p className="text-[11px] text-orange-300/80">
-                      These variables are used in your prompt but don't exist in your CSV:{' '}
+                      These variables are used in your prompt but don&apos;t exist in your CSV:{' '}
                       <span className="font-mono font-semibold">
                         {variableValidation.missing.map(v => `{{${v}}}`).join(', ')}
                       </span>
@@ -879,7 +901,7 @@ export default function BulkProcessor() {
               {csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
                 <div className="flex items-start gap-2 p-2 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
                   <p className="text-[11px] text-zinc-500">
-                    💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they'll just be ignored.
+                    💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
                   </p>
                 </div>
               )}
@@ -911,12 +933,12 @@ export default function BulkProcessor() {
                       <div className="group relative">
                         <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
                         <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-2 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300">
-                          By default, results go into a column called "bio". Only change this if you need multiple output columns.
+                          By default, results go into a column called &quot;bio&quot;. Only change this if you need multiple output columns.
                         </div>
                       </div>
                     </div>
                     <p className="text-[11px] text-zinc-500">
-                      These will be the column headers in your results CSV (default: "bio")
+                      These will be the column headers in your results CSV (default: &quot;bio&quot;)
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {outputFields.map(field => (
