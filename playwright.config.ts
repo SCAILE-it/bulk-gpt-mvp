@@ -25,14 +25,25 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // Setup project - runs first to create authenticated session
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
+    // Main tests - depend on setup and use authenticated session
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Use saved authenticated session for all tests
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
     },
   ],
 
-  /* Assumes dev server is already running on localhost:3000 */
-  /* Run: npm run dev in another terminal before running tests */
+  /* Assumes dev server is already running on localhost:3333 */
+  /* Run: npm run dev -- -p 3333 in another terminal before running tests */
 })
 
 
