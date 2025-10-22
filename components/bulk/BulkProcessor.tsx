@@ -71,11 +71,10 @@ export default function BulkProcessor() {
   const [error, setError] = useState<string | null>(null)
   
   // Use V2 or V1 processing state
-  // const currentBatchId = useV2BatchProcessor ? v2BatchProcessor.batchId : batchId
-  // const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
-  // const currentIsTesting = useV2BatchProcessor ? v2BatchProcessor.isTesting : isTesting
-  // const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
-  // const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : null
+  const currentBatchId = useV2BatchProcessor ? v2BatchProcessor.batchId : batchId
+  const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
+  const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
+  const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : null
 
   // === LOAD RECENT FILES ===
   useEffect(() => {
@@ -239,6 +238,19 @@ export default function BulkProcessor() {
   const handleProcess = useCallback(async () => {
     if (!currentCsvData || !prompt) return
 
+    // V2: Use new batch processor hook
+    if (useV2BatchProcessor) {
+      await v2BatchProcessor.startBatch({
+        csvData: currentCsvData,
+        prompt,
+        context: '',
+        outputColumns: outputFields,
+        webhookUrl: webhookUrl || undefined,
+      })
+      return
+    }
+
+    // V1: Legacy implementation
     setIsProcessing(true)
     setError(null)
     setResults([])
@@ -286,10 +298,13 @@ export default function BulkProcessor() {
       setError(err instanceof Error ? err.message : 'Processing failed')
       setIsProcessing(false)
     }
-  }, [currentCsvData, prompt, outputFields, webhookUrl])
+  }, [currentCsvData, prompt, outputFields, webhookUrl, useV2BatchProcessor, v2BatchProcessor])
 
-  // === STREAMING (EventSource) ===
+  // === STREAMING (EventSource) - V1 ONLY ===
   useEffect(() => {
+    // V2: useBatchProcessor handles streaming internally
+    if (useV2BatchProcessor) return
+    
     if (!batchId || !isProcessing) return
 
     const eventSource = new EventSource(`/api/batch/${batchId}/stream`)
@@ -349,17 +364,17 @@ export default function BulkProcessor() {
     return () => {
       eventSource.close()
     }
-  }, [batchId, isProcessing])
+  }, [batchId, isProcessing, useV2BatchProcessor])
 
   // === EXPORT ===
   const handleExport = useCallback(() => {
-    if (results.length === 0) return
+    if (currentResults.length === 0) return
 
     const csv = [
       // Header
-      [...Object.keys(results[0].input), ...outputFields, 'status'].join(','),
+      [...Object.keys(currentResults[0].input), ...outputFields, 'status'].join(','),
       // Rows
-      ...results.map(r => [
+      ...currentResults.map(r => [
         ...Object.values(r.input).map(v => `"${v}"`),
         ...outputFields.map(() => `"${r.output}"`),
         r.status,
@@ -370,10 +385,10 @@ export default function BulkProcessor() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `results-${Date.now()}.csv`
+    a.download = `results-${currentBatchId || Date.now()}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [results, outputFields])
+  }, [currentResults, outputFields, currentBatchId])
 
   // === FETCH API TOKEN ===
   const handleFetchToken = useCallback(async () => {
@@ -607,10 +622,10 @@ export default function BulkProcessor() {
               </button>
               <button
                 onClick={handleProcess}
-                disabled={!csvData || !prompt || isProcessing}
+                disabled={!csvData || !prompt || currentIsProcessing}
                 className="flex-[2] flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                {currentIsProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
                 <span>Run {csvData ? `(${csvData.totalRows})` : ''}</span>
               </button>
             </div>
@@ -619,14 +634,17 @@ export default function BulkProcessor() {
 
         {/* RIGHT PANEL - Results */}
         <div className="overflow-hidden flex flex-col">
-          {results.length > 0 ? (
+          {currentResults.length > 0 ? (
             <>
               {/* Results Header */}
               <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-zinc-400">Results</span>
                   <span className="text-[11px] text-zinc-600">
-                    {results.filter(r => r.status === 'completed').length}/{results.length} completed
+                    {currentProgress 
+                      ? `${currentProgress.completed}/${currentProgress.total} completed (${currentProgress.percentage}%)`
+                      : `${currentResults.filter(r => r.status === 'completed').length}/${currentResults.length} completed`
+                    }
                   </span>
                 </div>
                 <button
@@ -651,7 +669,7 @@ export default function BulkProcessor() {
                     </tr>
                   </thead>
                   <tbody>
-                    {results.map((result, i) => (
+                    {currentResults.map((result, i) => (
                       <tr
                         key={result.id}
                         className={`
