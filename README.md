@@ -97,3 +97,4 @@ Private repository - All rights reserved
 ---
 
 **For AI Agents:** Start with [CURRENT_STATUS.md](./CURRENT_STATUS.md) for complete context.
+
