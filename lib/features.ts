@@ -31,9 +31,9 @@ interface FeatureFlags {
 // Default feature flags
 const defaultFlags: FeatureFlags = {
   // All v2 features off by default
-  useNewFileUpload: false,
-  useNewCSVParser: false,
-  useNewBatchProcessor: false,
+  useNewFileUpload: true,
+  useNewCSVParser: true,
+  useNewBatchProcessor: true,
   useServiceLayer: false,
   useZustandStore: false,
   
