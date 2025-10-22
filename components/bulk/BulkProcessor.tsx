@@ -71,11 +71,11 @@ export default function BulkProcessor() {
   const [error, setError] = useState<string | null>(null)
   
   // Use V2 or V1 processing state
-  const currentBatchId = useV2BatchProcessor ? v2BatchProcessor.batchId : batchId
-  const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
-  const currentIsTesting = useV2BatchProcessor ? v2BatchProcessor.isTesting : isTesting
-  const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
-  const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : null
+  // const currentBatchId = useV2BatchProcessor ? v2BatchProcessor.batchId : batchId
+  // const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
+  // const currentIsTesting = useV2BatchProcessor ? v2BatchProcessor.isTesting : isTesting
+  // const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
+  // const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : null
 
   // === LOAD RECENT FILES ===
   useEffect(() => {
