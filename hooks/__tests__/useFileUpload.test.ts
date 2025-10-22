@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 /**
  * Tests for useFileUpload hook
  * Ensures file upload validation and state management works correctly
@@ -8,8 +9,8 @@ import { useFileUpload } from '../useFileUpload'
 import * as analytics from '@/lib/analytics'
 
 // Mock analytics
-jest.mock('@/lib/analytics', () => ({
-  trackEvent: jest.fn(),
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
   ANALYTICS_EVENTS: {
     FILE_UPLOADED: 'file_uploaded',
     FILE_PARSE_ERROR: 'file_parse_error',
@@ -37,7 +38,7 @@ Object.defineProperty(window, 'localStorage', {
 describe('useFileUpload', () => {
   beforeEach(() => {
     localStorageMock.clear()
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Initial State', () => {
@@ -249,7 +250,7 @@ describe('useFileUpload', () => {
   describe('Error Handling', () => {
     it('should handle localStorage errors gracefully', () => {
       // Mock localStorage to throw error
-      const setItemSpy = jest.spyOn(Storage.prototype, 'setItem')
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
       setItemSpy.mockImplementation(() => {
         throw new Error('QuotaExceededError')
       })

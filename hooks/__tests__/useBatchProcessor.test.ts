@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 /**
  * Unit tests for useBatchProcessor hook
  */
@@ -8,8 +9,8 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import type { ParsedCSV } from '@/lib/types'
 
 // Mock analytics
-jest.mock('@/lib/analytics', () => ({
-  trackEvent: jest.fn(),
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
   ANALYTICS_EVENTS: {
     BATCH_STARTED: 'batch_started',
     BATCH_COMPLETED: 'batch_completed',
@@ -18,7 +19,7 @@ jest.mock('@/lib/analytics', () => ({
 }))
 
 // Mock fetch
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 // Mock EventSource
 class MockEventSource {
@@ -52,7 +53,7 @@ global.EventSource = MockEventSource as any
 
 describe('useBatchProcessor', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     ;(global.fetch as jest.Mock).mockClear()
   })
 

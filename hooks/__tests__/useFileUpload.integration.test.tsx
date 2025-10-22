@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 /**
  * Integration test for useFileUpload hook
  * Tests actual File objects and localStorage

@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 /**
  * Tests for useCSVParser hook
  * Ensures CSV parsing state management works correctly
@@ -9,9 +10,9 @@ import * as csvParser from '@/lib/csv-parser'
 import * as analytics from '@/lib/analytics'
 
 // Mock dependencies
-jest.mock('@/lib/csv-parser')
-jest.mock('@/lib/analytics', () => ({
-  trackEvent: jest.fn(),
+vi.mock('@/lib/csv-parser')
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
   ANALYTICS_EVENTS: {
     FILE_UPLOADED: 'file_uploaded',
     FILE_PARSE_ERROR: 'file_parse_error',
@@ -20,7 +21,7 @@ jest.mock('@/lib/analytics', () => ({
 
 describe('useCSVParser', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Initial State', () => {
