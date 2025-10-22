@@ -17,6 +17,7 @@ import type { ParsedCSV } from '@/lib/types'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { features } from '@/lib/features'
 import { useFileUpload, type RecentFile } from '@/hooks/useFileUpload'
+import { useCSVParser } from '@/hooks/useCSVParser'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
@@ -30,9 +31,12 @@ interface Result {
 }
 
 export default function BulkProcessor() {
-  // === FILE STATE (V2: Use hook if feature flag enabled) ===
+  // === FILE STATE (V2: Use hooks if feature flags enabled) ===
   const useV2FileUpload = features.useNewFileUpload
+  const useV2CSVParser = features.useNewCSVParser
+  
   const v2FileUpload = useFileUpload()
+  const v2CSVParser = useCSVParser()
   
   // V1 (Legacy) file state
   const [file, setFile] = useState<File | null>(null)
@@ -40,10 +44,11 @@ export default function BulkProcessor() {
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Use V2 or V1 state based on feature flag
+  // Use V2 or V1 state based on feature flags
   const currentFile = useV2FileUpload ? v2FileUpload.file : file
+  const currentCsvData = useV2CSVParser ? v2CSVParser.csvData : csvData
   const currentRecentFiles = useV2FileUpload ? v2FileUpload.recentFiles : recentFiles
-  const currentError = useV2FileUpload ? v2FileUpload.error : null
+  const currentError = useV2FileUpload ? v2FileUpload.error : (useV2CSVParser ? v2CSVParser.error : null)
 
   // === CONFIG STATE ===
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
@@ -76,33 +81,17 @@ export default function BulkProcessor() {
 
   // === FILE UPLOAD ===
   const handleFileUpload = useCallback(async (uploadedFile: File) => {
-    // V2: Use new hook if feature flag enabled
-    if (useV2FileUpload) {
+    // V2: Use new hooks if feature flags enabled
+    if (useV2FileUpload && useV2CSVParser) {
       await v2FileUpload.uploadFile(uploadedFile)
       
-      // If successful, parse CSV and add to recent
+      // If successful, parse CSV
       if (!v2FileUpload.error && v2FileUpload.file) {
-        try {
-          const parsed = await parseCSV(uploadedFile)
-          setCsvData(parsed)
-          v2FileUpload.addToRecent(uploadedFile, parsed.totalRows)
-          
-          // Track with additional metadata
-          trackEvent(ANALYTICS_EVENTS.FILE_UPLOADED, {
-            fileName: uploadedFile.name,
-            fileSize: uploadedFile.size,
-            rowCount: parsed.totalRows,
-            columnCount: parsed.columns.length,
-          })
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to parse CSV'
-          // V2 hook already tracked upload, track parse error
-          trackEvent(ANALYTICS_EVENTS.FILE_PARSE_ERROR, {
-            fileName: uploadedFile.name,
-            fileSize: uploadedFile.size,
-            error: errorMessage,
-            stage: 'parsing',
-          })
+        await v2CSVParser.parseFile(uploadedFile)
+        
+        // Add to recent if parse succeeded
+        if (!v2CSVParser.error && v2CSVParser.csvData) {
+          v2FileUpload.addToRecent(uploadedFile, v2CSVParser.csvData.totalRows)
         }
       }
       return
@@ -160,7 +149,7 @@ export default function BulkProcessor() {
         error: errorMessage,
       })
     }
-  }, [recentFiles, useV2FileUpload, v2FileUpload])
+  }, [recentFiles, useV2FileUpload, useV2CSVParser, v2FileUpload, v2CSVParser])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -178,12 +167,12 @@ export default function BulkProcessor() {
 
   useHotkeys('mod+t', (e) => {
     e.preventDefault()
-    if (csvData && prompt) handleTest()
+    if (currentCsvData && prompt) handleTest()
   })
 
   useHotkeys('mod+enter', (e) => {
     e.preventDefault()
-    if (csvData && prompt) handleProcess()
+    if (currentCsvData && prompt) handleProcess()
   })
 
   // === OUTPUT FIELDS ===
@@ -200,7 +189,7 @@ export default function BulkProcessor() {
 
   // === TEST (1 ROW) ===
   const handleTest = useCallback(async () => {
-    if (!csvData || !prompt) return
+    if (!currentCsvData || !prompt) return
 
     setIsTesting(true)
     setError(null)
@@ -210,8 +199,8 @@ export default function BulkProcessor() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          csvFilename: csvData.filename,
-          rows: [csvData.rows[0].data], // Only first row
+          csvFilename: currentCsvData.filename,
+          rows: [currentCsvData.rows[0].data], // Only first row
           prompt,
           context: '',
           outputColumns: outputFields,
@@ -234,11 +223,11 @@ export default function BulkProcessor() {
     } finally {
       setIsTesting(false)
     }
-  }, [csvData, prompt, outputFields, webhookUrl])
+  }, [currentCsvData, prompt, outputFields, webhookUrl])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
-    if (!csvData || !prompt) return
+    if (!currentCsvData || !prompt) return
 
     setIsProcessing(true)
     setError(null)
@@ -249,8 +238,8 @@ export default function BulkProcessor() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          csvFilename: csvData.filename,
-          rows: csvData.rows.map(r => r.data),
+          csvFilename: currentCsvData.filename,
+          rows: currentCsvData.rows.map(r => r.data),
           prompt,
           context: '',
           outputColumns: outputFields,
@@ -269,13 +258,13 @@ export default function BulkProcessor() {
       // Track batch start
       trackEvent(ANALYTICS_EVENTS.BATCH_STARTED, {
         batchId: data.batchId,
-        rowCount: csvData.rows.length,
+        rowCount: currentCsvData.rows.length,
         promptLength: prompt.length,
         outputFieldCount: outputFields.length,
       })
 
       // Initialize results
-      const initialResults: Result[] = csvData.rows.map((row, index) => ({
+      const initialResults: Result[] = currentCsvData.rows.map((row, index) => ({
         id: `${data.batchId}-${index}`,
         input: row.data,
         output: '',
@@ -287,7 +276,7 @@ export default function BulkProcessor() {
       setError(err instanceof Error ? err.message : 'Processing failed')
       setIsProcessing(false)
     }
-  }, [csvData, prompt, outputFields, webhookUrl])
+  }, [currentCsvData, prompt, outputFields, webhookUrl])
 
   // === STREAMING (EventSource) ===
   useEffect(() => {
@@ -430,9 +419,9 @@ export default function BulkProcessor() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {csvData && (
+            {currentCsvData && (
               <div className="text-xs text-zinc-500">
-                {csvData.totalRows} rows • {csvData.columns.length} cols
+                {currentCsvData.totalRows} rows • {currentCsvData.columns.length} cols
               </div>
             )}
           </div>
