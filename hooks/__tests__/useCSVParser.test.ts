@@ -1,8 +1,9 @@
 /**
  * Tests for useCSVParser hook
+ * Ensures CSV parsing state management works correctly
  */
 
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { useCSVParser } from '../useCSVParser'
 import * as csvParser from '@/lib/csv-parser'
 import * as analytics from '@/lib/analytics'
@@ -27,102 +28,151 @@ describe('useCSVParser', () => {
       const { result } = renderHook(() => useCSVParser())
       
       expect(result.current.csvData).toBeNull()
-      expect(result.current.error).toBeNull()
       expect(result.current.isParsing).toBe(false)
+      expect(result.current.error).toBeNull()
     })
   })
 
-  describe('CSV Parsing', () => {
+  describe('Successful Parsing', () => {
     it('should parse CSV file successfully', async () => {
       const mockParsedData = {
         filename: 'test.csv',
         rows: [
-          { data: { name: 'John', email: 'john@test.com' }, rowIndex: 0 },
+          { rowIndex: 0, data: { name: 'John', email: 'john@test.com' } },
         ],
         columns: ['name', 'email'],
         totalRows: 1,
       }
 
-      jest.spyOn(csvParser, 'parseCSV').mockResolvedValue(mockParsedData)
+      ;(csvParser.parseCSV as jest.Mock).mockResolvedValue(mockParsedData)
 
       const { result } = renderHook(() => useCSVParser())
       const file = new File(['name,email\nJohn,john@test.com'], 'test.csv', { type: 'text/csv' })
+
+      let parsedResult
+      await act(async () => {
+        parsedResult = await result.current.parseFile(file)
+      })
+
+      expect(result.current.csvData).toEqual(mockParsedData)
+      expect(result.current.isParsing).toBe(false)
+      expect(result.current.error).toBeNull()
+      expect(parsedResult).toEqual(mockParsedData)
+    })
+
+    it('should track analytics on successful parse', async () => {
+      const mockParsedData = {
+        filename: 'test.csv',
+        rows: [],
+        columns: ['name'],
+        totalRows: 100,
+      }
+
+      ;(csvParser.parseCSV as jest.Mock).mockResolvedValue(mockParsedData)
+
+      const { result } = renderHook(() => useCSVParser())
+      const file = new File(['data'], 'test.csv', { type: 'text/csv' })
 
       await act(async () => {
         await result.current.parseFile(file)
       })
 
-      expect(result.current.csvData).toEqual(mockParsedData)
-      expect(result.current.error).toBeNull()
-      expect(result.current.isParsing).toBe(false)
       expect(analytics.trackEvent).toHaveBeenCalledWith(
         'file_uploaded',
         expect.objectContaining({
           fileName: 'test.csv',
-          rowCount: 1,
-          columnCount: 2,
+          rowCount: 100,
+          columnCount: 1,
         })
       )
     })
 
-    it('should handle parse errors', async () => {
-      const error = new Error('Invalid CSV format')
-      jest.spyOn(csvParser, 'parseCSV').mockRejectedValue(error)
-
-      const { result } = renderHook(() => useCSVParser())
-      const file = new File(['invalid'], 'test.csv', { type: 'text/csv' })
-
-      await act(async () => {
-        try {
-          await result.current.parseFile(file)
-        } catch (err) {
-          // Expected to throw
-        }
-      })
-
-      expect(result.current.csvData).toBeNull()
-      expect(result.current.error).toBe('Invalid CSV format')
-      expect(result.current.isParsing).toBe(false)
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'file_parse_error',
-        expect.objectContaining({
-          error: 'Invalid CSV format',
-          stage: 'parsing',
-        })
-      )
-    })
-
-    it('should set isParsing during parse operation', async () => {
-      let resolvePromise: (value: unknown) => void
-      const parsePromise = new Promise((resolve) => {
+    it('should set isParsing to true during parsing', async () => {
+      let resolvePromise: (value: any) => void
+      const parsePromise = new Promise(resolve => {
         resolvePromise = resolve
       })
 
-      jest.spyOn(csvParser, 'parseCSV').mockReturnValue(parsePromise as Promise<never>)
+      ;(csvParser.parseCSV as jest.Mock).mockReturnValue(parsePromise)
 
       const { result } = renderHook(() => useCSVParser())
-      const file = new File(['test'], 'test.csv', { type: 'text/csv' })
+      const file = new File(['data'], 'test.csv', { type: 'text/csv' })
 
+      let parseFilePromise: Promise<any>
       act(() => {
-        result.current.parseFile(file)
+        parseFilePromise = result.current.parseFile(file)
       })
 
-      // Should be parsing
-      expect(result.current.isParsing).toBe(true)
+      // Check isParsing is true during parse
+      await waitFor(() => {
+        expect(result.current.isParsing).toBe(true)
+      })
 
-      // Resolve and wait
-      await act(async () => {
-        resolvePromise({
+      // Complete parsing
+      act(() => {
           filename: 'test.csv',
           rows: [],
           columns: [],
           totalRows: 0,
         })
-        await parsePromise
       })
 
-      // Should be done
+      await parseFilePromise!
+
       expect(result.current.isParsing).toBe(false)
+    })
+  })
+
+  describe('Parse Errors', () => {
+    it('should handle parse errors gracefully', async () => {
+      const errorMessage = 'Invalid CSV format'
+      ;(csvParser.parseCSV as jest.Mock).mockRejectedValue(new Error(errorMessage))
+
+      const { result } = renderHook(() => useCSVParser())
+      const file = new File(['invalid'], 'test.csv', { type: 'text/csv' })
+
+      let parsedResult
+      await act(async () => {
+        parsedResult = await result.current.parseFile(file)
+      })
+
+      expect(result.current.csvData).toBeNull()
+      expect(result.current.error).toBe(errorMessage)
+      expect(result.current.isParsing).toBe(false)
+      expect(parsedResult).toBeNull()
+    })
+
+    it('should track analytics on parse error', async () => {
+      ;(csvParser.parseCSV as jest.Mock).mockRejectedValue(new Error('Parse failed'))
+
+      const { result } = renderHook(() => useCSVParser())
+      const file = new File(['data'], 'test.csv', { type: 'text/csv' })
+
+      await act(async () => {
+        await result.current.parseFile(file)
+      })
+
+      expect(analytics.trackEvent).toHaveBeenCalledWith(
+        'file_parse_error',
+        expect.objectContaining({
+          fileName: 'test.csv',
+          error: 'Parse failed',
+          stage: 'parsing',
+        })
+      )
+    })
+
+    it('should handle non-Error exceptions', async () => {
+      ;(csvParser.parseCSV as jest.Mock).mockRejectedValue('String error')
+
+      const { result } = renderHook(() => useCSVParser())
+      const file = new File(['data'], 'test.csv', { type: 'text/csv' })
+
+      await act(async () => {
+        await result.current.parseFile(file)
+      })
+
+      expect(result.current.error).toBe('Failed to parse CSV')
     })
   })
 
@@ -131,21 +181,23 @@ describe('useCSVParser', () => {
       const mockParsedData = {
         filename: 'test.csv',
         rows: [],
-        columns: ['name'],
+        columns: [],
         totalRows: 0,
       }
 
-      jest.spyOn(csvParser, 'parseCSV').mockResolvedValue(mockParsedData)
+      ;(csvParser.parseCSV as jest.Mock).mockResolvedValue(mockParsedData)
 
       const { result } = renderHook(() => useCSVParser())
-      const file = new File(['name\nJohn'], 'test.csv', { type: 'text/csv' })
+      const file = new File(['data'], 'test.csv', { type: 'text/csv' })
 
+      // Parse file
       await act(async () => {
         await result.current.parseFile(file)
       })
 
-      expect(result.current.csvData).toEqual(mockParsedData)
+      expect(result.current.csvData).not.toBeNull()
 
+      // Clear data
       act(() => {
         result.current.clearData()
       })
@@ -155,70 +207,95 @@ describe('useCSVParser', () => {
     })
 
     it('should clear error only', async () => {
-      const error = new Error('Parse error')
-      jest.spyOn(csvParser, 'parseCSV').mockRejectedValue(error)
+      ;(csvParser.parseCSV as jest.Mock).mockRejectedValue(new Error('Error'))
 
       const { result } = renderHook(() => useCSVParser())
-      const file = new File(['invalid'], 'test.csv', { type: 'text/csv' })
+      const file = new File(['data'], 'test.csv', { type: 'text/csv' })
 
+      // Trigger error
       await act(async () => {
-        try {
-          await result.current.parseFile(file)
-        } catch {
-          // Expected
-        }
+        await result.current.parseFile(file)
       })
 
-      expect(result.current.error).toBeTruthy()
+      expect(result.current.error).not.toBeNull()
 
+      // Clear error only
       act(() => {
         result.current.clearError()
       })
 
       expect(result.current.error).toBeNull()
     })
+
+    it('should clear previous error on new parse attempt', async () => {
+      ;(csvParser.parseCSV as jest.Mock)
+        .mockRejectedValueOnce(new Error('First error'))
+        .mockResolvedValueOnce({
+          filename: 'test.csv',
+          rows: [],
+          columns: [],
+          totalRows: 0,
+        })
+
+      const { result } = renderHook(() => useCSVParser())
+      const file = new File(['data'], 'test.csv', { type: 'text/csv' })
+
+      // First parse (error)
+      await act(async () => {
+        await result.current.parseFile(file)
+      })
+
+      expect(result.current.error).toBe('First error')
+
+      // Second parse (success)
+      await act(async () => {
+        await result.current.parseFile(file)
+      })
+
+      expect(result.current.error).toBeNull()
+      expect(result.current.csvData).not.toBeNull()
+    })
   })
 
-  describe('Error Handling', () => {
-    it('should handle non-Error objects', async () => {
-      jest.spyOn(csvParser, 'parseCSV').mockRejectedValue('String error')
+  describe('Multiple Parse Operations', () => {
+    it('should handle sequential parse operations', async () => {
+      const mockData1 = {
+        filename: 'file1.csv',
+        rows: [],
+        columns: ['col1'],
+        totalRows: 1,
+      }
+      
+      const mockData2 = {
+        filename: 'file2.csv',
+        rows: [],
+        columns: ['col2'],
+        totalRows: 2,
+      }
+
+      ;(csvParser.parseCSV as jest.Mock)
+        .mockResolvedValueOnce(mockData1)
+        .mockResolvedValueOnce(mockData2)
 
       const { result } = renderHook(() => useCSVParser())
-      const file = new File(['test'], 'test.csv', { type: 'text/csv' })
+      
+      const file1 = new File(['data1'], 'file1.csv', { type: 'text/csv' })
+      const file2 = new File(['data2'], 'file2.csv', { type: 'text/csv' })
 
+      // Parse first file
       await act(async () => {
-        try {
-          await result.current.parseFile(file)
-        } catch {
-          // Expected
-        }
+        await result.current.parseFile(file1)
       })
 
-      expect(result.current.error).toBe('Failed to parse CSV')
-    })
+      expect(result.current.csvData?.filename).toBe('file1.csv')
 
-    it('should track analytics on error', async () => {
-      const error = new Error('Corrupted file')
-      jest.spyOn(csvParser, 'parseCSV').mockRejectedValue(error)
-
-      const { result } = renderHook(() => useCSVParser())
-      const file = new File(['bad'], 'corrupted.csv', { type: 'text/csv' })
-
+      // Parse second file
       await act(async () => {
-        try {
-          await result.current.parseFile(file)
-        } catch {
-          // Expected
-        }
+        await result.current.parseFile(file2)
       })
 
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'file_parse_error',
-        expect.objectContaining({
-          fileName: 'corrupted.csv',
-          error: 'Corrupted file',
-        })
-      )
+      expect(result.current.csvData?.filename).toBe('file2.csv')
+      expect(csvParser.parseCSV).toHaveBeenCalledTimes(2)
     })
   })
 })
