@@ -100,6 +100,7 @@ export default function BulkProcessor() {
   // === API ACCESS ===
   const [apiToken, setApiToken] = useState<string | null>(null)
   const [showApiAccess, setShowApiAccess] = useState(false)
+  const [isFetchingToken, setIsFetchingToken] = useState(false)
 
   // === TIMEOUT REFS (for cleanup) ===
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -598,6 +599,9 @@ export default function BulkProcessor() {
 
   // === FETCH API TOKEN ===
   const handleFetchToken = useCallback(async () => {
+    setIsFetchingToken(true)
+    setError(null)
+
     try {
       const response = await fetch('/api/tokens')
       if (!response.ok) throw new Error('Failed to fetch token')
@@ -606,6 +610,8 @@ export default function BulkProcessor() {
       setShowApiAccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch API token')
+    } finally {
+      setIsFetchingToken(false)
     }
   }, [])
 
@@ -1009,9 +1015,11 @@ export default function BulkProcessor() {
               {!showApiAccess ? (
                 <button
                   onClick={handleFetchToken}
-                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  disabled={isFetchingToken}
+                  className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Show curl command →
+                  {isFetchingToken && <Loader2 className="h-3 w-3 animate-spin" />}
+                  <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
                 </button>
               ) : (
                 <div className="space-y-2">
