@@ -140,12 +140,14 @@ export default function BulkProcessor() {
   const [results, setResults] = useState<Result[]>([])
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [progress, setProgress] = useState<{ total: number; completed: number; status: string } | null>(null)
+  const [processingStartTime, setProcessingStartTime] = useState<number | null>(null)
 
   // Use V2 or V1 processing state
   const currentBatchId = useV2BatchProcessor ? v2BatchProcessor.batchId : batchId
   const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
   const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
-  const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : null
+  const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : progress
 
   // === LOAD RECENT FILES ===
   useEffect(() => {
@@ -489,6 +491,8 @@ export default function BulkProcessor() {
     setIsProcessing(true)
     setError(null)
     setResults([])
+    setProgress(null)
+    setProcessingStartTime(Date.now())
 
     try {
       const response = await fetch('/api/process', {
@@ -511,7 +515,7 @@ export default function BulkProcessor() {
 
       const data = await response.json()
       setBatchId(data.batchId)
-      
+
       // Track batch start
       trackEvent(ANALYTICS_EVENTS.BATCH_STARTED, {
         batchId: data.batchId,
@@ -520,7 +524,7 @@ export default function BulkProcessor() {
         outputFieldCount: outputFields.length,
       })
 
-      // Initialize results
+      // Initialize results and progress
       const initialResults: Result[] = currentCsvData.rows.map((row, index) => ({
         id: `${data.batchId}-${index}`,
         input: row.data,
@@ -528,6 +532,7 @@ export default function BulkProcessor() {
         status: 'pending' as const,
       }))
       setResults(initialResults)
+      setProgress({ total: currentCsvData.rows.length, completed: 0, status: 'pending' })
 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
@@ -565,8 +570,13 @@ export default function BulkProcessor() {
     })
 
     // Handle progress update
-    eventSource.addEventListener('progress', () => {
-      // Progress tracking (can be displayed in UI if needed)
+    eventSource.addEventListener('progress', (e) => {
+      const progressData = JSON.parse(e.data)
+      setProgress({
+        total: progressData.total || 0,
+        completed: progressData.completed || 0,
+        status: progressData.status || 'processing',
+      })
     })
 
     // Handle completion
@@ -1115,23 +1125,48 @@ export default function BulkProcessor() {
           {currentResults.length > 0 ? (
             <>
               {/* Results Header */}
-              <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-medium text-zinc-400">Results</span>
-                  <span className="text-[11px] text-zinc-600">
-                    {currentProgress 
-                      ? `${currentProgress.completed}/${currentProgress.total} completed (${currentProgress.percentage}%)`
-                      : `${currentResults.filter(r => r.status === 'completed').length}/${currentResults.length} completed`
-                    }
-                  </span>
+              <div className="border-b border-white/5">
+                <div className="flex items-center justify-between px-6 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-zinc-400">Results</span>
+                    <span className="text-[11px] text-zinc-600">
+                      {currentProgress
+                        ? `${currentProgress.completed}/${currentProgress.total} completed`
+                        : `${currentResults.filter(r => r.status === 'completed').length}/${currentResults.length} completed`
+                      }
+                    </span>
+                    {currentProgress && currentProgress.completed < currentProgress.total && processingStartTime && (
+                      <span className="text-[11px] text-zinc-600">
+                        {(() => {
+                          const elapsed = Date.now() - processingStartTime
+                          const avgTimePerRow = elapsed / Math.max(currentProgress.completed, 1)
+                          const remaining = (currentProgress.total - currentProgress.completed) * avgTimePerRow
+                          const seconds = Math.ceil(remaining / 1000)
+                          return `• ~${seconds}s remaining`
+                        })()}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleExport}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Export</span>
+                  </button>
                 </div>
-                <button
-                  onClick={handleExport}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>Export</span>
-                </button>
+
+                {/* Progress Bar */}
+                {currentProgress && currentProgress.total > 0 && (
+                  <div className="px-6 pb-3">
+                    <div className="w-full h-1.5 bg-zinc-900/50 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                        style={{ width: `${(currentProgress.completed / currentProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Results Table */}
@@ -1164,10 +1199,32 @@ export default function BulkProcessor() {
                         )}
 
                         <td className="px-4 py-3">
-                          {result.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                          {result.status === 'failed' && <XCircle className="h-4 w-4 text-red-400" />}
-                          {result.status === 'processing' && <Loader2 className="h-4 w-4 animate-spin text-blue-400" />}
-                          {result.status === 'pending' && <div className="h-4 w-4 rounded-full border border-zinc-700" />}
+                          <div className="flex items-center gap-2">
+                            {result.status === 'completed' && (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                <span className="text-[11px] text-zinc-500">Done</span>
+                              </>
+                            )}
+                            {result.status === 'failed' && (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                                <span className="text-[11px] text-red-400">Failed</span>
+                              </>
+                            )}
+                            {result.status === 'processing' && (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-400 flex-shrink-0" />
+                                <span className="text-[11px] text-blue-400">Processing...</span>
+                              </>
+                            )}
+                            {result.status === 'pending' && (
+                              <>
+                                <div className="h-4 w-4 rounded-full border border-zinc-700 flex-shrink-0" />
+                                <span className="text-[11px] text-zinc-600">Waiting in queue...</span>
+                              </>
+                            )}
+                          </div>
                         </td>
                         {csvData?.columns.map(h => (
                           <td key={h} className="px-4 py-3 text-zinc-400 font-mono text-xs">
