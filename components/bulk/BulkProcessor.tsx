@@ -105,6 +105,7 @@ export default function BulkProcessor() {
   const [newField, setNewField] = useState('')
   const [webhookUrl, setWebhookUrl] = useState('')
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
+  const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
 
   // === API ACCESS ===
   const [apiToken, setApiToken] = useState<string | null>(null)
@@ -980,25 +981,23 @@ export default function BulkProcessor() {
               )}
             </div>
 
-            {/* ADVANCED SETTINGS (Collapsible) */}
-            <div className="space-y-2">
+            {/* ADVANCED SETTINGS (Modal) */}
+            <div className="flex items-center gap-2">
+              <Settings className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+              <label className="text-xs font-medium text-zinc-400">Advanced</label>
+              <span className="text-[10px] text-zinc-600">(optional)</span>
               <button
-                onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                className="flex items-center justify-between w-full px-3 py-2 hover:bg-zinc-900/50 rounded-md transition-colors group"
+                onClick={() => setShowAdvancedSettingsModal(true)}
+                className="ml-auto text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <Settings className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400 transition-colors" />
-                  <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-300">
-                    Advanced Settings
-                  </span>
-                  <span className="text-[10px] text-zinc-600">
-                    (optional - most users skip this)
-                  </span>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${showAdvancedSettings ? 'rotate-180' : ''}`} />
+                Configure →
               </button>
+            </div>
 
-              {showAdvancedSettings && (
+            {/* Hidden - Advanced Settings content (now in modal) */}
+            {false && (
+              <div className="space-y-2">
+                {showAdvancedSettings && (
                 <div className="space-y-4 px-3 py-2 border-l-2 border-zinc-800">
                   {/* OUTPUT FIELDS */}
                   <div className="space-y-2">
@@ -1076,36 +1075,39 @@ export default function BulkProcessor() {
                     )}
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* API ACCESS */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                <label className="text-xs font-medium text-zinc-400">API Access</label>
+                )}
               </div>
-              {!showApiAccess ? (
-                <button
-                  onClick={handleFetchToken}
-                  disabled={isFetchingToken}
-                  className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isFetchingToken && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <pre className="p-3 bg-zinc-900 border border-white/5 rounded-lg text-[11px] text-zinc-400 font-mono overflow-x-auto">
+            )}
+
+            {/* Hidden - API ACCESS moved to Advanced Settings modal */}
+            {false && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                  <label className="text-xs font-medium text-zinc-400">API Access</label>
+                </div>
+                {!showApiAccess ? (
+                  <button
+                    onClick={handleFetchToken}
+                    disabled={isFetchingToken}
+                    className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isFetchingToken && <Loader2 className="h-3 w-3 animate-spin" />}
+                    <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <pre className="p-3 bg-zinc-900 border border-white/5 rounded-lg text-[11px] text-zinc-400 font-mono overflow-x-auto">
 {`curl -X POST ${window.location.origin}/api/process \\
   -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
   -H "Content-Type: application/json" \\
   -d '{"csvFilename":"data.csv","rows":[...]}'`}
-                  </pre>
-                  <p className="text-[11px] text-zinc-400">Use in n8n, Zapier, Postman</p>
-                </div>
-              )}
-            </div>
+                    </pre>
+                    <p className="text-[11px] text-zinc-400">Use in n8n, Zapier, Postman</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
@@ -1507,6 +1509,142 @@ export default function BulkProcessor() {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADVANCED SETTINGS MODAL */}
+      {showAdvancedSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowAdvancedSettingsModal(false)}>
+          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/5 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <Settings className="h-5 w-5 text-zinc-400" />
+                <h2 className="text-lg font-medium text-zinc-100">Advanced Settings</h2>
+              </div>
+              <button onClick={() => setShowAdvancedSettingsModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                <p className="text-sm text-zinc-500">Optional configuration for advanced use cases</p>
+
+                {/* OUTPUT COLUMN NAMES */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Table2 className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                    <label className="text-sm font-medium text-zinc-300">Output Column Names</label>
+                    <div className="group relative">
+                      <HelpCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" />
+                      <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-2 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300">
+                        By default, results go into a column called "bio". Only change this if you need multiple output columns.
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-zinc-500">
+                    Column headers for your results CSV (default: "bio")
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {outputFields.map(field => (
+                      <div key={field} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border border-white/5 rounded text-sm text-zinc-300 font-mono">
+                        {field}
+                        <button
+                          onClick={() => removeOutputField(field)}
+                          className="hover:text-red-400 transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="inline-flex gap-1.5">
+                      <input
+                        value={newField}
+                        onChange={(e) => setNewField(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addOutputField()}
+                        placeholder="Add field..."
+                        className="w-28 px-3 py-1.5 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
+                      />
+                      <button
+                        onClick={addOutputField}
+                        className="p-1.5 hover:bg-zinc-800 rounded transition-colors"
+                      >
+                        <Plus className="h-3.5 w-3.5 text-zinc-500" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* WEBHOOK URL */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Webhook className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                    <label htmlFor="webhook-modal" className="text-sm font-medium text-zinc-300">
+                      Webhook URL
+                    </label>
+                    <span className="text-xs text-zinc-600">(optional)</span>
+                  </div>
+                  <input
+                    id="webhook-modal"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://hooks.n8n.cloud/..."
+                    className={`w-full px-3 py-2 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all ${
+                      !webhookValidation.isValid
+                        ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40'
+                        : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
+                    }`}
+                  />
+                  {!webhookValidation.isValid && webhookValidation.error && (
+                    <p className="text-xs text-orange-400 flex items-center gap-1.5">
+                      <XCircle className="h-3.5 w-3.5" />
+                      {webhookValidation.error}
+                    </p>
+                  )}
+                  {webhookValidation.isValid && webhookUrl && (
+                    <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
+                  )}
+                </div>
+
+                {/* API ACCESS */}
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Code className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                    <label className="text-sm font-medium text-zinc-300">API Access</label>
+                  </div>
+                  {!showApiAccess ? (
+                    <button
+                      onClick={handleFetchToken}
+                      disabled={isFetchingToken}
+                      className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isFetchingToken && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <pre className="p-4 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
+{`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/process \\
+  -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"csvFilename":"data.csv","rows":[...]}'`}
+                      </pre>
+                      <p className="text-xs text-zinc-500">Use in n8n, Zapier, Postman, or any HTTP client</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end p-6 border-t border-white/5 bg-zinc-900/50 flex-shrink-0">
+              <button onClick={() => setShowAdvancedSettingsModal(false)} className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium rounded-md transition-colors">
+                Done
+              </button>
             </div>
           </div>
         </div>
