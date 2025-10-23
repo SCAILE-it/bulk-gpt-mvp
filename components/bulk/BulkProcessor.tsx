@@ -119,10 +119,6 @@ export default function BulkProcessor() {
     return localStorage.getItem('bulk-beta-banner-dismissed') !== 'true'
   })
 
-  // === TEST RESULT MODAL ===
-  const [showTestModal, setShowTestModal] = useState(false)
-  const [testResult, setTestResult] = useState<{ input: Record<string, string>, output: Record<string, string> } | null>(null)
-
   // === TEMPLATE GALLERY ===
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templateSearchQuery, setTemplateSearchQuery] = useState('')
@@ -433,12 +429,16 @@ export default function BulkProcessor() {
 
       const data = await response.json()
 
-      // Show result in modal
-      setTestResult({
+      // Show test result in RHS (same format as batch results)
+      const testResult: Result = {
+        id: 'test-result',
         input: currentCsvData.rows[0].data,
-        output: data.results?.[0]?.output || data
-      })
-      setShowTestModal(true)
+        output: typeof data.results?.[0]?.output === 'string'
+          ? data.results[0].output
+          : JSON.stringify(data.results?.[0]?.output || data, null, 2),
+        status: 'completed'
+      }
+      setResults([testResult])
 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
@@ -1317,68 +1317,6 @@ export default function BulkProcessor() {
         </div>
       </main>
 
-      {/* TEST RESULT MODAL */}
-      {showTestModal && testResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTestModal(false)}>
-          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-5 w-5 text-green-400" />
-                <h2 className="text-lg font-medium text-zinc-100">Test Result</h2>
-              </div>
-              <button onClick={() => setShowTestModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(80vh-8rem)]">
-              {/* Input */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Input (First Row)</label>
-                <div className="bg-zinc-950/70 border border-white/5 rounded-md p-4">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {Object.entries(testResult.input).map(([key, value]) => (
-                      <div key={key} className="flex flex-col">
-                        <span className="text-xs text-zinc-500 font-mono">{key}</span>
-                        <span className="text-sm text-zinc-300 font-mono">{String(value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Output */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">AI Output</label>
-                <div className="bg-zinc-950/70 border border-white/5 rounded-md p-4">
-                  {typeof testResult.output === 'object' ? (
-                    <div className="space-y-3">
-                      {Object.entries(testResult.output).map(([key, value]) => (
-                        <div key={key} className="space-y-1">
-                          <span className="text-xs text-zinc-500 font-medium">{key}</span>
-                          <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{String(value)}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{String(testResult.output)}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between p-6 border-t border-white/5 bg-zinc-900/50">
-              <p className="text-xs text-zinc-500">This shows the result for the first row only</p>
-              <button onClick={() => setShowTestModal(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* TEMPLATE GALLERY MODAL */}
       {showTemplateModal && (
