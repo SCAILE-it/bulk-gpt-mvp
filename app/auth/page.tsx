@@ -58,12 +58,17 @@ function LoginForm() {
       }
 
       if (data?.user) {
-        // Ensure user record exists in public.users table
-        await fetch('/api/auth/ensure-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: data.user.id, email: data.user.email })
-        })
+        // Ensure user record exists in public.users table (optional for testing)
+        try {
+          await fetch('/api/auth/ensure-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: data.user.id, email: data.user.email })
+          })
+        } catch (err) {
+          // Ignore ensure-user errors for testing - table may not exist yet
+          console.warn('ensure-user failed (non-critical):', err)
+        }
 
         // Get returnUrl from query params with validation
         const returnUrl = searchParams.get('returnUrl') || '/wizard'
