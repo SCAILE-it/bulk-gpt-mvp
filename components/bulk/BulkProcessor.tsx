@@ -104,7 +104,6 @@ export default function BulkProcessor() {
   const [outputFields, setOutputFields] = useState<string[]>(['bio'])
   const [newField, setNewField] = useState('')
   const [webhookUrl, setWebhookUrl] = useState('')
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
   const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
 
   // === API ACCESS ===
@@ -997,7 +996,6 @@ export default function BulkProcessor() {
             {/* Hidden - Advanced Settings content (now in modal) */}
             {false && (
               <div className="space-y-2">
-                {showAdvancedSettings && (
                 <div className="space-y-4 px-3 py-2 border-l-2 border-zinc-800">
                   {/* OUTPUT FIELDS */}
                   <div className="space-y-2">
@@ -1075,7 +1073,6 @@ export default function BulkProcessor() {
                     )}
                   </div>
                 </div>
-                )}
               </div>
             )}
 
@@ -1542,12 +1539,12 @@ export default function BulkProcessor() {
                     <div className="group relative">
                       <HelpCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" />
                       <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-2 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300">
-                        By default, results go into a column called "bio". Only change this if you need multiple output columns.
+                        By default, results go into a column called &quot;bio&quot;. Only change this if you need multiple output columns.
                       </div>
                     </div>
                   </div>
                   <p className="text-xs text-zinc-500">
-                    Column headers for your results CSV (default: "bio")
+                    Column headers for your results CSV (default: &quot;bio&quot;)
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {outputFields.map(field => (
