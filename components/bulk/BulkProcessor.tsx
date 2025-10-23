@@ -153,8 +153,8 @@ export default function BulkProcessor() {
     if (stored) {
       try {
         setRecentFiles(JSON.parse(stored))
-      } catch (e) {
-        console.error('Failed to load recent files:', e)
+      } catch {
+        // Invalid JSON, ignore
       }
     }
   }, [])
@@ -565,32 +565,18 @@ export default function BulkProcessor() {
     })
 
     // Handle progress update
-    eventSource.addEventListener('progress', (e) => {
-      const { completed, total } = JSON.parse(e.data)
-      // Progress tracking (can be displayed in UI)
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log(`Progress: ${completed}/${total}`)
-      }
+    eventSource.addEventListener('progress', () => {
+      // Progress tracking (can be displayed in UI if needed)
     })
 
     // Handle completion
-    eventSource.addEventListener('complete', (e) => {
-      const { status } = JSON.parse(e.data)
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log('Batch complete:', status)
-      }
+    eventSource.addEventListener('complete', () => {
       setIsProcessing(false)
       eventSource.close()
     })
 
     // Handle errors
-    eventSource.addEventListener('error', (e) => {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.error('Stream error:', e)
-      }
+    eventSource.addEventListener('error', () => {
       setError('Stream connection failed')
       setIsProcessing(false)
       eventSource.close()
@@ -753,8 +739,8 @@ export default function BulkProcessor() {
                           setError(null)
                           setIsProcessing(false)
                         }
-                      } catch (err) {
-                        console.error('Failed to reset batch:', err)
+                      } catch {
+                        // Silent failure - user can try again
                       }
                     }}
                     className="text-xs px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded text-red-300 transition-colors"
@@ -874,14 +860,8 @@ export default function BulkProcessor() {
                   {currentRecentFiles.slice(0, 3).map((f, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-zinc-900/70 rounded cursor-pointer group"
-                      onClick={() => {
-                        // TODO: Implement recent file loading
-                        if (process.env.NODE_ENV === 'development') {
-                          // eslint-disable-next-line no-console
-                          console.log('Recent file:', f.name)
-                        }
-                      }}
+                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-zinc-900/70 rounded cursor-not-allowed opacity-60 group"
+                      title="Recent file loading coming soon"
                     >
                       <FileText className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400" />
                       <div className="flex-1 min-w-0">
