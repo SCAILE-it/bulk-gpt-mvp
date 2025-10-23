@@ -334,6 +334,8 @@ export default function BulkProcessor() {
     },
     multiple: false,
     accept: { 'text/csv': ['.csv'] },
+    noClick: false, // Enable click to select
+    noKeyboard: false, // Enable keyboard access
   })
 
   // === KEYBOARD SHORTCUTS ===
@@ -691,8 +693,26 @@ export default function BulkProcessor() {
           <div className="p-6 space-y-6">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
-              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-sm text-red-400">
-                {currentError || error}
+              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
+                <p className="text-sm text-red-400">{currentError || error}</p>
+                {(error?.includes('wait for your current batch') || error?.includes('batch to complete')) && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/batch/reset', { method: 'POST' })
+                        if (response.ok) {
+                          setError(null)
+                          setIsProcessing(false)
+                        }
+                      } catch (err) {
+                        console.error('Failed to reset batch:', err)
+                      }
+                    }}
+                    className="text-xs px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded text-red-300 transition-colors"
+                  >
+                    Reset Stuck Batch
+                  </button>
+                )}
               </div>
             )}
 
@@ -1126,7 +1146,26 @@ export default function BulkProcessor() {
                           {result.error ? (
                             <span className="text-red-400 text-[11px]">{result.error}</span>
                           ) : result.output ? (
-                            <span className="line-clamp-2 text-[11px] leading-relaxed">{result.output}</span>
+                            (() => {
+                              try {
+                                const parsed = typeof result.output === 'string' ? JSON.parse(result.output) : result.output
+                                if (typeof parsed === 'object' && parsed !== null) {
+                                  return (
+                                    <div className="space-y-1">
+                                      {Object.entries(parsed).map(([key, value]) => (
+                                        <div key={key} className="text-[11px]">
+                                          <span className="text-zinc-500">{key}:</span>{' '}
+                                          <span className="text-zinc-300">{String(value)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )
+                                }
+                                return <span className="line-clamp-2 text-[11px] leading-relaxed">{String(result.output)}</span>
+                              } catch {
+                                return <span className="line-clamp-2 text-[11px] leading-relaxed">{result.output}</span>
+                              }
+                            })()
                           ) : (
                             <span className="text-zinc-600">—</span>
                           )}
