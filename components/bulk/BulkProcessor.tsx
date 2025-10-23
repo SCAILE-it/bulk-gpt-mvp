@@ -125,7 +125,7 @@ export default function BulkProcessor() {
   const [testResult, setTestResult] = useState<{ input: Record<string, string>, output: Record<string, string> } | null>(null)
 
   // === TEMPLATE GALLERY ===
-  const [showTemplateGallery, setShowTemplateGallery] = useState(false)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templateSearchQuery, setTemplateSearchQuery] = useState('')
   const [templateCategoryFilter, setTemplateCategoryFilter] = useState<'all' | 'content' | 'data' | 'analysis'>('all')
 
@@ -660,7 +660,7 @@ export default function BulkProcessor() {
 
   const applyTemplate = useCallback((template: PromptTemplate) => {
     setPrompt(template.prompt)
-    setShowTemplateGallery(false)
+    setShowTemplateModal(false)
 
     // Track template usage
     trackEvent(ANALYTICS_EVENTS.BULK_TEMPLATE_USED, {
@@ -903,110 +903,13 @@ export default function BulkProcessor() {
                   Prompt
                 </label>
                 <button
-                  onClick={() => setShowTemplateGallery(!showTemplateGallery)}
+                  onClick={() => setShowTemplateModal(true)}
                   className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors flex items-center gap-1"
                 >
                   <FileText className="h-3 w-3" />
-                  {showTemplateGallery ? 'Hide Templates' : 'Browse Templates'}
+                  Browse Templates
                 </button>
               </div>
-
-              {/* TEMPLATE GALLERY */}
-              {showTemplateGallery && (
-                <div className="space-y-3 p-3 bg-zinc-900/50 border border-white/5 rounded-md">
-                  {/* Search and Filter */}
-                  <div className="space-y-2">
-                    {/* Search */}
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
-                      <input
-                        type="text"
-                        value={templateSearchQuery}
-                        onChange={(e) => setTemplateSearchQuery(e.target.value)}
-                        placeholder="Search templates..."
-                        className="w-full pl-9 pr-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
-                      />
-                    </div>
-
-                    {/* Category Filter */}
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                      <div className="flex gap-1.5 flex-wrap">
-                        {TEMPLATE_CATEGORIES.map((category) => {
-                          const Icon = category.icon
-                          const isActive = templateCategoryFilter === category.id
-                          return (
-                            <button
-                              key={category.id}
-                              onClick={() => setTemplateCategoryFilter(category.id)}
-                              className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                                Icon ? 'flex items-center gap-1' : ''
-                              } ${
-                                isActive
-                                  ? 'bg-zinc-700 text-zinc-200 border border-white/10'
-                                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
-                              }`}
-                            >
-                              {Icon && <Icon className="h-3 w-3" />}
-                              {category.label}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Templates List */}
-                  <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
-                    {filteredTemplates.length > 0 ? (
-                      filteredTemplates.map((template) => (
-                        <button
-                          key={template.id}
-                          onClick={() => applyTemplate(template)}
-                          className="text-left p-3 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-white/10 rounded-md transition-all group"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
-                                  {template.name}
-                                </h4>
-                                <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded text-[10px] font-mono">
-                                  {template.category}
-                                </span>
-                              </div>
-                              <p className="text-xs text-zinc-500 mb-2">
-                                {template.description}
-                              </p>
-                              <div className="flex items-center gap-1 text-[10px] text-zinc-600">
-                                <span>Uses:</span>
-                                <span className="font-mono">
-                                  {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
-                                </span>
-                              </div>
-                            </div>
-                            <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 rotate-[-90deg] transition-colors flex-shrink-0" />
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center">
-                        <Search className="h-8 w-8 mx-auto mb-2 text-zinc-700" />
-                        <p className="text-xs text-zinc-500">No templates match your search</p>
-                        <button
-                          onClick={() => {
-                            setTemplateSearchQuery('')
-                            setTemplateCategoryFilter('all')
-                          }}
-                          className="mt-2 text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
-                        >
-                          Clear filters
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               <textarea
                 id="prompt"
@@ -1488,6 +1391,122 @@ export default function BulkProcessor() {
               <button onClick={() => setShowTestModal(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TEMPLATE GALLERY MODAL */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTemplateModal(false)}>
+          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/5 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-zinc-400" />
+                <h2 className="text-lg font-medium text-zinc-100">Template Gallery</h2>
+              </div>
+              <button onClick={() => setShowTemplateModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {/* Search and Filter */}
+                <div className="space-y-3">
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                    <input
+                      type="text"
+                      value={templateSearchQuery}
+                      onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                      placeholder="Search templates..."
+                      className="w-full pl-10 pr-3 py-2.5 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
+                    />
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                    <div className="flex gap-2 flex-wrap">
+                      {TEMPLATE_CATEGORIES.map((category) => {
+                        const Icon = category.icon
+                        const isActive = templateCategoryFilter === category.id
+                        return (
+                          <button
+                            key={category.id}
+                            onClick={() => setTemplateCategoryFilter(category.id)}
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                              Icon ? 'flex items-center gap-1.5' : ''
+                            } ${
+                              isActive
+                                ? 'bg-zinc-700 text-zinc-200 border border-white/10'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                            }`}
+                          >
+                            {Icon && <Icon className="h-3.5 w-3.5" />}
+                            {category.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Templates List */}
+                <div className="grid grid-cols-1 gap-3">
+                  {filteredTemplates.length > 0 ? (
+                    filteredTemplates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => applyTemplate(template)}
+                        className="text-left p-4 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-white/10 rounded-md transition-all group"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
+                                {template.name}
+                              </h4>
+                              <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded text-[10px] font-mono">
+                                {template.category}
+                              </span>
+                            </div>
+                            <p className="text-xs text-zinc-500 mb-2 leading-relaxed">
+                              {template.description}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
+                              <span>Uses:</span>
+                              <span className="font-mono">
+                                {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 rotate-[-90deg] transition-colors flex-shrink-0 mt-1" />
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-12 text-center">
+                      <Search className="h-10 w-10 mx-auto mb-3 text-zinc-700" />
+                      <p className="text-sm text-zinc-500 mb-1">No templates match your search</p>
+                      <p className="text-xs text-zinc-600 mb-4">Try a different search term or category</p>
+                      <button
+                        onClick={() => {
+                          setTemplateSearchQuery('')
+                          setTemplateCategoryFilter('all')
+                        }}
+                        className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors underline"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
