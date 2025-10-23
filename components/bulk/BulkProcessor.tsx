@@ -10,7 +10,8 @@ import { useDropzone } from 'react-dropzone'
 import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle, XCircle,
-  Loader2, Download, Plus, X, ChevronDown, HelpCircle
+  Loader2, Download, Plus, X, ChevronDown, HelpCircle,
+  Settings, Table2, Webhook, Code, Search, Filter, Sparkles, Database, FileEdit
 } from 'lucide-react'
 import { parseCSV } from '@/lib/csv-parser'
 import type { ParsedCSV } from '@/lib/types'
@@ -117,6 +118,11 @@ export default function BulkProcessor() {
 
   // === TEMPLATE GALLERY ===
   const [showTemplateGallery, setShowTemplateGallery] = useState(false)
+  const [templateSearchQuery, setTemplateSearchQuery] = useState('')
+  const [templateCategoryFilter, setTemplateCategoryFilter] = useState<'all' | 'content' | 'data' | 'analysis'>('all')
+
+  // === KEYBOARD SHORTCUTS HELP ===
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
 
   // === PROCESSING STATE ===
   const [batchId, setBatchId] = useState<string | null>(null)
@@ -191,6 +197,28 @@ export default function BulkProcessor() {
       return { isValid: false, error: 'Invalid URL format (must start with https://)' }
     }
   }, [webhookUrl])
+
+  // === FILTERED TEMPLATES ===
+  const filteredTemplates = useMemo(() => {
+    let filtered = PROMPT_TEMPLATES
+
+    // Filter by category
+    if (templateCategoryFilter !== 'all') {
+      filtered = filtered.filter(t => t.category === templateCategoryFilter)
+    }
+
+    // Filter by search query
+    if (templateSearchQuery.trim()) {
+      const query = templateSearchQuery.toLowerCase()
+      filtered = filtered.filter(t =>
+        t.name.toLowerCase().includes(query) ||
+        t.description.toLowerCase().includes(query) ||
+        t.category.toLowerCase().includes(query)
+      )
+    }
+
+    return filtered
+  }, [templateSearchQuery, templateCategoryFilter])
 
   // === FILE UPLOAD ===
   const handleFileUpload = useCallback(async (uploadedFile: File) => {
@@ -665,8 +693,8 @@ export default function BulkProcessor() {
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-6">
             <h1 className="text-[15px] font-medium tracking-tight">Bulk Processor</h1>
-            <div className="h-4 w-px bg-zinc-800" />
-            <div className="flex items-center gap-3 text-xs text-zinc-500">
+            <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
+            <div className="hidden sm:flex items-center gap-3 text-xs text-zinc-500">
               <div className="flex items-center gap-1.5">
                 <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-[11px]">⌘O</kbd>
                 <span>Upload</span>
@@ -681,12 +709,20 @@ export default function BulkProcessor() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {currentCsvData && (
               <div className="text-xs text-zinc-500">
                 {currentCsvData.totalRows} rows • {currentCsvData.columns.length} cols
               </div>
             )}
+            <button
+              onClick={() => setShowKeyboardHelp(true)}
+              className="flex items-center justify-center w-7 h-7 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-white/5 text-zinc-400 hover:text-zinc-300 transition-colors"
+              aria-label="View keyboard shortcuts"
+              title="Keyboard shortcuts"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -869,34 +905,121 @@ export default function BulkProcessor() {
 
               {/* TEMPLATE GALLERY */}
               {showTemplateGallery && (
-                <div className="grid grid-cols-1 gap-2 p-3 bg-zinc-900/50 border border-white/5 rounded-md">
-                  {PROMPT_TEMPLATES.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => applyTemplate(template)}
-                      className="text-left p-3 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-blue-500/30 rounded-md transition-all group"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium text-zinc-200 group-hover:text-blue-400 transition-colors">
-                            {template.name}
-                          </h4>
-                          <p className="text-xs text-zinc-500 mt-0.5">
-                            {template.description}
-                          </p>
-                          <div className="mt-2 flex items-center gap-2 text-[10px]">
-                            <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded font-mono">
-                              {template.category}
-                            </span>
-                            <span className="text-zinc-600">
-                              Uses: {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
-                            </span>
-                          </div>
-                        </div>
-                        <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-blue-400 rotate-[-90deg] transition-colors" />
+                <div className="space-y-3 p-3 bg-zinc-900/50 border border-white/5 rounded-md">
+                  {/* Search and Filter */}
+                  <div className="space-y-2">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                      <input
+                        type="text"
+                        value={templateSearchQuery}
+                        onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                        placeholder="Search templates..."
+                        className="w-full pl-9 pr-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/50 transition-all"
+                      />
+                    </div>
+
+                    {/* Category Filter */}
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                      <div className="flex gap-1.5 flex-wrap">
+                        <button
+                          onClick={() => setTemplateCategoryFilter('all')}
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                            templateCategoryFilter === 'all'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                          }`}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => setTemplateCategoryFilter('content')}
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                            templateCategoryFilter === 'content'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                          }`}
+                        >
+                          <FileEdit className="h-3 w-3" />
+                          Content
+                        </button>
+                        <button
+                          onClick={() => setTemplateCategoryFilter('data')}
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                            templateCategoryFilter === 'data'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                          }`}
+                        >
+                          <Database className="h-3 w-3" />
+                          Data
+                        </button>
+                        <button
+                          onClick={() => setTemplateCategoryFilter('analysis')}
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                            templateCategoryFilter === 'analysis'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                          }`}
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          Analysis
+                        </button>
                       </div>
-                    </button>
-                  ))}
+                    </div>
+                  </div>
+
+                  {/* Templates List */}
+                  <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
+                    {filteredTemplates.length > 0 ? (
+                      filteredTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          onClick={() => applyTemplate(template)}
+                          className="text-left p-3 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-blue-500/30 rounded-md transition-all group"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="text-sm font-medium text-zinc-200 group-hover:text-blue-400 transition-colors">
+                                  {template.name}
+                                </h4>
+                                <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded text-[10px] font-mono">
+                                  {template.category}
+                                </span>
+                              </div>
+                              <p className="text-xs text-zinc-500 mb-2">
+                                {template.description}
+                              </p>
+                              <div className="flex items-center gap-1 text-[10px] text-zinc-600">
+                                <span>Uses:</span>
+                                <span className="font-mono">
+                                  {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-blue-400 rotate-[-90deg] transition-colors flex-shrink-0" />
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center">
+                        <Search className="h-8 w-8 mx-auto mb-2 text-zinc-700" />
+                        <p className="text-xs text-zinc-500">No templates match your search</p>
+                        <button
+                          onClick={() => {
+                            setTemplateSearchQuery('')
+                            setTemplateCategoryFilter('all')
+                          }}
+                          className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          Clear filters
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -976,6 +1099,7 @@ export default function BulkProcessor() {
                 className="flex items-center justify-between w-full px-3 py-2 hover:bg-zinc-900/50 rounded-md transition-colors group"
               >
                 <div className="flex items-center gap-2">
+                  <Settings className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400 transition-colors" />
                   <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-300">
                     Advanced Settings
                   </span>
@@ -991,6 +1115,7 @@ export default function BulkProcessor() {
                   {/* OUTPUT FIELDS */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
+                      <Table2 className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
                       <label className="text-xs font-medium text-zinc-300">Output Column Names</label>
                       <div className="group relative">
                         <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
@@ -1035,6 +1160,7 @@ export default function BulkProcessor() {
                   {/* WEBHOOK */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
+                      <Webhook className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
                       <label htmlFor="webhook" className="text-xs font-medium text-zinc-300">
                         Webhook URL
                       </label>
@@ -1067,7 +1193,10 @@ export default function BulkProcessor() {
 
             {/* API ACCESS */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-400">API Access</label>
+              <div className="flex items-center gap-2">
+                <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                <label className="text-xs font-medium text-zinc-400">API Access</label>
+              </div>
               {!showApiAccess ? (
                 <button
                   onClick={handleFetchToken}
@@ -1373,6 +1502,98 @@ export default function BulkProcessor() {
               <p className="text-xs text-zinc-500">This shows the result for the first row only</p>
               <button onClick={() => setShowTestModal(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KEYBOARD SHORTCUTS HELP MODAL */}
+      {showKeyboardHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowKeyboardHelp(false)}>
+          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <HelpCircle className="h-5 w-5 text-blue-400" />
+                <h2 className="text-lg font-medium text-zinc-100">Keyboard Shortcuts</h2>
+              </div>
+              <button onClick={() => setShowKeyboardHelp(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              <p className="text-sm text-zinc-400">Speed up your workflow with these keyboard shortcuts</p>
+
+              <div className="space-y-4">
+                {/* File Operations */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">File Operations</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                      <div className="flex items-center gap-3">
+                        <Upload className="h-4 w-4 text-zinc-500" />
+                        <span className="text-sm text-zinc-300">Open file picker</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
+                        <span className="text-zinc-600">+</span>
+                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">O</kbd>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Processing */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Processing</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                      <div className="flex items-center gap-3">
+                        <Play className="h-4 w-4 text-zinc-500" />
+                        <span className="text-sm text-zinc-300">Test with first row</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
+                        <span className="text-zinc-600">+</span>
+                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">T</kbd>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                      <div className="flex items-center gap-3">
+                        <Play className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-zinc-300">Run all rows</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
+                        <span className="text-zinc-600">+</span>
+                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">↵</kbd>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tips */}
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-md space-y-2">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-blue-300">Pro Tip</p>
+                      <p className="text-xs text-blue-200/80 leading-relaxed">
+                        Use ⌘T to test your prompt with the first row before running the full batch. This helps you verify the output format and catch any issues early.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end p-6 border-t border-white/5 bg-zinc-900/50">
+              <button onClick={() => setShowKeyboardHelp(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
+                Got it
               </button>
             </div>
           </div>
