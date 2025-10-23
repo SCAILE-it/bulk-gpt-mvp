@@ -1,0 +1,37 @@
+{
+  "promptTextarea": {
+    "minHeight": "80px",
+    "height": 80,
+    "rows": null
+  },
+  "leftSidebar": {
+    "height": 32,
+    "viewportHeight": 720,
+    "fillsScreen": false
+  },
+  "navLinks": [
+    {
+      "text": "Bulk GPT",
+      "href": "https://bulk-gpt-app.vercel.app/dashboard"
+    },
+    {
+      "text": "Dashboard",
+      "href": "https://bulk-gpt-app.vercel.app/dashboard"
+    },
+    {
+      "text": "Process",
+      "href": "https://bulk-gpt-app.vercel.app/bulk"
+    },
+    {
+      "text": "Profile",
+      "href": "https://bulk-gpt-app.vercel.app/profile"
+    }
+  ],
+  "fontSizes": [
+    "11px",
+    "12px",
+    "14px",
+    "16px",
+    "20px"
+  ]
+}
