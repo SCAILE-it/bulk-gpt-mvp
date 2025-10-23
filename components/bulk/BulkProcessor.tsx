@@ -808,12 +808,12 @@ export default function BulkProcessor() {
               <label className="text-xs font-medium text-zinc-300">Dataset</label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-4 min-h-[100px] md:p-6 md:min-h-[140px] flex flex-col items-center justify-center text-center cursor-pointer transition ${
+                className={`border-2 border-dashed rounded-lg p-4 min-h-[100px] md:p-6 md:min-h-[140px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
                   isDragActive
-                    ? 'border-white/20 bg-white/5'
+                    ? 'border-white/20 bg-white/5 scale-[1.02]'
                     : currentFile
                     ? 'border-white/10 bg-zinc-900/70'
-                    : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50'
+                    : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50 active:scale-[0.98]'
                 }`}
               >
                 <input {...getInputProps()} ref={fileInputRef} />
@@ -830,8 +830,8 @@ export default function BulkProcessor() {
                     </p>
                     {!currentFile && (
                       <>
-                        <p className="text-xs text-zinc-400 mb-2">
-                          or click to browse
+                        <p className="text-xs text-zinc-300 mb-2 font-medium underline decoration-dotted">
+                          or click anywhere to browse
                         </p>
                         <p className="text-xs text-zinc-500">
                           Max 10MB • CSV format • Up to 1,000 rows
@@ -846,9 +846,28 @@ export default function BulkProcessor() {
                         </a>
                       </>
                     )}
+                    {currentFile && csvData && (
+                      <p className="text-xs text-green-500 mt-2">
+                        ✓ {csvData.totalRows} rows • {csvData.columns.length} columns
+                      </p>
+                    )}
                   </>
                 )}
               </div>
+
+              {/* Upload feedback */}
+              {successMessage && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-md">
+                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <p className="text-xs text-green-500">{successMessage}</p>
+                </div>
+              )}
+              {currentError && (
+                <div className="flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
+                  <XCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-400">{currentError}</p>
+                </div>
+              )}
             </div>
 
             <div className="h-px bg-zinc-800/50" />
