@@ -1178,26 +1178,7 @@ export default function BulkProcessor() {
                           {result.error ? (
                             <span className="text-red-400 text-[11px]">{result.error}</span>
                           ) : result.output ? (
-                            (() => {
-                              try {
-                                const parsed = typeof result.output === 'string' ? JSON.parse(result.output) : result.output
-                                if (typeof parsed === 'object' && parsed !== null) {
-                                  return (
-                                    <div className="space-y-1">
-                                      {Object.entries(parsed).map(([key, value]) => (
-                                        <div key={key} className="text-[11px]">
-                                          <span className="text-zinc-500">{key}:</span>{' '}
-                                          <span className="text-zinc-300">{String(value)}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )
-                                }
-                                return <span className="line-clamp-2 text-[11px] leading-relaxed">{String(result.output)}</span>
-                              } catch {
-                                return <span className="line-clamp-2 text-[11px] leading-relaxed">{result.output}</span>
-                              }
-                            })()
+                            <span className="line-clamp-3 text-[11px] leading-relaxed whitespace-pre-wrap">{String(result.output)}</span>
                           ) : (
                             <span className="text-zinc-600">—</span>
                           )}
