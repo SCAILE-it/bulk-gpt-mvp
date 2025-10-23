@@ -739,7 +739,7 @@ export default function BulkProcessor() {
       <main className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-49px)]">
         {/* LEFT PANEL - Configuration */}
         <div className="border-r border-white/5 overflow-y-auto bg-zinc-900">
-          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="p-4 space-y-4">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -823,7 +823,7 @@ export default function BulkProcessor() {
               <label className="text-xs font-medium text-zinc-300">Dataset</label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-8 min-h-[200px] flex flex-col items-center justify-center text-center cursor-pointer transition ${
+                className={`border-2 border-dashed rounded-lg p-6 min-h-[140px] flex flex-col items-center justify-center text-center cursor-pointer transition ${
                   isDragActive
                     ? 'border-white/20 bg-white/5'
                     : currentFile
@@ -915,7 +915,7 @@ export default function BulkProcessor() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="w-full min-h-[180px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
+                className="w-full min-h-[120px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                 placeholder="Write a bio for {{name}} at {{company}}"
               />
               <div className="flex items-center justify-between text-[11px]">
@@ -1108,7 +1108,7 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="sticky bottom-0 p-4 sm:p-6 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
+          <div className="sticky bottom-0 p-4 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleTest}
