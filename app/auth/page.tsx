@@ -72,14 +72,14 @@ function LoginForm() {
         }
 
         // Get returnUrl from query params with validation
-        const returnUrl = searchParams.get('returnUrl') || '/wizard'
+        const returnUrl = searchParams.get('returnUrl') || '/bulk'
 
         // Validate before redirecting (SECURITY - prevent open redirect)
         if (isValidReturnUrl(returnUrl)) {
           router.push(returnUrl)
         } else {
           // Invalid returnUrl, use safe fallback
-          router.push('/wizard')
+          router.push('/bulk')
         }
 
         router.refresh()

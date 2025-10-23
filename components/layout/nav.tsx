@@ -40,7 +40,7 @@ export function Nav() {
 
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/wizard', label: 'Wizard' },
+    { href: '/bulk', label: 'Process' },
     { href: '/profile', label: 'Profile' },
   ]
 

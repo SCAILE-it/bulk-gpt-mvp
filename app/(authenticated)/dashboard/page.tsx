@@ -222,7 +222,7 @@ export default function DashboardPage() {
               Overview of your batch processing activity
             </p>
           </div>
-          <Button onClick={() => router.push('/wizard')} size="lg">
+          <Button onClick={() => router.push('/bulk')} size="lg">
             <Plus className="mr-2 h-4 w-4" />
             New Batch
           </Button>
@@ -323,7 +323,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Get started by creating your first batch
                 </p>
-                <Button onClick={() => router.push('/wizard')}>
+                <Button onClick={() => router.push('/bulk')}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create First Batch
                 </Button>
