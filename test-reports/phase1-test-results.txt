@@ -1,0 +1,32 @@
+
+Running 7 tests using 4 workers
+
+🔐 Setting up authentication...
+📧 Filling in credentials...
+🚀 Submitting login...
+  ✘  1 [setup] › playwright-tests/auth.setup.ts:18:6 › authenticate (30.0s)
+
+
+  1) [setup] › playwright-tests/auth.setup.ts:18:6 › authenticate ──────────────────────────────────
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      35 |
+      36 |   // Wait for redirect after successful login
+    > 37 |   await page.waitForURL(/\/(bulk|wizard|dashboard)/, { timeout: 10000 })
+         |              ^
+      38 |
+      39 |   console.log('✅ Login successful!')
+      40 |
+        at /home/federicodeponte/projects/bulk-gpt-app/playwright-tests/auth.setup.ts:37:14
+
+    Error Context: test-results/auth.setup.ts-authenticate-setup/error-context.md
+
+  1 failed
+    [setup] › playwright-tests/auth.setup.ts:18:6 › authenticate ───────────────────────────────────
+  6 did not run
