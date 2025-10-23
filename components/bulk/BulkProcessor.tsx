@@ -739,7 +739,7 @@ export default function BulkProcessor() {
       <main className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-49px)]">
         {/* LEFT PANEL - Configuration */}
         <div className="border-r border-white/5 overflow-y-auto bg-zinc-900">
-          <div className="p-4 space-y-4">
+          <div className="p-3 space-y-3 md:p-4 md:space-y-4">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -774,7 +774,7 @@ export default function BulkProcessor() {
             )}
 
             {/* WORKFLOW STEPS */}
-            <div className="space-y-2">
+            <div className="space-y-1.5 md:space-y-2">
               <div className="flex items-center gap-3">
                 <div className={`flex items-center gap-2 ${currentCsvData ? 'text-green-400' : 'text-blue-400'}`}>
                   {currentCsvData ? (
@@ -823,7 +823,7 @@ export default function BulkProcessor() {
               <label className="text-xs font-medium text-zinc-300">Dataset</label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-6 min-h-[140px] flex flex-col items-center justify-center text-center cursor-pointer transition ${
+                className={`border-2 border-dashed rounded-lg p-4 min-h-[100px] md:p-6 md:min-h-[140px] flex flex-col items-center justify-center text-center cursor-pointer transition ${
                   isDragActive
                     ? 'border-white/20 bg-white/5'
                     : currentFile
@@ -834,12 +834,12 @@ export default function BulkProcessor() {
                 <input {...getInputProps()} ref={fileInputRef} />
                 {isUploading ? (
                   <>
-                    <Loader2 className="h-12 w-12 mx-auto mb-3 text-zinc-400 animate-spin" />
+                    <Loader2 className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 md:mb-3 text-zinc-400 animate-spin" />
                     <p className="text-sm text-zinc-300 font-medium">Uploading and parsing...</p>
                   </>
                 ) : (
                   <>
-                    <Upload className="h-12 w-12 mx-auto mb-3 text-zinc-400" />
+                    <Upload className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 md:mb-3 text-zinc-400" />
                     <p className="text-sm text-zinc-200 font-medium mb-1">
                       {isDragActive ? 'Drop here' : currentFile ? currentFile.name : 'Drop your CSV file here'}
                     </p>
@@ -915,7 +915,7 @@ export default function BulkProcessor() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="w-full min-h-[120px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
+                className="w-full min-h-[80px] md:min-h-[120px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                 placeholder="Write a bio for {{name}} at {{company}}"
               />
               <div className="flex items-center justify-between text-[11px]">
@@ -1108,7 +1108,7 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="sticky bottom-0 p-4 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
+          <div className="sticky bottom-0 p-3 md:p-4 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleTest}
