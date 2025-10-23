@@ -724,7 +724,7 @@ export default function BulkProcessor() {
       <main className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-49px)]">
         {/* LEFT PANEL - Configuration */}
         <div className="border-r border-white/5 overflow-y-auto bg-zinc-900">
-          <div className="p-3 space-y-3 md:p-4 md:space-y-4">
+          <div className="p-2 space-y-2">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -759,7 +759,7 @@ export default function BulkProcessor() {
             )}
 
             {/* WORKFLOW STEPS */}
-            <div className="space-y-1.5 md:space-y-2">
+            <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <div className={`flex items-center gap-2 ${currentCsvData ? 'text-green-400' : 'text-blue-400'}`}>
                   {currentCsvData ? (
@@ -804,11 +804,11 @@ export default function BulkProcessor() {
             <div className="h-px bg-zinc-800/50" />
 
             {/* FILE UPLOAD */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-xs font-medium text-zinc-300">Dataset</label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-4 min-h-[100px] md:p-6 md:min-h-[140px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
+                className={`border-2 border-dashed rounded-lg p-3 min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
                   isDragActive
                     ? 'border-white/20 bg-white/5 scale-[1.02]'
                     : currentFile
@@ -819,12 +819,12 @@ export default function BulkProcessor() {
                 <input {...getInputProps()} ref={fileInputRef} />
                 {isUploading ? (
                   <>
-                    <Loader2 className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 md:mb-3 text-zinc-400 animate-spin" />
+                    <Loader2 className="h-8 w-8 mx-auto mb-2 text-zinc-400 animate-spin" />
                     <p className="text-sm text-zinc-300 font-medium">Uploading and parsing...</p>
                   </>
                 ) : (
                   <>
-                    <Upload className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 md:mb-3 text-zinc-400" />
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
                     <p className="text-sm text-zinc-200 font-medium mb-1">
                       {isDragActive ? 'Drop here' : currentFile ? currentFile.name : 'Drop your CSV file here'}
                     </p>
@@ -874,7 +874,7 @@ export default function BulkProcessor() {
             {currentCsvData && (
               <>
                 <div className="h-px bg-zinc-800/50" />
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-xs font-medium text-zinc-300">Data Preview</h3>
@@ -886,12 +886,12 @@ export default function BulkProcessor() {
 
                   {/* Preview Table */}
                   <div className="border border-white/5 rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto max-h-[200px] overflow-y-auto">
+                    <div className="overflow-x-auto max-h-[120px] overflow-y-auto">
                       <table className="w-full text-xs">
                         <thead className="sticky top-0 bg-zinc-900/95 border-b border-white/5">
                           <tr>
                             {currentCsvData.columns.map(col => (
-                              <th key={col} className="px-3 py-2 text-left font-medium text-zinc-400 whitespace-nowrap">
+                              <th key={col} className="px-2 py-1 text-left font-medium text-zinc-400 whitespace-nowrap">
                                 {col}
                               </th>
                             ))}
@@ -904,7 +904,7 @@ export default function BulkProcessor() {
                               className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
                             >
                               {currentCsvData.columns.map(col => (
-                                <td key={col} className="px-3 py-2 text-zinc-300 font-mono text-[11px] whitespace-nowrap">
+                                <td key={col} className="px-2 py-1 text-zinc-300 font-mono text-[11px] whitespace-nowrap">
                                   {row.data[col] || '—'}
                                 </td>
                               ))}
@@ -926,7 +926,7 @@ export default function BulkProcessor() {
             <div className="h-px bg-zinc-800/50" />
 
             {/* PROMPT */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label htmlFor="prompt" className="text-xs font-medium text-zinc-300">
                   Prompt
@@ -944,7 +944,7 @@ export default function BulkProcessor() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="w-full min-h-[80px] md:min-h-[120px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
+                className="w-full min-h-[60px] md:min-h-[80px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                 placeholder="Write a bio for {{name}} at {{company}}"
               />
               <div className="flex items-center justify-between text-[11px]">
@@ -967,7 +967,7 @@ export default function BulkProcessor() {
 
               {/* VARIABLE DETECTION SUCCESS */}
               {csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
-                <div className="flex items-start gap-2 p-2.5 bg-green-500/10 border border-green-500/20 rounded-md">
+                <div className="flex items-start gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-green-400">
                     <span className="font-medium">Variables detected: </span>
@@ -980,9 +980,9 @@ export default function BulkProcessor() {
 
               {/* VARIABLE VALIDATION WARNING */}
               {!variableValidation.isValid && variableValidation.missing.length > 0 && (
-                <div className="flex items-start gap-2 p-3 bg-orange-500/10 border border-orange-500/20 rounded-md">
+                <div className="flex items-start gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-md">
                   <XCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <p className="text-xs font-medium text-orange-400">
                       Missing variables in your CSV
                     </p>
@@ -1001,7 +1001,7 @@ export default function BulkProcessor() {
 
               {/* UNUSED VARIABLES INFO (subtle, informational only) */}
               {csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
-                <div className="flex items-start gap-2 p-2 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
+                <div className="flex items-start gap-2 p-1.5 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
                   <p className="text-[11px] text-zinc-500">
                     💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
                   </p>
@@ -1137,12 +1137,12 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="sticky bottom-0 p-3 md:p-4 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
-            <div className="flex flex-col sm:flex-row gap-2">
+          <div className="sticky bottom-0 p-2 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row gap-1.5">
               <button
                 onClick={handleTest}
                 disabled={!csvData || !prompt || isTesting || !variableValidation.isValid || !webhookValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] sm:min-h-0"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px] sm:min-h-0"
               >
                 {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 <span>Test (1 row)</span>
@@ -1150,7 +1150,7 @@ export default function BulkProcessor() {
               <button
                 onClick={handleProcess}
                 disabled={!csvData || !prompt || currentIsProcessing || !variableValidation.isValid || !webhookValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-0"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] sm:min-h-0"
               >
                 {currentIsProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 <span>Run All {csvData ? `(${csvData.totalRows})` : ''}</span>
