@@ -11,7 +11,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search } from 'lucide-react'
 
 interface Batch {
   id: string
@@ -33,6 +35,8 @@ interface DashboardStats {
 export default function DashboardPage() {
   const router = useRouter()
   const [batches, setBatches] = useState<Batch[]>([])
+  const [filteredBatches, setFilteredBatches] = useState<Batch[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [stats, setStats] = useState<DashboardStats>({
     totalBatches: 0,
     completedBatches: 0,
@@ -99,6 +103,54 @@ export default function DashboardPage() {
 
     fetchDashboardData()
   }, [router])
+
+  // Filter batches based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredBatches(batches)
+      return
+    }
+
+    const query = searchQuery.toLowerCase()
+    const filtered = batches.filter(batch =>
+      batch.csv_filename.toLowerCase().includes(query) ||
+      batch.status.toLowerCase().includes(query)
+    )
+    setFilteredBatches(filtered)
+  }, [searchQuery, batches])
+
+  const downloadCSV = () => {
+    const headers = ['Filename', 'Status', 'Total Rows', 'Processed Rows', 'Created At']
+    const csvContent = [
+      headers.join(','),
+      ...filteredBatches.map(b => [
+        `"${b.csv_filename}"`,
+        b.status,
+        b.total_rows,
+        b.processed_rows,
+        new Date(b.created_at).toLocaleString()
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `batches-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const downloadJSON = () => {
+    const jsonContent = JSON.stringify(filteredBatches, null, 2)
+    const blob = new Blob([jsonContent], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `batches-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const getStatusBadge = (status: Batch['status']) => {
     const variants = {
@@ -225,8 +277,43 @@ export default function DashboardPage() {
         {/* Recent Batches */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Batches</CardTitle>
-            <CardDescription>Your last 10 batch processing jobs</CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle>Recent Batches</CardTitle>
+                <CardDescription>Search, filter, and download your batch history</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadCSV}
+                  disabled={filteredBatches.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadJSON}
+                  disabled={filteredBatches.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  JSON
+                </Button>
+              </div>
+            </div>
+            {batches.length > 0 && (
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by filename or status..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {batches.length === 0 ? (
@@ -241,28 +328,39 @@ export default function DashboardPage() {
                   Create First Batch
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {batches.map((batch) => (
-                  <div
-                    key={batch.id}
-                    className="flex items-center justify-between p-4 rounded-lg border"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <p className="font-medium truncate">{batch.csv_filename}</p>
-                        {getStatusBadge(batch.status)}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>
-                          {batch.processed_rows} / {batch.total_rows} rows
-                        </span>
-                        <span>{formatDate(batch.created_at)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            ) : filteredBatches.length === 0 ? (
+              <div className="text-center py-12">
+                <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No results found</h3>
+                <p className="text-sm text-muted-foreground">
+                  Try adjusting your search query
+                </p>
               </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Filename</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Progress</TableHead>
+                    <TableHead className="text-right">Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBatches.map((batch) => (
+                    <TableRow key={batch.id}>
+                      <TableCell className="font-medium">{batch.csv_filename}</TableCell>
+                      <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {batch.processed_rows} / {batch.total_rows} rows
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {formatDate(batch.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
