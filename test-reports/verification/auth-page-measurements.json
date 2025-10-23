@@ -1,0 +1,12 @@
+{
+  "emailInput": {
+    "height": 40,
+    "width": 398
+  },
+  "submitButton": {
+    "height": 40,
+    "width": 398,
+    "fontSize": "14px"
+  },
+  "headers": []
+}
