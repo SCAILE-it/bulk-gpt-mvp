@@ -40,6 +40,14 @@ export default defineConfig({
       },
       dependencies: ['setup'],
     },
+    // No-auth tests - for visual checks, deployment verification
+    {
+      name: 'no-auth',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+      testMatch: /.*visual-check\.spec\.ts/,
+    },
   ],
 
   /* Assumes dev server is already running on localhost:3333 */
