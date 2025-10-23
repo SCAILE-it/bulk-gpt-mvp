@@ -803,89 +803,34 @@ export default function BulkProcessor() {
 
             <div className="h-px bg-zinc-800/50" />
 
-            {/* FILE UPLOAD */}
+            {/* FILE UPLOAD / DATA PREVIEW (Combined) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-zinc-300">Dataset</label>
-              <div
-                {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-3 min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
-                  isDragActive
-                    ? 'border-white/20 bg-white/5 scale-[1.02]'
-                    : currentFile
-                    ? 'border-white/10 bg-zinc-900/70'
-                    : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50 active:scale-[0.98]'
-                }`}
-              >
-                <input {...getInputProps()} ref={fileInputRef} />
-                {isUploading ? (
-                  <>
-                    <Loader2 className="h-8 w-8 mx-auto mb-2 text-zinc-400 animate-spin" />
-                    <p className="text-sm text-zinc-300 font-medium">Uploading and parsing...</p>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
-                    <p className="text-sm text-zinc-200 font-medium mb-1">
-                      {isDragActive ? 'Drop here' : currentFile ? currentFile.name : 'Drop your CSV file here'}
-                    </p>
-                    {!currentFile && (
-                      <>
-                        <p className="text-xs text-zinc-300 mb-2 font-medium underline decoration-dotted">
-                          or click anywhere to browse
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          Max 10MB • CSV format • Up to 1,000 rows
-                        </p>
-                        <a
-                          href="/sample.csv"
-                          download
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs text-zinc-400 hover:text-zinc-300 mt-3 inline-flex items-center gap-1 hover:underline"
-                        >
-                          Download sample template →
-                        </a>
-                      </>
-                    )}
-                    {currentFile && csvData && (
-                      <p className="text-xs text-green-500 mt-2">
-                        ✓ {csvData.totalRows} rows • {csvData.columns.length} columns
-                      </p>
-                    )}
-                  </>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-zinc-300">Dataset</label>
+                {currentCsvData && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors flex items-center gap-1"
+                  >
+                    <Upload className="h-3 w-3" />
+                    Change file
+                  </button>
                 )}
               </div>
 
-              {/* Upload feedback */}
-              {successMessage && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-md">
-                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <p className="text-xs text-green-500">{successMessage}</p>
-                </div>
-              )}
-              {currentError && (
-                <div className="flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
-                  <XCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-400">{currentError}</p>
-                </div>
-              )}
-            </div>
-
-            {/* CSV PREVIEW (moved from right panel) */}
-            {currentCsvData && (
-              <>
-                <div className="h-px bg-zinc-800/50" />
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xs font-medium text-zinc-300">Data Preview</h3>
-                      <p className="text-[11px] text-zinc-500 mt-0.5">
+              {currentCsvData && !isUploading ? (
+                // Show CSV Preview when file is loaded
+                <>
+                  <div className="border border-white/5 rounded-lg overflow-hidden bg-zinc-900/40">
+                    <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between bg-zinc-900/60">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                        <span className="text-xs text-zinc-300 font-medium">{currentFile?.name || 'data.csv'}</span>
+                      </div>
+                      <span className="text-[11px] text-zinc-500">
                         {currentCsvData.totalRows} rows • {currentCsvData.columns.length} columns
-                      </p>
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Preview Table */}
-                  <div className="border border-white/5 rounded-lg overflow-hidden">
                     <div className="overflow-x-auto max-h-[120px] overflow-y-auto">
                       <table className="w-full text-xs">
                         <thead className="sticky top-0 bg-zinc-900/95 border-b border-white/5">
@@ -901,7 +846,7 @@ export default function BulkProcessor() {
                           {currentCsvData.rows.slice(0, 5).map((row, i) => (
                             <tr
                               key={i}
-                              className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
+                              className={`border-b border-white/5 last:border-0 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
                             >
                               {currentCsvData.columns.map(col => (
                                 <td key={col} className="px-2 py-1 text-zinc-300 font-mono text-[11px] whitespace-nowrap">
@@ -919,9 +864,63 @@ export default function BulkProcessor() {
                       </div>
                     )}
                   </div>
+                  <input {...getInputProps()} ref={fileInputRef} className="hidden" />
+                </>
+              ) : (
+                // Show Upload Dropzone when no file or uploading
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-3 min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
+                    isDragActive
+                      ? 'border-white/20 bg-white/5 scale-[1.02]'
+                      : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50 active:scale-[0.98]'
+                  }`}
+                >
+                  <input {...getInputProps()} ref={fileInputRef} />
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-8 w-8 mx-auto mb-2 text-zinc-400 animate-spin" />
+                      <p className="text-sm text-zinc-300 font-medium">Uploading and parsing...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
+                      <p className="text-sm text-zinc-200 font-medium mb-1">
+                        {isDragActive ? 'Drop here' : 'Drop your CSV file here'}
+                      </p>
+                      <p className="text-xs text-zinc-300 mb-2 font-medium underline decoration-dotted">
+                        or click anywhere to browse
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Max 10MB • CSV format • Up to 1,000 rows
+                      </p>
+                      <a
+                        href="/sample.csv"
+                        download
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-zinc-400 hover:text-zinc-300 mt-3 inline-flex items-center gap-1 hover:underline"
+                      >
+                        Download sample template →
+                      </a>
+                    </>
+                  )}
                 </div>
-              </>
-            )}
+              )}
+
+              {/* Upload feedback */}
+              {successMessage && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-md">
+                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <p className="text-xs text-green-500">{successMessage}</p>
+                </div>
+              )}
+              {currentError && (
+                <div className="flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
+                  <XCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-400">{currentError}</p>
+                </div>
+              )}
+            </div>
 
             <div className="h-px bg-zinc-800/50" />
 
@@ -944,7 +943,7 @@ export default function BulkProcessor() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="w-full min-h-[60px] md:min-h-[80px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
+                className="w-full min-h-[120px] md:min-h-[180px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                 placeholder="Write a bio for {{name}} at {{company}}"
               />
               <div className="flex items-center justify-between text-[11px]">
