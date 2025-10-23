@@ -1,3 +1,5 @@
+// ABOUTME: Authentication page for user login with Supabase
+// ABOUTME: Handles sign-in, validates return URLs to prevent open redirects, and redirects to wizard after auth
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -58,16 +60,15 @@ function LoginForm() {
       }
 
       if (data?.user) {
-        // Ensure user record exists in public.users table (optional for testing)
+        // Ensure user record exists in public.users table (optional, non-blocking)
         try {
           await fetch('/api/auth/ensure-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: data.user.id, email: data.user.email })
           })
-        } catch (err) {
-          // Ignore ensure-user errors for testing - table may not exist yet
-          console.warn('ensure-user failed (non-critical):', err)
+        } catch {
+          // Silently ignore - table may not exist in development
         }
 
         // Get returnUrl from query params with validation
