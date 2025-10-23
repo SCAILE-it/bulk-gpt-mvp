@@ -96,7 +96,6 @@ export default function BulkProcessor() {
   // Use V2 or V1 state based on feature flags
   const currentFile = useV2FileUpload ? v2FileUpload.file : file
   const currentCsvData = useV2CSVParser ? v2CSVParser.csvData : csvData
-  const currentRecentFiles = useV2FileUpload ? v2FileUpload.recentFiles : recentFiles
   const currentError = useV2FileUpload ? v2FileUpload.error : (useV2CSVParser ? v2CSVParser.error : (useV2BatchProcessor ? v2BatchProcessor.error : null))
 
   // === CONFIG STATE ===
@@ -149,17 +148,7 @@ export default function BulkProcessor() {
   const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
   const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : progress
 
-  // === LOAD RECENT FILES ===
-  useEffect(() => {
-    const stored = localStorage.getItem(RECENT_FILES_KEY)
-    if (stored) {
-      try {
-        setRecentFiles(JSON.parse(stored))
-      } catch {
-        // Invalid JSON, ignore
-      }
-    }
-  }, [])
+  // Recent files feature removed - users can re-upload files if needed
 
   // === VARIABLE VALIDATION ===
   const variableValidation = useMemo(() => {
@@ -861,28 +850,6 @@ export default function BulkProcessor() {
                 )}
               </div>
             </div>
-
-            {/* RECENT */}
-            {currentRecentFiles.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-zinc-300">Recent</label>
-                <div className="space-y-1">
-                  {currentRecentFiles.slice(0, 3).map((f, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-zinc-900/70 rounded cursor-not-allowed opacity-60 group"
-                      title="Recent file loading coming soon"
-                    >
-                      <FileText className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-300 truncate font-mono">{f.name}</p>
-                        <p className="text-[11px] text-zinc-400">{f.rowCount} rows</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="h-px bg-zinc-800/50" />
 
