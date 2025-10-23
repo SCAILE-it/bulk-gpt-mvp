@@ -825,21 +825,21 @@ export default function BulkProcessor() {
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-8 min-h-[200px] flex flex-col items-center justify-center text-center cursor-pointer transition ${
                   isDragActive
-                    ? 'border-blue-500 bg-blue-500/10'
+                    ? 'border-white/20 bg-white/5'
                     : currentFile
                     ? 'border-white/10 bg-zinc-900/70'
-                    : 'border-blue-500/30 hover:border-blue-500/50 bg-blue-500/5 hover:bg-blue-500/10'
+                    : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50'
                 }`}
               >
                 <input {...getInputProps()} ref={fileInputRef} />
                 {isUploading ? (
                   <>
-                    <Loader2 className="h-12 w-12 mx-auto mb-3 text-blue-400 animate-spin" />
+                    <Loader2 className="h-12 w-12 mx-auto mb-3 text-zinc-400 animate-spin" />
                     <p className="text-sm text-zinc-300 font-medium">Uploading and parsing...</p>
                   </>
                 ) : (
                   <>
-                    <Upload className="h-12 w-12 mx-auto mb-3 text-blue-500" />
+                    <Upload className="h-12 w-12 mx-auto mb-3 text-zinc-400" />
                     <p className="text-sm text-zinc-200 font-medium mb-1">
                       {isDragActive ? 'Drop here' : currentFile ? currentFile.name : 'Drop your CSV file here'}
                     </p>
@@ -855,7 +855,7 @@ export default function BulkProcessor() {
                           href="/sample.csv"
                           download
                           onClick={(e) => e.stopPropagation()}
-                          className="text-xs text-blue-400 hover:text-blue-300 mt-3 inline-flex items-center gap-1 hover:underline"
+                          className="text-xs text-zinc-400 hover:text-zinc-300 mt-3 inline-flex items-center gap-1 hover:underline"
                         >
                           Download sample template →
                         </a>
@@ -904,7 +904,7 @@ export default function BulkProcessor() {
                 </label>
                 <button
                   onClick={() => setShowTemplateGallery(!showTemplateGallery)}
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                  className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors flex items-center gap-1"
                 >
                   <FileText className="h-3 w-3" />
                   {showTemplateGallery ? 'Hide Templates' : 'Browse Templates'}
@@ -924,7 +924,7 @@ export default function BulkProcessor() {
                         value={templateSearchQuery}
                         onChange={(e) => setTemplateSearchQuery(e.target.value)}
                         placeholder="Search templates..."
-                        className="w-full pl-9 pr-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/50 transition-all"
+                        className="w-full pl-9 pr-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
                       />
                     </div>
 
@@ -943,7 +943,7 @@ export default function BulkProcessor() {
                                 Icon ? 'flex items-center gap-1' : ''
                               } ${
                                 isActive
-                                  ? 'bg-blue-600 text-white'
+                                  ? 'bg-zinc-700 text-zinc-200 border border-white/10'
                                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
                               }`}
                             >
@@ -963,12 +963,12 @@ export default function BulkProcessor() {
                         <button
                           key={template.id}
                           onClick={() => applyTemplate(template)}
-                          className="text-left p-3 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-blue-500/30 rounded-md transition-all group"
+                          className="text-left p-3 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-white/10 rounded-md transition-all group"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h4 className="text-sm font-medium text-zinc-200 group-hover:text-blue-400 transition-colors">
+                                <h4 className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
                                   {template.name}
                                 </h4>
                                 <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded text-[10px] font-mono">
@@ -985,7 +985,7 @@ export default function BulkProcessor() {
                                 </span>
                               </div>
                             </div>
-                            <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-blue-400 rotate-[-90deg] transition-colors flex-shrink-0" />
+                            <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 rotate-[-90deg] transition-colors flex-shrink-0" />
                           </div>
                         </button>
                       ))
@@ -998,7 +998,7 @@ export default function BulkProcessor() {
                             setTemplateSearchQuery('')
                             setTemplateCategoryFilter('all')
                           }}
-                          className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                          className="mt-2 text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
                         >
                           Clear filters
                         </button>
@@ -1012,7 +1012,7 @@ export default function BulkProcessor() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="w-full min-h-[180px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:shadow-[0_0_4px_rgba(59,130,246,0.4)] focus:border-blue-500/50 transition-all duration-150 ease-out"
+                className="w-full min-h-[180px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                 placeholder="Write a bio for {{name}} at {{company}}"
               />
               <div className="flex items-center justify-between text-[11px]">
@@ -1130,7 +1130,7 @@ export default function BulkProcessor() {
                           onChange={(e) => setNewField(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && addOutputField()}
                           placeholder="field..."
-                          className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:shadow-[0_0_4px_rgba(59,130,246,0.4)] focus:border-blue-500/50 transition-all duration-150 ease-out"
+                          className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                         />
                         <button
                           onClick={addOutputField}
@@ -1159,7 +1159,7 @@ export default function BulkProcessor() {
                       className={`w-full px-3 py-1.5 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all duration-150 ease-out ${
                         !webhookValidation.isValid
                           ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40 focus:shadow-[0_0_4px_rgba(249,115,22,0.4)]'
-                          : 'border border-white/5 focus:ring-1 focus:ring-blue-500/40 focus:shadow-[0_0_4px_rgba(59,130,246,0.4)] focus:border-blue-500/50'
+                          : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
                       }`}
                     />
                     {!webhookValidation.isValid && webhookValidation.error && (
@@ -1186,7 +1186,7 @@ export default function BulkProcessor() {
                 <button
                   onClick={handleFetchToken}
                   disabled={isFetchingToken}
-                  className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isFetchingToken && <Loader2 className="h-3 w-3 animate-spin" />}
                   <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
