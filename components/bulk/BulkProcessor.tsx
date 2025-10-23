@@ -61,6 +61,14 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
   }
 ]
 
+// Category filter configuration
+const TEMPLATE_CATEGORIES = [
+  { id: 'all' as const, label: 'All', icon: null },
+  { id: 'content' as const, label: 'Content', icon: FileEdit },
+  { id: 'data' as const, label: 'Data', icon: Database },
+  { id: 'analysis' as const, label: 'Analysis', icon: Sparkles },
+]
+
 interface Result {
   id: string
   input: Record<string, string>
@@ -924,49 +932,26 @@ export default function BulkProcessor() {
                     <div className="flex items-center gap-2">
                       <Filter className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
                       <div className="flex gap-1.5 flex-wrap">
-                        <button
-                          onClick={() => setTemplateCategoryFilter('all')}
-                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                            templateCategoryFilter === 'all'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
-                          }`}
-                        >
-                          All
-                        </button>
-                        <button
-                          onClick={() => setTemplateCategoryFilter('content')}
-                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                            templateCategoryFilter === 'content'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
-                          }`}
-                        >
-                          <FileEdit className="h-3 w-3" />
-                          Content
-                        </button>
-                        <button
-                          onClick={() => setTemplateCategoryFilter('data')}
-                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                            templateCategoryFilter === 'data'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
-                          }`}
-                        >
-                          <Database className="h-3 w-3" />
-                          Data
-                        </button>
-                        <button
-                          onClick={() => setTemplateCategoryFilter('analysis')}
-                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                            templateCategoryFilter === 'analysis'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
-                          }`}
-                        >
-                          <Sparkles className="h-3 w-3" />
-                          Analysis
-                        </button>
+                        {TEMPLATE_CATEGORIES.map((category) => {
+                          const Icon = category.icon
+                          const isActive = templateCategoryFilter === category.id
+                          return (
+                            <button
+                              key={category.id}
+                              onClick={() => setTemplateCategoryFilter(category.id)}
+                              className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                                Icon ? 'flex items-center gap-1' : ''
+                              } ${
+                                isActive
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                              }`}
+                            >
+                              {Icon && <Icon className="h-3 w-3" />}
+                              {category.label}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   </div>
