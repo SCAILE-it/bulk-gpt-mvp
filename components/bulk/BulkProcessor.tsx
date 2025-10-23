@@ -870,6 +870,59 @@ export default function BulkProcessor() {
               )}
             </div>
 
+            {/* CSV PREVIEW (moved from right panel) */}
+            {currentCsvData && (
+              <>
+                <div className="h-px bg-zinc-800/50" />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-medium text-zinc-300">Data Preview</h3>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        {currentCsvData.totalRows} rows • {currentCsvData.columns.length} columns
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Preview Table */}
+                  <div className="border border-white/5 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto max-h-[200px] overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-zinc-900/95 border-b border-white/5">
+                          <tr>
+                            {currentCsvData.columns.map(col => (
+                              <th key={col} className="px-3 py-2 text-left font-medium text-zinc-400 whitespace-nowrap">
+                                {col}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentCsvData.rows.slice(0, 5).map((row, i) => (
+                            <tr
+                              key={i}
+                              className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
+                            >
+                              {currentCsvData.columns.map(col => (
+                                <td key={col} className="px-3 py-2 text-zinc-300 font-mono text-[11px] whitespace-nowrap">
+                                  {row.data[col] || '—'}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {currentCsvData.totalRows > 5 && (
+                      <div className="px-3 py-1.5 bg-zinc-900/60 border-t border-white/5 text-[11px] text-zinc-500">
+                        Showing first 5 of {currentCsvData.totalRows} rows
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="h-px bg-zinc-800/50" />
 
             {/* PROMPT */}
@@ -1232,78 +1285,6 @@ export default function BulkProcessor() {
                 </table>
               </div>
             </>
-          ) : currentCsvData ? (
-            <div className="flex-1 overflow-auto p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-medium text-zinc-300">CSV Preview</h3>
-                    <p className="text-xs text-zinc-500 mt-1">
-                      {currentCsvData.totalRows} rows • {currentCsvData.columns.length} columns
-                    </p>
-                  </div>
-                </div>
-
-                {/* Preview Table */}
-                <div className="border border-white/5 rounded-lg overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-zinc-900/95 border-b border-white/5">
-                      <tr>
-                        {currentCsvData.columns.map(col => (
-                          <th key={col} className="px-4 py-2.5 text-left font-medium text-zinc-400">
-                            {col}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentCsvData.rows.slice(0, 5).map((row, i) => (
-                        <tr
-                          key={i}
-                          className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
-                        >
-                          {currentCsvData.columns.map(col => (
-                            <td key={col} className="px-4 py-2.5 text-zinc-300 font-mono">
-                              {row.data[col] || '—'}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {currentCsvData.totalRows > 5 && (
-                    <div className="px-4 py-2 bg-zinc-900/60 border-t border-white/5 text-xs text-zinc-500">
-                      Showing first 5 of {currentCsvData.totalRows} rows
-                    </div>
-                  )}
-                </div>
-
-                {/* Prompt Preview */}
-                {prompt && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-zinc-400">Prompt Preview</h4>
-                    <div className="p-4 bg-zinc-900/70 border border-white/5 rounded-lg">
-                      <p className="text-xs text-zinc-300 leading-relaxed font-mono">
-                        {prompt.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-                          const value = currentCsvData.rows[0]?.data[key]
-                          return value ? `"${value}"` : `{{${key}}}`
-                        })}
-                      </p>
-                    </div>
-                    <p className="text-xs text-zinc-500">
-                      Example with first row data
-                    </p>
-                  </div>
-                )}
-
-                {/* Next Steps */}
-                <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-                  <p className="text-xs text-blue-300 leading-relaxed">
-                    ✓ CSV loaded • Configure your prompt above, then click <strong>Test</strong> to preview one result, or <strong>Run</strong> to process all rows.
-                  </p>
-                </div>
-              </div>
-            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center space-y-4 max-w-md">
@@ -1311,9 +1292,9 @@ export default function BulkProcessor() {
                   <FileText className="h-7 w-7 text-blue-500" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-base font-medium text-zinc-200">No data yet</h3>
+                  <h3 className="text-base font-medium text-zinc-200">No results yet</h3>
                   <p className="text-sm text-zinc-400 leading-relaxed">
-                    Upload a CSV file to see your data preview here
+                    Upload a CSV, configure your prompt, and click Run to see results here
                   </p>
                 </div>
                 <div className="pt-2 space-y-2 text-xs text-zinc-500">
