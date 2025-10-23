@@ -639,16 +639,21 @@ export default function BulkProcessor() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Beta Banner */}
       {showBetaBanner && (
-        <div className="bg-blue-600/10 border-b border-blue-500/20 px-6 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[11px] font-medium rounded">BETA</span>
-              <p className="text-xs text-blue-300">
-                Limited to 1,000 rows per batch • 5 batches per day •
-                <a href="#" className="ml-1 underline hover:text-blue-200">Request full access →</a>
+        <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[11px] font-medium rounded flex-shrink-0">BETA</span>
+              <p className="text-xs text-blue-300 truncate sm:whitespace-normal">
+                <span className="hidden sm:inline">Limited to 1,000 rows per batch • 5 batches per day •</span>
+                <span className="sm:hidden">1k rows/batch • 5/day •</span>
+                <a href="#" className="ml-1 underline hover:text-blue-200 whitespace-nowrap">Request full access →</a>
               </p>
             </div>
-            <button className="text-blue-400 hover:text-blue-300" onClick={dismissBetaBanner}>
+            <button
+              className="text-blue-400 hover:text-blue-300 flex-shrink-0"
+              onClick={dismissBetaBanner}
+              aria-label="Dismiss banner"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -687,10 +692,10 @@ export default function BulkProcessor() {
       </header>
 
       {/* Main Content */}
-      <main className="grid grid-cols-2 h-[calc(100vh-49px)]">
+      <main className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-49px)]">
         {/* LEFT PANEL - Configuration */}
         <div className="border-r border-white/5 overflow-y-auto bg-zinc-900">
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -1087,12 +1092,12 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="sticky bottom-0 p-6 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
-            <div className="flex gap-2">
+          <div className="sticky bottom-0 p-4 sm:p-6 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleTest}
                 disabled={!csvData || !prompt || isTesting || !variableValidation.isValid || !webhookValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] sm:min-h-0"
               >
                 {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 <span>Test (1 row)</span>
@@ -1100,7 +1105,7 @@ export default function BulkProcessor() {
               <button
                 onClick={handleProcess}
                 disabled={!csvData || !prompt || currentIsProcessing || !variableValidation.isValid || !webhookValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-0"
               >
                 {currentIsProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 <span>Run All {csvData ? `(${csvData.totalRows})` : ''}</span>
@@ -1280,16 +1285,30 @@ export default function BulkProcessor() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center space-y-3 max-w-sm">
-                <div className="mx-auto w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-zinc-600" />
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="text-center space-y-4 max-w-md">
+                <div className="mx-auto w-16 h-16 rounded-full bg-blue-500/10 border-2 border-blue-500/20 flex items-center justify-center">
+                  <FileText className="h-7 w-7 text-blue-500" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium text-zinc-400 mb-1">No data yet</h3>
-                  <p className="text-sm text-zinc-500 leading-relaxed">
-                    Upload a CSV to get started
+                <div className="space-y-2">
+                  <h3 className="text-base font-medium text-zinc-200">No data yet</h3>
+                  <p className="text-sm text-zinc-400 leading-relaxed">
+                    Upload a CSV file to see your data preview here
                   </p>
+                </div>
+                <div className="pt-2 space-y-2 text-xs text-zinc-500">
+                  <p>Your results will appear as:</p>
+                  <div className="flex items-center justify-center gap-2 p-3 bg-zinc-900/50 border border-white/5 rounded-lg">
+                    <div className="flex-1 text-left">
+                      <div className="text-zinc-400 font-mono text-[10px]">Input</div>
+                      <div className="text-zinc-300 text-xs">Row data</div>
+                    </div>
+                    <div className="text-zinc-600">→</div>
+                    <div className="flex-1 text-left">
+                      <div className="text-zinc-400 font-mono text-[10px]">Output</div>
+                      <div className="text-zinc-300 text-xs">AI result</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
