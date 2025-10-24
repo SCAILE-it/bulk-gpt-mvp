@@ -666,7 +666,7 @@ export default function BulkProcessor() {
         <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[11px] font-medium rounded flex-shrink-0">BETA</span>
+              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs font-medium rounded flex-shrink-0">BETA</span>
               <p className="text-xs text-blue-300 truncate sm:whitespace-normal">
                 <span className="hidden sm:inline">Limited to 1,000 rows per batch • 5 batches per day •</span>
                 <span className="sm:hidden">1k rows/batch • 5/day •</span>
@@ -688,19 +688,19 @@ export default function BulkProcessor() {
       <header className="sticky top-0 z-50 border-b border-white/5 bg-zinc-950/95 backdrop-blur-md supports-[backdrop-filter]:bg-zinc-950/60">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-6">
-            <h1 className="text-[15px] font-medium tracking-tight">Bulk Processor</h1>
+            <h1 className="text-sm font-medium tracking-tight">Bulk Processor</h1>
             <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
             <div className="hidden sm:flex items-center gap-3 text-xs text-zinc-500">
               <div className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-[11px]">⌘O</kbd>
+                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-xs">⌘O</kbd>
                 <span>Upload</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-[11px]">⌘T</kbd>
+                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-xs">⌘T</kbd>
                 <span>Test</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-[11px]">⌘↵</kbd>
+                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-xs">⌘↵</kbd>
                 <span>Run</span>
               </div>
             </div>
@@ -830,7 +830,7 @@ export default function BulkProcessor() {
                         <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
                         <span className="text-xs text-zinc-300 font-medium">{currentFile?.name || 'data.csv'}</span>
                       </div>
-                      <span className="text-[11px] text-zinc-500">
+                      <span className="text-xs text-zinc-500">
                         {currentCsvData.totalRows} rows • {currentCsvData.columns.length} columns
                       </span>
                     </div>
@@ -852,7 +852,7 @@ export default function BulkProcessor() {
                               className={`border-b border-white/5 last:border-0 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
                             >
                               {currentCsvData.columns.map(col => (
-                                <td key={col} className="px-2 py-1 text-zinc-300 font-mono text-[11px] whitespace-nowrap">
+                                <td key={col} className="px-2 py-1 text-zinc-300 font-mono text-xs whitespace-nowrap">
                                   {row.data[col] || '—'}
                                 </td>
                               ))}
@@ -862,7 +862,7 @@ export default function BulkProcessor() {
                       </table>
                     </div>
                     {currentCsvData.totalRows > 5 && (
-                      <div className="px-3 py-1.5 bg-zinc-900/60 border-t border-white/5 text-[11px] text-zinc-500">
+                      <div className="px-3 py-1.5 bg-zinc-900/60 border-t border-white/5 text-xs text-zinc-500">
                         Showing first 5 of {currentCsvData.totalRows} rows
                       </div>
                     )}
@@ -949,7 +949,7 @@ export default function BulkProcessor() {
                 className="w-full min-h-[120px] md:min-h-[180px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                 placeholder="Write a bio for {{name}} at {{company}}"
               />
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-xs">
                 {csvData && (
                   <p className="text-zinc-300">
                     Variables: {csvData.columns.map(h => `{{${h}}}`).join(', ')}
@@ -988,13 +988,13 @@ export default function BulkProcessor() {
                     <p className="text-xs font-medium text-orange-400">
                       Missing variables in your CSV
                     </p>
-                    <p className="text-[11px] text-orange-300/80">
+                    <p className="text-xs text-orange-300/80">
                       These variables are used in your prompt but don&apos;t exist in your CSV:{' '}
                       <span className="font-mono font-semibold">
                         {variableValidation.missing.map(v => `{{${v}}}`).join(', ')}
                       </span>
                     </p>
-                    <p className="text-[11px] text-orange-300/60">
+                    <p className="text-xs text-orange-300/60">
                       Please check your column names or remove these variables from your prompt.
                     </p>
                   </div>
@@ -1004,7 +1004,7 @@ export default function BulkProcessor() {
               {/* UNUSED VARIABLES INFO (subtle, informational only) */}
               {csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
                 <div className="flex items-start gap-2 p-1.5 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-xs text-zinc-500">
                     💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
                   </p>
                 </div>
@@ -1015,7 +1015,7 @@ export default function BulkProcessor() {
             <div className="flex items-center gap-2">
               <Settings className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
               <label className="text-xs font-medium text-zinc-400">Advanced</label>
-              <span className="text-[10px] text-zinc-600">(optional)</span>
+              <span className="text-xs text-zinc-600">(optional)</span>
               <button
                 onClick={() => setShowAdvancedSettingsModal(true)}
                 className="ml-auto text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
@@ -1040,7 +1040,7 @@ export default function BulkProcessor() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-[11px] text-zinc-500">
+                    <p className="text-xs text-zinc-500">
                       These will be the column headers in your results CSV (default: &quot;bio&quot;)
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -1080,7 +1080,7 @@ export default function BulkProcessor() {
                       <label htmlFor="webhook" className="text-xs font-medium text-zinc-300">
                         Webhook URL
                       </label>
-                      <span className="text-[10px] text-zinc-600">(optional)</span>
+                      <span className="text-xs text-zinc-600">(optional)</span>
                     </div>
                     <input
                       id="webhook"
@@ -1094,13 +1094,13 @@ export default function BulkProcessor() {
                       }`}
                     />
                     {!webhookValidation.isValid && webhookValidation.error && (
-                      <p className="text-[11px] text-orange-400 flex items-center gap-1">
+                      <p className="text-xs text-orange-400 flex items-center gap-1">
                         <XCircle className="h-3 w-3" />
                         {webhookValidation.error}
                       </p>
                     )}
                     {webhookValidation.isValid && (
-                      <p className="text-[11px] text-zinc-500">POST results to this URL when batch completes</p>
+                      <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
                     )}
                   </div>
                 </div>
@@ -1125,13 +1125,13 @@ export default function BulkProcessor() {
                   </button>
                 ) : (
                   <div className="space-y-2">
-                    <pre className="p-3 bg-zinc-900 border border-white/5 rounded-lg text-[11px] text-zinc-400 font-mono overflow-x-auto">
+                    <pre className="p-3 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
 {`curl -X POST ${window.location.origin}/api/process \\
   -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
   -H "Content-Type: application/json" \\
   -d '{"csvFilename":"data.csv","rows":[...]}'`}
                     </pre>
-                    <p className="text-[11px] text-zinc-400">Use in n8n, Zapier, Postman</p>
+                    <p className="text-xs text-zinc-400">Use in n8n, Zapier, Postman</p>
                   </div>
                 )}
               </div>
@@ -1170,14 +1170,14 @@ export default function BulkProcessor() {
                 <div className="flex items-center justify-between px-6 py-3">
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-medium text-zinc-400">Results</span>
-                    <span className="text-[11px] text-zinc-600">
+                    <span className="text-xs text-zinc-600">
                       {currentProgress
                         ? `${currentProgress.completed}/${currentProgress.total} completed`
                         : `${currentResults.filter(r => r.status === 'completed').length}/${currentResults.length} completed`
                       }
                     </span>
                     {currentProgress && currentProgress.completed < currentProgress.total && processingStartTime && (
-                      <span className="text-[11px] text-zinc-600">
+                      <span className="text-xs text-zinc-600">
                         {(() => {
                           const elapsed = Date.now() - processingStartTime
                           const avgTimePerRow = elapsed / Math.max(currentProgress.completed, 1)
@@ -1244,25 +1244,25 @@ export default function BulkProcessor() {
                             {result.status === 'completed' && (
                               <>
                                 <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                                <span className="text-[11px] text-zinc-500">Done</span>
+                                <span className="text-xs text-zinc-500">Done</span>
                               </>
                             )}
                             {result.status === 'failed' && (
                               <>
                                 <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
-                                <span className="text-[11px] text-red-400">Failed</span>
+                                <span className="text-xs text-red-400">Failed</span>
                               </>
                             )}
                             {result.status === 'processing' && (
                               <>
                                 <Loader2 className="h-4 w-4 animate-spin text-blue-400 flex-shrink-0" />
-                                <span className="text-[11px] text-blue-400">Processing...</span>
+                                <span className="text-xs text-blue-400">Processing...</span>
                               </>
                             )}
                             {result.status === 'pending' && (
                               <>
                                 <div className="h-4 w-4 rounded-full border border-zinc-700 flex-shrink-0" />
-                                <span className="text-[11px] text-zinc-600">Waiting in queue...</span>
+                                <span className="text-xs text-zinc-600">Waiting in queue...</span>
                               </>
                             )}
                           </div>
@@ -1274,9 +1274,9 @@ export default function BulkProcessor() {
                         ))}
                         <td className="px-4 py-3 text-zinc-300">
                           {result.error ? (
-                            <span className="text-red-400 text-[11px]">{result.error}</span>
+                            <span className="text-red-400 text-xs">{result.error}</span>
                           ) : result.output ? (
-                            <span className="line-clamp-3 text-[11px] leading-relaxed whitespace-pre-wrap">{String(result.output)}</span>
+                            <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">{String(result.output)}</span>
                           ) : (
                             <span className="text-zinc-600">—</span>
                           )}
@@ -1303,12 +1303,12 @@ export default function BulkProcessor() {
                   <p>Your results will appear as:</p>
                   <div className="flex items-center justify-center gap-2 p-3 bg-zinc-900/50 border border-white/5 rounded-lg">
                     <div className="flex-1 text-left">
-                      <div className="text-zinc-400 font-mono text-[10px]">Input</div>
+                      <div className="text-zinc-400 font-mono text-xs">Input</div>
                       <div className="text-zinc-300 text-xs">Row data</div>
                     </div>
                     <div className="text-zinc-600">→</div>
                     <div className="flex-1 text-left">
-                      <div className="text-zinc-400 font-mono text-[10px]">Output</div>
+                      <div className="text-zinc-400 font-mono text-xs">Output</div>
                       <div className="text-zinc-300 text-xs">AI result</div>
                     </div>
                   </div>
@@ -1395,14 +1395,14 @@ export default function BulkProcessor() {
                               <h4 className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
                                 {template.name}
                               </h4>
-                              <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded text-[10px] font-mono">
+                              <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded text-xs font-mono">
                                 {template.category}
                               </span>
                             </div>
                             <p className="text-xs text-zinc-500 mb-2 leading-relaxed">
                               {template.description}
                             </p>
-                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-600">
+                            <div className="flex items-center gap-1.5 text-xs text-zinc-600">
                               <span>Uses:</span>
                               <span className="font-mono">
                                 {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
