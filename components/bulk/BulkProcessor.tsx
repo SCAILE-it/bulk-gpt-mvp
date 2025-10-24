@@ -11,7 +11,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle, XCircle,
   Loader2, Download, Plus, X, ChevronDown, HelpCircle,
-  Settings, Table2, Webhook, Code, Search, Filter, Sparkles, Database, FileEdit
+  Settings, Table2, Webhook, Code, Search, Filter, Sparkles, Database, FileEdit, AlertTriangle
 } from 'lucide-react'
 import { parseCSV } from '@/lib/csv-parser'
 import type { ParsedCSV } from '@/lib/types'
@@ -129,6 +129,9 @@ export default function BulkProcessor() {
 
   // === PROMPT PREVIEW ===
   const [previewRowIndex, setPreviewRowIndex] = useState(0)
+
+  // === DELETE CONFIRMATION ===
+  const [fieldToDelete, setFieldToDelete] = useState<string | null>(null)
 
   // Generate prompt preview with variables substituted
   const promptPreview = useMemo(() => {
@@ -410,8 +413,15 @@ export default function BulkProcessor() {
   }, [newField, outputFields])
 
   const removeOutputField = useCallback((field: string) => {
-    setOutputFields(outputFields.filter(f => f !== field))
-  }, [outputFields])
+    setFieldToDelete(field)
+  }, [])
+
+  const confirmDeleteOutputField = useCallback(() => {
+    if (fieldToDelete) {
+      setOutputFields(outputFields.filter(f => f !== fieldToDelete))
+      setFieldToDelete(null)
+    }
+  }, [fieldToDelete, outputFields])
 
   // === TEST (1 ROW) ===
   const handleTest = useCallback(async () => {
@@ -1705,6 +1715,50 @@ export default function BulkProcessor() {
             <div className="flex items-center justify-end p-6 border-t border-white/5 bg-zinc-900/50">
               <button onClick={() => setShowKeyboardHelp(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
                 Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE OUTPUT FIELD CONFIRMATION MODAL */}
+      {fieldToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFieldToDelete(null)}>
+          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                <h2 className="text-lg font-medium text-zinc-100">Delete Output Field?</h2>
+              </div>
+              <button onClick={() => setFieldToDelete(null)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-zinc-300">
+                Are you sure you want to delete the output field <span className="font-mono text-blue-400">{fieldToDelete}</span>?
+              </p>
+              <p className="text-xs text-zinc-500">
+                This action cannot be undone. You&apos;ll need to manually add it back if you change your mind.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-white/5 bg-zinc-900/50">
+              <button
+                onClick={() => setFieldToDelete(null)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteOutputField}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-md transition-colors"
+              >
+                Delete Field
               </button>
             </div>
           </div>
