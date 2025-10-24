@@ -20,6 +20,7 @@ import { features } from '@/lib/features'
 import { useFileUpload, type RecentFile } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
@@ -132,6 +133,13 @@ export default function BulkProcessor() {
 
   // === DELETE CONFIRMATION ===
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null)
+
+  // === FOCUS MANAGEMENT ===
+  // Focus trap refs for modals - ensures keyboard navigation stays within modal
+  const templateModalRef = useFocusTrap<HTMLDivElement>(showTemplateModal)
+  const advancedSettingsModalRef = useFocusTrap<HTMLDivElement>(showAdvancedSettingsModal)
+  const keyboardHelpModalRef = useFocusTrap<HTMLDivElement>(showKeyboardHelp)
+  const deleteConfirmationModalRef = useFocusTrap<HTMLDivElement>(fieldToDelete !== null)
 
   // Generate prompt preview with variables substituted
   const promptPreview = useMemo(() => {
@@ -1409,6 +1417,7 @@ export default function BulkProcessor() {
       {showTemplateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTemplateModal(false)}>
           <div
+            ref={templateModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
@@ -1535,6 +1544,7 @@ export default function BulkProcessor() {
       {showAdvancedSettingsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowAdvancedSettingsModal(false)}>
           <div
+            ref={advancedSettingsModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
@@ -1686,6 +1696,7 @@ export default function BulkProcessor() {
       {showKeyboardHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowKeyboardHelp(false)}>
           <div
+            ref={keyboardHelpModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
@@ -1788,6 +1799,7 @@ export default function BulkProcessor() {
       {fieldToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFieldToDelete(null)}>
           <div
+            ref={deleteConfirmationModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
