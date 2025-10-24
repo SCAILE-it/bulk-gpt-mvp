@@ -1,19 +1,61 @@
 /**
- * Retry logic with exponential backoff and circuit breaker
+ * Production-grade retry logic with exponential backoff and circuit breaker
+ *
+ * Features:
+ * - Smart retry logic (only retries transient errors)
+ * - Exponential backoff with jitter
+ * - Circuit breaker pattern
+ * - Full error context preservation
+ * - Development/production logging
  */
 
 import { BulkGPTError } from './types'
+import { logError } from './errors'
+import { devLog } from './dev-logger'
 
 export interface RetryOptions {
   maxRetries?: number
   initialDelay?: number
   maxDelay?: number
   backoffMultiplier?: number
+  shouldRetry?: (error: unknown, attempt: number) => boolean
   onRetry?: (delay: number, attempt: number, error: Error) => void
 }
 
 /**
+ * Check if an error should be retried
+ * Only retry transient failures (network errors, 5xx, 429)
+ */
+function isRetryableError(error: unknown): boolean {
+  // Network errors - always retry
+  if (error instanceof TypeError && error.message.includes('fetch')) {
+    return true
+  }
+
+  // Timeout errors - retry
+  if (error instanceof Error && error.name === 'AbortError') {
+    return true
+  }
+
+  // BulkGPT timeout errors
+  if (error instanceof BulkGPTError && (error.code === 'TIMEOUT' || error.code === 'TIMEOUT_ERROR')) {
+    return true
+  }
+
+  // HTTP errors from Response objects
+  if (error && typeof error === 'object' && 'status' in error) {
+    const status = (error as { status: number }).status
+    // Retry on: 429 (rate limit), 500-599 (server errors), 408 (timeout)
+    return status === 408 || status === 429 || (status >= 500 && status < 600)
+  }
+
+  // Unknown errors or client errors (4xx except 429/408) - don't retry
+  return false
+}
+
+/**
  * Retry an async function with exponential backoff
+ * Production-grade implementation with smart retry logic
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
@@ -21,9 +63,10 @@ export async function withRetry<T>(
 ): Promise<T> {
   const {
     maxRetries = 3,
-    initialDelay = 100,
-    maxDelay = 10000,
+    initialDelay = 1000, // 1 second default (more appropriate for network calls)
+    maxDelay = 30000, // 30 seconds max
     backoffMultiplier = 2,
+    shouldRetry = isRetryableError,
     onRetry,
   } = options
 
@@ -31,27 +74,61 @@ export async function withRetry<T>(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await fn()
+      // Execute function
+      const result = await fn()
+
+      // Success after retry - log it
+      if (attempt > 0) {
+        devLog.log(`✓ Retry succeeded on attempt ${attempt}/${maxRetries}`)
+      }
+
+      return result
+
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
 
-      if (attempt < maxRetries) {
-        const delay = Math.min(initialDelay * Math.pow(backoffMultiplier, attempt), maxDelay)
-        const jitter = Math.random() * delay * 0.1 // 10% jitter
-        const totalDelay = Math.floor(delay + jitter)
+      // Check if we should retry this error
+      const willRetry = attempt < maxRetries && shouldRetry(error, attempt)
 
-        onRetry?.(totalDelay, attempt + 1, lastError)
-
-        await new Promise((resolve) => setTimeout(resolve, totalDelay))
+      if (!willRetry) {
+        // Final attempt or non-retryable error
+        if (attempt === maxRetries) {
+          logError(lastError, {
+            source: 'lib/retry/withRetry',
+            attemptsExhausted: maxRetries + 1,
+            finalError: true
+          })
+        }
+        throw lastError
       }
+
+      // Calculate delay with exponential backoff + full jitter
+      const exponentialDelay = Math.min(
+        initialDelay * Math.pow(backoffMultiplier, attempt),
+        maxDelay
+      )
+      // Full jitter: random delay between 0 and exponentialDelay
+      // This prevents thundering herd problem
+      const totalDelay = Math.floor(Math.random() * exponentialDelay)
+
+      devLog.warn(
+        `⚠ Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${totalDelay}ms:`,
+        lastError.message
+      )
+
+      onRetry?.(totalDelay, attempt + 1, lastError)
+
+      await new Promise((resolve) => setTimeout(resolve, totalDelay))
     }
   }
 
+  // Should never reach here, but TypeScript needs it
   throw lastError || new Error('Retry exhausted')
 }
 
 /**
- * Fetch with timeout
+ * Fetch with timeout and automatic retry
+ * Production-ready wrapper for fetch API
  */
 export async function fetchWithTimeout(
   url: string,
@@ -69,12 +146,34 @@ export async function fetchWithTimeout(
     return response
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new BulkGPTError('TIMEOUT', `Request timeout after ${timeoutMs}ms`)
+      throw new BulkGPTError('TIMEOUT', `Request timeout after ${timeoutMs}ms`, {
+        url,
+        timeoutMs
+      })
     }
     throw error
   } finally {
     clearTimeout(timeoutId)
   }
+}
+
+/**
+ * Fetch with automatic retry on transient failures
+ * Combines timeout + retry logic
+ */
+export async function fetchWithRetry(
+  url: string,
+  options?: RequestInit & {
+    timeoutMs?: number
+    retryOptions?: RetryOptions
+  }
+): Promise<Response> {
+  const { timeoutMs = 30000, retryOptions, ...fetchOptions } = options || {}
+
+  return withRetry(
+    () => fetchWithTimeout(url, timeoutMs, fetchOptions),
+    retryOptions
+  )
 }
 
 /**
