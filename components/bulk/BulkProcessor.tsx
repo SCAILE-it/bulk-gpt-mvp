@@ -742,7 +742,7 @@ export default function BulkProcessor() {
 
   // === RENDER ===
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="h-[calc(100vh-69px)] bg-zinc-950 text-zinc-100 flex flex-col">
       {/* Beta Banner */}
       {showBetaBanner && (
         <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-2">
@@ -767,7 +767,7 @@ export default function BulkProcessor() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-zinc-950/95 backdrop-blur-md supports-[backdrop-filter]:bg-zinc-950/60">
+      <header className="flex-shrink-0 sticky top-0 z-50 border-b border-white/5 bg-zinc-950/95 backdrop-blur-md supports-[backdrop-filter]:bg-zinc-950/60">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-6">
             <h1 className="text-sm font-medium tracking-tight">Bulk Processor</h1>
@@ -806,7 +806,7 @@ export default function BulkProcessor() {
       </header>
 
       {/* Main Content */}
-      <main className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-49px)]">
+      <main className="flex-1 h-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
         {/* LEFT PANEL - Configuration */}
         <div className="h-full border-r border-white/5 bg-zinc-900 flex flex-col">
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
