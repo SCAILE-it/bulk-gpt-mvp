@@ -2,6 +2,8 @@
  * API Client for bulk processing through Gemini
  */
 
+import { logError } from './errors'
+
 export interface ProcessRow {
   id: string
   input: Record<string, string>
@@ -100,7 +102,10 @@ export async function processRows(
           }
           rowIndex++
         } catch (parseError) {
-          console.error('Failed to parse response line:', line)
+          logError(
+            parseError instanceof Error ? parseError : new Error('Parse error'),
+            { line, rowIndex }
+          )
         }
       }
 

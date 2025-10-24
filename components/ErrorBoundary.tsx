@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { logError as logErrorToService } from '@/lib/errors'
 
 interface Props {
   children: ReactNode
@@ -26,8 +27,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
-    
+    logErrorToService(error, {
+      componentStack: errorInfo.componentStack,
+      source: 'ErrorBoundary',
+    })
+
     // Report to error tracking service
     if (this.props.onError) {
       this.props.onError(error, errorInfo)
@@ -141,8 +145,11 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook for functional components
 export function useErrorHandler() {
   return (error: Error, errorInfo?: ErrorInfo) => {
-    console.error('Error caught by useErrorHandler:', error)
-    
+    logErrorToService(error, {
+      componentStack: errorInfo?.componentStack,
+      source: 'useErrorHandler',
+    })
+
     // Report to tracking service
     if (typeof window !== 'undefined') {
       const windowWithSentry = window as Window & { Sentry?: { captureException: (error: Error, extra?: { extra?: ErrorInfo }) => void } }

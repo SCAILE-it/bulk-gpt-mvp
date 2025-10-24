@@ -1,6 +1,8 @@
 // ABOUTME: Apollo.io API client with authentication, rate limiting, and error handling
 // ABOUTME: Handles People Search, Enrichment, and Bulk operations
 
+import { devLog } from '@/lib/dev-logger';
+import { logError } from '@/lib/errors';
 import {
   ApolloConfig,
   PersonSearchFilters,
@@ -238,13 +240,16 @@ export class ApolloClient {
         if (this.rateLimitInfo && this.rateLimitInfo.remaining < 10 && batchNumber < totalBatches) {
           const waitTime = this.rateLimitInfo.reset.getTime() - Date.now();
           if (waitTime > 0) {
-            // eslint-disable-next-line no-console
-            console.log(`Rate limit approaching, waiting ${Math.ceil(waitTime / 1000)}s...`);
+            devLog.log(`Rate limit approaching, waiting ${Math.ceil(waitTime / 1000)}s...`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
           }
         }
       } catch (error) {
-        console.error(`Batch ${batchNumber} failed:`, error);
+        logError(error instanceof Error ? error : new Error(`Batch ${batchNumber} failed`), {
+          source: 'apollo/client/bulkEnrichWithBatching',
+          batchNumber,
+          totalBatches
+        });
         // Continue with next batch even if one fails
       }
     }

@@ -6,6 +6,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { devLog } from '@/lib/dev-logger'
 
 const STORAGE_KEY = 'wizard-session'
 const SESSION_EXPIRY_DAYS = 7
@@ -96,12 +97,12 @@ export function useWizardSession() {
       const data: unknown = JSON.parse(stored)
 
       if (!validateSessionData(data)) {
-        console.warn('Invalid session data structure, resetting')
+        devLog.warn('Invalid session data structure, resetting')
         return null
       }
 
       if (isSessionExpired(data.timestamp)) {
-        console.log('Session expired, clearing')
+        devLog.log('Session expired, clearing')
         localStorage.removeItem(STORAGE_KEY)
         return null
       }
@@ -111,7 +112,7 @@ export function useWizardSession() {
 
       return data
     } catch (error) {
-      console.error('Failed to load session from localStorage:', error)
+      devLog.error('Failed to load session from localStorage:', error)
       return null
     }
   }, [])
@@ -135,7 +136,7 @@ export function useWizardSession() {
           }
           localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData))
         } catch (error) {
-          console.error('Failed to save session to localStorage:', error)
+          devLog.error('Failed to save session to localStorage:', error)
           // Continue - state is still updated in memory
         }
       }, DEBOUNCE_DELAY)
@@ -157,7 +158,7 @@ export function useWizardSession() {
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData))
     } catch (error) {
-      console.error('Failed to save session immediately:', error)
+      devLog.error('Failed to save session immediately:', error)
     }
   }, [currentStep, step1Data, step2Data, step3Data])
 
@@ -209,7 +210,7 @@ export function useWizardSession() {
         setStep2Data(data.step2Data)
         setStep3Data(data.step3Data)
       } catch (error) {
-        console.error('Failed to sync from storage event:', error)
+        devLog.error('Failed to sync from storage event:', error)
       }
     }
 
@@ -267,7 +268,7 @@ export function useWizardSession() {
       setStep2Data(null)
       setStep3Data(null)
     } catch (error) {
-      console.error('Failed to clear session:', error)
+      devLog.error('Failed to clear session:', error)
     }
   }, [])
 

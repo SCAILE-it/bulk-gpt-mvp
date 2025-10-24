@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search } from 'lucide-react'
+import { logError } from '@/lib/errors'
 
 interface Batch {
   id: string
@@ -94,7 +95,9 @@ export default function DashboardPage() {
           successRate,
         })
       } catch (err) {
-        console.error('Error fetching dashboard data:', err)
+        logError(err instanceof Error ? err : new Error('Dashboard fetch failed'), {
+          source: 'dashboard/fetchDashboardData'
+        })
         setError(err instanceof Error ? err.message : 'Failed to load dashboard')
       } finally {
         setIsLoading(false)
@@ -168,7 +171,11 @@ export default function DashboardPage() {
         .order('created_at', { ascending: true })
 
       if (error) {
-        console.error('Error fetching batch results:', error)
+        logError(new Error('Batch results fetch failed'), {
+          source: 'dashboard/downloadBatchResults',
+          batchId,
+          supabaseError: error
+        })
         alert('Failed to fetch results. Please try again.')
         return
       }
@@ -205,7 +212,11 @@ export default function DashboardPage() {
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Error downloading batch results:', err)
+      logError(err instanceof Error ? err : new Error('Download batch results failed'), {
+        source: 'dashboard/downloadBatchResults',
+        batchId,
+        filename
+      })
       alert('An error occurred while downloading results')
     }
   }

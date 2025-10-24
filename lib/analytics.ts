@@ -3,6 +3,8 @@
  * Can be easily swapped for PostHog, Mixpanel, Amplitude, etc.
  */
 
+import { devLog } from '@/lib/dev-logger'
+
 interface AnalyticsEvent {
   event: string
   properties?: Record<string, unknown>
@@ -51,19 +53,13 @@ class Analytics {
     }
 
     // Identify user in your analytics provider
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log('Analytics: Identify user', userId, traits)
-    }
+    devLog.log('Analytics: Identify user', userId, traits)
   }
 
   private sendEvent(event: AnalyticsEvent) {
     // Send to your analytics provider
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log('Analytics:', event.event, event.properties)
-    }
-    
+    devLog.log('Analytics:', event.event, event.properties)
+
     // Example: PostHog
     // if (typeof window !== 'undefined' && (window as any).posthog) {
     //   (window as any).posthog.capture(event.event, event.properties)

@@ -4,6 +4,8 @@
 import { ApolloClient, createApolloClient } from './client';
 import { PersonSearchFilters, ApolloPerson } from './types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { logError } from '@/lib/errors';
+import { devLog } from '@/lib/dev-logger';
 
 /**
  * AI-Powered Apollo Service
@@ -271,7 +273,11 @@ Be honest about fit - not every lead is a good match!`;
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        console.error(`Failed to qualify lead ${lead.name}:`, error);
+        logError(error instanceof Error ? error : new Error('Lead qualification failed'), {
+          source: 'apollo/service/bulkQualifyLeads',
+          leadName: lead.name,
+          leadId: lead.id
+        });
         // Add with default qualification
         results.push({
           lead,
@@ -340,7 +346,7 @@ Be honest about fit - not every lead is a good match!`;
           }
         );
       } catch (error) {
-        console.warn('Enrichment failed, using basic data:', error);
+        devLog.warn('Enrichment failed, using basic data:', error);
       }
     }
 

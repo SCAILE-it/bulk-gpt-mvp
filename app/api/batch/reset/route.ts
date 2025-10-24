@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { releaseBatch } from '@/middleware/rateLimits'
+import { logError } from '@/lib/errors'
 
 /**
  * POST /api/batch/reset
@@ -27,7 +28,9 @@ export async function POST(): Promise<Response> {
       message: 'Batch state reset successfully. You can now start a new batch.',
     })
   } catch (error) {
-    console.error('Batch reset error:', error)
+    logError(error instanceof Error ? error : new Error('Batch reset failed'), {
+      source: 'api/batch/reset/POST'
+    })
     return NextResponse.json(
       { error: 'Failed to reset batch state' },
       { status: 500 }

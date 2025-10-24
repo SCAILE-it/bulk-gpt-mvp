@@ -3,6 +3,8 @@ import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { validatePrompt } from '@/lib/validation'
 import type { OutputColumn } from '@/lib/types'
 import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
+import { logError } from '@/lib/errors'
+import { devLog } from '@/lib/dev-logger'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
 
@@ -122,14 +124,21 @@ export async function POST(request: NextRequest): Promise<Response> {
         .select()
 
       if (error) {
-        console.error('Failed to create batch:', error)
+        logError(new Error('Failed to create batch'), {
+          source: 'api/process/POST',
+          supabaseError: error,
+          batchId
+        })
         return NextResponse.json(
           { error: 'Failed to create batch in database' },
           { status: 500 }
         )
       }
     } catch (dbError) {
-      console.error('Database error:', dbError)
+      logError(dbError instanceof Error ? dbError : new Error('Database error'), {
+        source: 'api/process/POST/database',
+        batchId
+      })
       return NextResponse.json(
         { error: 'Database connection failed' },
         { status: 500 }
@@ -144,8 +153,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns, webhookUrl).catch((error) => {
-      // eslint-disable-next-line no-console
-      console.error(`Failed to invoke Modal for batch ${batchId}:`, error)
+      logError(error instanceof Error ? error : new Error('Modal invocation failed'), {
+        source: 'api/process/POST/invokeModalAsync',
+        batchId
+      })
       // Mark batch as failed (best effort, don't block response)
       markBatchFailed(batchId)
       // Release rate limit on failure
@@ -165,7 +176,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('POST /api/process error:', error)
+    logError(error instanceof Error ? error : new Error('Process API error'), {
+      source: 'api/process/POST',
+      userId
+    })
     // Release rate limit on error
     if (userId) {
       releaseBatch(userId)
@@ -217,11 +231,12 @@ async function invokeModalAsync(
       throw new Error(`Modal returned ${response.status}: ${await response.text()}`)
     }
 
-    // eslint-disable-next-line no-console
-    console.log(`Modal request successful for batch ${batchId}, status: ${response.status}`)
+    devLog.log(`Modal request successful for batch ${batchId}, status: ${response.status}`)
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(`Modal request failed for batch ${batchId}:`, error)
+    logError(error instanceof Error ? error : new Error('Modal request failed'), {
+      source: 'api/process/invokeModalAsync',
+      batchId
+    })
     throw error // Re-throw to trigger catch in line 109
   }
 }

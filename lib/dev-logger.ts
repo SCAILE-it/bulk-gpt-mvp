@@ -57,18 +57,7 @@ export const devLog = {
 }
 
 /**
- * Production-safe error logger
- * Always logs errors (even in production) but sanitizes sensitive data
+ * NOTE: For error logging, use logError() from @/lib/errors
+ * This file only contains development-only console wrappers (devLog)
+ * Error handling is centralized in lib/errors.ts to follow DRY principle
  */
-export const logError = (error: Error | unknown, context?: Record<string, unknown>) => {
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  const errorStack = error instanceof Error ? error.stack : undefined
-
-  // In production, log to error tracking service (Sentry, etc.)
-  // For now, just console.error
-  console.error('[ERROR]', errorMessage, {
-    ...context,
-    stack: errorStack,
-    timestamp: new Date().toISOString(),
-  })
-}

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { User, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { logError } from '@/lib/errors'
 
 interface UserProfile {
   id: string
@@ -87,7 +88,9 @@ export default function ProfilePage() {
           setOrganization(data.organization || '')
         }
       } catch (err) {
-        console.error('Error fetching profile:', err)
+        logError(err instanceof Error ? err : new Error('Profile fetch failed'), {
+          source: 'profile/fetchProfile'
+        })
         setError(err instanceof Error ? err.message : 'Failed to load profile')
       } finally {
         setIsLoading(false)
@@ -126,7 +129,10 @@ export default function ProfilePage() {
       setSuccessMessage('Profile updated successfully!')
       setTimeout(() => setSuccessMessage(null), 3000)
     } catch (err) {
-      console.error('Error updating profile:', err)
+      logError(err instanceof Error ? err : new Error('Profile update failed'), {
+        source: 'profile/handleSave',
+        userId: profile?.id
+      })
       setError(err instanceof Error ? err.message : 'Failed to update profile')
     } finally {
       setIsSaving(false)

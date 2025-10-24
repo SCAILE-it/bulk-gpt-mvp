@@ -16,6 +16,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { devLog } from '@/lib/dev-logger'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
@@ -57,7 +58,7 @@ export function useFileUpload(): UseFileUploadReturn {
         setRecentFiles(parsed)
       }
     } catch (e) {
-      console.error('Failed to load recent files:', e)
+      devLog.warn('Failed to load recent files from localStorage:', e)
     }
   }, [])
 
@@ -155,7 +156,7 @@ export function useFileUpload(): UseFileUploadReturn {
       try {
         localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(updated))
       } catch (e) {
-        console.error('Failed to save recent files:', e)
+        devLog.warn('Failed to save recent files to localStorage:', e)
       }
 
       return updated
