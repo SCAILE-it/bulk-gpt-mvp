@@ -5,6 +5,7 @@ import type { OutputColumn } from '@/lib/types'
 import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
 import { logError } from '@/lib/errors'
 import { devLog } from '@/lib/dev-logger'
+import { fetchWithRetry } from '@/lib/retry'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
 
@@ -206,10 +207,9 @@ async function invokeModalAsync(
   outputColumns: OutputColumn[],
   webhookUrl?: string
 ): Promise<void> {
-  // Actually await the fetch to ensure request completes before function exits
-  // This prevents ClientDisconnect errors when serverless function terminates
+  // Use retry logic for Modal API calls (transient failures, rate limits, etc.)
   try {
-    const response = await fetch(modalUrl, {
+    const response = await fetchWithRetry(modalUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -223,21 +223,27 @@ async function invokeModalAsync(
         output_schema: outputColumns,
         webhook_url: webhookUrl,
       }),
-      // Timeout after 30 seconds (Modal should respond quickly with 202 Accepted)
-      signal: AbortSignal.timeout(30000),
+      timeoutMs: 30000, // 30 seconds timeout
+      retryOptions: {
+        maxRetries: 3,
+        initialDelay: 1000, // 1 second
+        maxDelay: 10000, // 10 seconds (faster for API endpoint)
+      },
     })
 
     if (!response.ok) {
-      throw new Error(`Modal returned ${response.status}: ${await response.text()}`)
+      const errorText = await response.text()
+      throw new Error(`Modal returned ${response.status}: ${errorText}`)
     }
 
     devLog.log(`Modal request successful for batch ${batchId}, status: ${response.status}`)
   } catch (error) {
     logError(error instanceof Error ? error : new Error('Modal request failed'), {
       source: 'api/process/invokeModalAsync',
-      batchId
+      batchId,
+      modalUrl
     })
-    throw error // Re-throw to trigger catch in line 109
+    throw error // Re-throw to trigger catch handler
   }
 }
 
