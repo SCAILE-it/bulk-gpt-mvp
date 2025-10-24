@@ -142,7 +142,7 @@ export default function BulkProcessor() {
     // Replace all {{variable}} with actual values from the selected row
     currentCsvData.columns.forEach(column => {
       const regex = new RegExp(`\\{\\{${column}\\}\\}`, 'g')
-      preview = preview.replace(regex, row[column] || '')
+      preview = preview.replace(regex, row.data[column] || '')
     })
 
     return preview
@@ -1001,7 +1001,7 @@ export default function BulkProcessor() {
                     >
                       {currentCsvData.rows.slice(0, Math.min(10, currentCsvData.totalRows)).map((row, idx) => (
                         <option key={idx} value={idx}>
-                          Row {idx + 1}: {Object.values(row).slice(0, 2).join(', ')}...
+                          Row {idx + 1}: {Object.values(row.data).slice(0, 2).join(', ')}...
                         </option>
                       ))}
                     </select>
