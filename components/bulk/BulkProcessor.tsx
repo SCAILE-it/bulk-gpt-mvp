@@ -1541,14 +1541,19 @@ export default function BulkProcessor() {
                     <Table2 className="h-4 w-4 text-zinc-500 flex-shrink-0" />
                     <label className="text-sm font-medium text-zinc-300">Output Column Names</label>
                     <div className="group relative">
-                      <HelpCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" />
-                      <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-2 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300">
-                        By default, results go into a column called &quot;bio&quot;. Only change this if you need multiple output columns.
+                      <HelpCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" aria-label="Help about output fields" />
+                      <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-72 p-3 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
+                        <p className="font-medium mb-1.5">What are output fields?</p>
+                        <p className="mb-2">These are the column names where AI results will appear in your downloaded CSV.</p>
+                        <p className="text-zinc-400">
+                          <span className="font-medium">Example:</span> If you set &quot;summary&quot; as a field, your CSV will have a &quot;summary&quot; column with AI-generated content for each row.
+                        </p>
+                        <p className="mt-2 text-zinc-500 text-[11px]">Default is &quot;bio&quot; - most users don&apos;t need to change this.</p>
                       </div>
                     </div>
                   </div>
                   <p className="text-xs text-zinc-500">
-                    Column headers for your results CSV (default: &quot;bio&quot;)
+                    Name the columns where AI output will appear in your downloaded CSV. The default &quot;bio&quot; works for most use cases.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {outputFields.map(field => (
