@@ -152,6 +152,64 @@ export default function DashboardPage() {
     URL.revokeObjectURL(url)
   }
 
+  const downloadBatchResults = async (batchId: string, filename: string) => {
+    try {
+      const supabase = createClient()
+      if (!supabase) {
+        alert('Supabase client not configured')
+        return
+      }
+
+      // Fetch batch_results for this batch
+      const { data: results, error } = await supabase
+        .from('batch_results')
+        .select('input, output, status, error')
+        .eq('batch_id', batchId)
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching batch results:', error)
+        alert('Failed to fetch results. Please try again.')
+        return
+      }
+
+      if (!results || results.length === 0) {
+        alert('No results found for this batch. The batch may still be processing.')
+        return
+      }
+
+      // Parse first result to get input column names
+      const firstResult = results[0]
+      const inputData = typeof firstResult.input === 'string'
+        ? JSON.parse(firstResult.input)
+        : firstResult.input
+      const inputColumns = Object.keys(inputData)
+
+      // Generate CSV
+      const headers = [...inputColumns, 'AI_Output', 'Status', 'Error']
+      const csvRows = results.map(r => {
+        const input = typeof r.input === 'string' ? JSON.parse(r.input) : r.input
+        const inputValues = inputColumns.map(col => `"${(input[col] || '').replace(/"/g, '""')}"`)
+        const output = `"${(r.output || '').replace(/"/g, '""')}"`
+        const status = r.status || ''
+        const error = r.error ? `"${r.error.replace(/"/g, '""')}"` : '""'
+        return [...inputValues, output, status, error].join(',')
+      })
+
+      const csvContent = [headers.join(','), ...csvRows].join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `results-${filename.replace('.csv', '')}-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Error downloading batch results:', err)
+      alert('An error occurred while downloading results')
+    }
+  }
+
   const getStatusBadge = (status: Batch['status']) => {
     const variants = {
       pending: { icon: Clock, label: 'Pending', className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
@@ -344,6 +402,7 @@ export default function DashboardPage() {
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Progress</TableHead>
                     <TableHead className="text-right">Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -356,6 +415,19 @@ export default function DashboardPage() {
                       </TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground">
                         {formatDate(batch.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {(batch.status === 'completed' || batch.status === 'completed_with_errors') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => downloadBatchResults(batch.id, batch.csv_filename)}
+                            className="h-8 w-8 p-0"
+                            title="Download results CSV"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
