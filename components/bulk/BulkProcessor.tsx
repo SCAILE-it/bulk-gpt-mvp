@@ -471,13 +471,30 @@ export default function BulkProcessor() {
 
       const data = await response.json()
 
+      // Validate we have actual results, not just batch creation response
+      if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
+        throw new Error('No results returned from API. Batch may still be processing.')
+      }
+
+      // Extract the actual output from the first result
+      const firstResult = data.results[0]
+      let outputValue: string
+
+      if (firstResult.output !== undefined && firstResult.output !== null) {
+        // Use the output value - stringify if it's an object
+        outputValue = typeof firstResult.output === 'string'
+          ? firstResult.output
+          : JSON.stringify(firstResult.output, null, 2)
+      } else {
+        // If output is missing, show a meaningful error
+        throw new Error('API returned results but output field is missing')
+      }
+
       // Show test result in RHS (same format as batch results)
       const testResult: Result = {
         id: 'test-result',
         input: currentCsvData.rows[0].data,
-        output: typeof data.results?.[0]?.output === 'string'
-          ? data.results[0].output
-          : JSON.stringify(data.results?.[0]?.output || data, null, 2),
+        output: outputValue,
         status: 'completed'
       }
       setResults([testResult])
@@ -791,8 +808,8 @@ export default function BulkProcessor() {
       {/* Main Content */}
       <main className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-49px)]">
         {/* LEFT PANEL - Configuration */}
-        <div className="h-full border-r border-white/5 overflow-y-auto bg-zinc-900">
-          <div className="p-2 space-y-2">
+        <div className="h-full border-r border-white/5 bg-zinc-900 flex flex-col">
+          <div className="flex-1 overflow-y-auto p-2 space-y-2">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -1230,7 +1247,7 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="sticky bottom-0 p-2 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
+          <div className="flex-shrink-0 p-2 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
             <div className="flex flex-col sm:flex-row gap-1.5">
               <button
                 onClick={handleTest}
