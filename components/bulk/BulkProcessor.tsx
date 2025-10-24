@@ -814,6 +814,7 @@ export default function BulkProcessor() {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors flex items-center gap-1"
+                    title="Upload a different CSV file (⌘O)"
                   >
                     <Upload className="h-3 w-3" />
                     Change file
@@ -1145,6 +1146,7 @@ export default function BulkProcessor() {
                 onClick={handleTest}
                 disabled={!csvData || !prompt || isTesting || !variableValidation.isValid || !webhookValidation.isValid}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px] sm:min-h-0"
+                title="Test with first row (⌘T)"
               >
                 {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 <span>Test (1 row)</span>
@@ -1153,6 +1155,7 @@ export default function BulkProcessor() {
                 onClick={handleProcess}
                 disabled={!csvData || !prompt || currentIsProcessing || !variableValidation.isValid || !webhookValidation.isValid}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] sm:min-h-0"
+                title="Run all rows (⌘Enter)"
               >
                 {currentIsProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 <span>Run All {csvData ? `(${csvData.totalRows})` : ''}</span>
