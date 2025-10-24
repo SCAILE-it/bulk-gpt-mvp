@@ -127,6 +127,27 @@ export default function BulkProcessor() {
   // === KEYBOARD SHORTCUTS HELP ===
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
 
+  // === PROMPT PREVIEW ===
+  const [previewRowIndex, setPreviewRowIndex] = useState(0)
+
+  // Generate prompt preview with variables substituted
+  const promptPreview = useMemo(() => {
+    if (!currentCsvData || !prompt || previewRowIndex >= currentCsvData.rows.length) {
+      return null
+    }
+
+    const row = currentCsvData.rows[previewRowIndex]
+    let preview = prompt
+
+    // Replace all {{variable}} with actual values from the selected row
+    currentCsvData.columns.forEach(column => {
+      const regex = new RegExp(`\\{\\{${column}\\}\\}`, 'g')
+      preview = preview.replace(regex, row[column] || '')
+    })
+
+    return preview
+  }, [currentCsvData, prompt, previewRowIndex])
+
   // === PROCESSING STATE ===
   const [batchId, setBatchId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -967,6 +988,29 @@ export default function BulkProcessor() {
                   {prompt.length > 2000 && ' (may be too long)'}
                 </p>
               </div>
+
+              {/* PROMPT PREVIEW WITH ROW SELECTOR */}
+              {csvData && prompt && promptPreview && variableValidation.isValid && (
+                <div className="space-y-1.5 p-2 bg-zinc-900/40 border border-white/5 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-zinc-400">Preview with data</label>
+                    <select
+                      value={previewRowIndex}
+                      onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
+                      className="text-xs px-2 py-1 bg-zinc-900 border border-white/10 rounded text-zinc-300 focus:outline-none focus:ring-1 focus:ring-white/20"
+                    >
+                      {csvData.rows.slice(0, Math.min(10, csvData.totalRows)).map((row, idx) => (
+                        <option key={idx} value={idx}>
+                          Row {idx + 1}: {Object.values(row).slice(0, 2).join(', ')}...
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="p-2 bg-zinc-950/50 border border-white/5 rounded text-xs text-zinc-300 font-mono whitespace-pre-wrap max-h-24 overflow-y-auto">
+                    {promptPreview}
+                  </div>
+                </div>
+              )}
 
               {/* VARIABLE DETECTION SUCCESS */}
               {csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
