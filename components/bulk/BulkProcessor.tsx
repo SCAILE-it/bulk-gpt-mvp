@@ -990,7 +990,7 @@ export default function BulkProcessor() {
               </div>
 
               {/* PROMPT PREVIEW WITH ROW SELECTOR */}
-              {csvData && prompt && promptPreview && variableValidation.isValid && (
+              {currentCsvData && prompt && promptPreview && variableValidation.isValid && (
                 <div className="space-y-1.5 p-2 bg-zinc-900/40 border border-white/5 rounded-md">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-zinc-400">Preview with data</label>
@@ -999,7 +999,7 @@ export default function BulkProcessor() {
                       onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
                       className="text-xs px-2 py-1 bg-zinc-900 border border-white/10 rounded text-zinc-300 focus:outline-none focus:ring-1 focus:ring-white/20"
                     >
-                      {csvData.rows.slice(0, Math.min(10, csvData.totalRows)).map((row, idx) => (
+                      {currentCsvData.rows.slice(0, Math.min(10, currentCsvData.totalRows)).map((row, idx) => (
                         <option key={idx} value={idx}>
                           Row {idx + 1}: {Object.values(row).slice(0, 2).join(', ')}...
                         </option>
