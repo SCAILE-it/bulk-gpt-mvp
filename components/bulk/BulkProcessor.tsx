@@ -1415,7 +1415,7 @@ export default function BulkProcessor() {
 
       {/* TEMPLATE GALLERY MODAL */}
       {showTemplateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTemplateModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTemplateModal(false)} tabIndex={-1}>
           <div
             ref={templateModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
@@ -1542,7 +1542,7 @@ export default function BulkProcessor() {
 
       {/* ADVANCED SETTINGS MODAL */}
       {showAdvancedSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowAdvancedSettingsModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowAdvancedSettingsModal(false)} tabIndex={-1}>
           <div
             ref={advancedSettingsModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
@@ -1694,7 +1694,7 @@ export default function BulkProcessor() {
 
       {/* KEYBOARD SHORTCUTS HELP MODAL */}
       {showKeyboardHelp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowKeyboardHelp(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowKeyboardHelp(false)} tabIndex={-1}>
           <div
             ref={keyboardHelpModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden"
@@ -1797,7 +1797,7 @@ export default function BulkProcessor() {
 
       {/* DELETE OUTPUT FIELD CONFIRMATION MODAL */}
       {fieldToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFieldToDelete(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFieldToDelete(null)} tabIndex={-1}>
           <div
             ref={deleteConfirmationModalRef}
             className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
