@@ -221,6 +221,23 @@ export default function BulkProcessor() {
     setIsUploading(true)
     setError(null)
 
+    // Validate file (applies to both V1 and V2)
+    if (!uploadedFile.name.endsWith('.csv')) {
+      setIsUploading(false)
+      setError(`File type not supported. Please upload a CSV file (found: ${uploadedFile.name.split('.').pop()}). Export your spreadsheet as CSV from Excel or Google Sheets.`)
+      return
+    }
+    if (uploadedFile.size > MAX_FILE_SIZE) {
+      setIsUploading(false)
+      setError(`File is too large (${(uploadedFile.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB. Try reducing the number of rows or removing unnecessary columns.`)
+      return
+    }
+    if (uploadedFile.size === 0) {
+      setIsUploading(false)
+      setError(`File "${uploadedFile.name}" is empty (0 bytes). Please check your file and try again.`)
+      return
+    }
+
     // V2: Use new hooks if feature flags enabled
     if (useV2FileUpload && useV2CSVParser) {
       try {
@@ -243,21 +260,7 @@ export default function BulkProcessor() {
 
     // V1: Legacy implementation
     try {
-      // Validate
-      if (!uploadedFile.name.endsWith('.csv')) {
-        setError(`File type not supported. Please upload a CSV file (found: ${uploadedFile.name.split('.').pop()}). Export your spreadsheet as CSV from Excel or Google Sheets.`)
-        return
-      }
-      if (uploadedFile.size > MAX_FILE_SIZE) {
-        setError(`File is too large (${(uploadedFile.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB. Try reducing the number of rows or removing unnecessary columns.`)
-        return
-      }
-      if (uploadedFile.size === 0) {
-        setError(`File "${uploadedFile.name}" is empty (0 bytes). Please check your file and try again.`)
-        return
-      }
-
-      // Parse CSV
+      // Parse CSV (validation already done above)
       const parsed = await parseCSV(uploadedFile)
 
       // Validate parsed data - EDGE CASES
@@ -723,7 +726,7 @@ export default function BulkProcessor() {
       {/* Main Content */}
       <main className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-49px)]">
         {/* LEFT PANEL - Configuration */}
-        <div className="border-r border-white/5 overflow-y-auto bg-zinc-900">
+        <div className="h-full border-r border-white/5 overflow-y-auto bg-zinc-900">
           <div className="p-2 space-y-2">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
@@ -1159,7 +1162,7 @@ export default function BulkProcessor() {
         </div>
 
         {/* RIGHT PANEL - Results */}
-        <div className="overflow-hidden flex flex-col">
+        <div className="h-full overflow-hidden flex flex-col">
           {currentResults.length > 0 ? (
             <>
               {/* Results Header */}
