@@ -4,6 +4,9 @@
  * In production, these are no-ops for better performance and security
  */
 
+/* eslint-disable no-console */
+// Console usage is intentional here - this file wraps console for environment-aware logging
+
 const isDevelopment = process.env.NODE_ENV === 'development'
 
 export const devLog = {
