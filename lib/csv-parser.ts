@@ -2,6 +2,38 @@ import Papa from 'papaparse'
 import { CSVRow, ParsedCSV, BulkGPTError } from './types'
 
 /**
+ * Sanitize cell value to prevent CSV injection attacks
+ * Prefixes formulas with single quote to disable execution in Excel/Google Sheets
+ *
+ * Formula characters that can execute code:
+ * - = (formula)
+ * - + (formula)
+ * - - (formula)
+ * - @ (formula in Excel)
+ * - \t (tab, can be used for injection)
+ * - \r (carriage return, can be used for injection)
+ *
+ * @see https://owasp.org/www-community/attacks/CSV_Injection
+ */
+function sanitizeCSVCell(value: unknown): string {
+  // Handle non-string values
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  const stringValue = String(value)
+
+  // Check if value starts with dangerous characters
+  if (/^[=+\-@\t\r]/.test(stringValue)) {
+    // Prefix with single quote to disable formula execution
+    // Excel/Google Sheets will treat it as literal text
+    return `'${stringValue}`
+  }
+
+  return stringValue
+}
+
+/**
  * Parse CSV file and return typed result
  * Uses papaparse library for robust CSV handling
  */
@@ -85,11 +117,19 @@ export async function parseCSV(file: File): Promise<ParsedCSV> {
             )
           }
 
-          // Convert to CSVRow format
-          const rows: CSVRow[] = result.data.map((row, index) => ({
-            data: row,
-            rowIndex: index,
-          }))
+          // Convert to CSVRow format and sanitize cell values to prevent CSV injection
+          const rows: CSVRow[] = result.data.map((row, index) => {
+            // Sanitize each cell value in the row
+            const sanitizedRow: Record<string, string> = {}
+            for (const [key, value] of Object.entries(row)) {
+              sanitizedRow[key] = sanitizeCSVCell(value)
+            }
+
+            return {
+              data: sanitizedRow,
+              rowIndex: index,
+            }
+          })
 
           resolve({
             filename: file.name,
