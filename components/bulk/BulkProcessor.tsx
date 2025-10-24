@@ -689,6 +689,32 @@ export default function BulkProcessor() {
     })
   }, [])
 
+  // === KEYBOARD NAVIGATION: ESC TO CLOSE MODALS ===
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        // Close modals in priority order (innermost first)
+        if (fieldToDelete) {
+          setFieldToDelete(null)
+        } else if (showKeyboardHelp) {
+          setShowKeyboardHelp(false)
+        } else if (showAdvancedSettingsModal) {
+          setShowAdvancedSettingsModal(false)
+        } else if (showTemplateModal) {
+          setShowTemplateModal(false)
+        }
+      }
+    }
+
+    // Add event listener
+    document.addEventListener('keydown', handleEscapeKey)
+
+    // Cleanup on unmount
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [fieldToDelete, showKeyboardHelp, showAdvancedSettingsModal, showTemplateModal])
+
   // === RENDER ===
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
