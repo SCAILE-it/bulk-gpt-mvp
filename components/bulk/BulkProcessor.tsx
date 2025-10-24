@@ -1105,6 +1105,7 @@ export default function BulkProcessor() {
                           <button
                             onClick={() => removeOutputField(field)}
                             className="hover:text-red-400 transition-colors"
+                            aria-label={`Remove ${field} output field`}
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -1121,6 +1122,7 @@ export default function BulkProcessor() {
                         <button
                           onClick={addOutputField}
                           className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                          aria-label="Add output field"
                         >
                           <Plus className="h-3 w-3 text-zinc-500" />
                         </button>
@@ -1380,14 +1382,24 @@ export default function BulkProcessor() {
       {/* TEMPLATE GALLERY MODAL */}
       {showTemplateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTemplateModal(false)}>
-          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="template-gallery-title"
+            aria-modal="true"
+          >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/5 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-zinc-400" />
-                <h2 className="text-lg font-medium text-zinc-100">Template Gallery</h2>
+                <h2 id="template-gallery-title" className="text-lg font-medium text-zinc-100">Template Gallery</h2>
               </div>
-              <button onClick={() => setShowTemplateModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button
+                onClick={() => setShowTemplateModal(false)}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                aria-label="Close template gallery"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1496,14 +1508,24 @@ export default function BulkProcessor() {
       {/* ADVANCED SETTINGS MODAL */}
       {showAdvancedSettingsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowAdvancedSettingsModal(false)}>
-          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="advanced-settings-title"
+            aria-modal="true"
+          >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/5 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <Settings className="h-5 w-5 text-zinc-400" />
-                <h2 className="text-lg font-medium text-zinc-100">Advanced Settings</h2>
+                <h2 id="advanced-settings-title" className="text-lg font-medium text-zinc-100">Advanced Settings</h2>
               </div>
-              <button onClick={() => setShowAdvancedSettingsModal(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button
+                onClick={() => setShowAdvancedSettingsModal(false)}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                aria-label="Close advanced settings"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1632,14 +1654,24 @@ export default function BulkProcessor() {
       {/* KEYBOARD SHORTCUTS HELP MODAL */}
       {showKeyboardHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowKeyboardHelp(false)}>
-          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="keyboard-shortcuts-title"
+            aria-modal="true"
+          >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/5">
               <div className="flex items-center gap-3">
                 <HelpCircle className="h-5 w-5 text-blue-400" />
-                <h2 className="text-lg font-medium text-zinc-100">Keyboard Shortcuts</h2>
+                <h2 id="keyboard-shortcuts-title" className="text-lg font-medium text-zinc-100">Keyboard Shortcuts</h2>
               </div>
-              <button onClick={() => setShowKeyboardHelp(false)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button
+                onClick={() => setShowKeyboardHelp(false)}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                aria-label="Close keyboard shortcuts help"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1724,14 +1756,24 @@ export default function BulkProcessor() {
       {/* DELETE OUTPUT FIELD CONFIRMATION MODAL */}
       {fieldToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFieldToDelete(null)}>
-          <div className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="delete-field-title"
+            aria-modal="true"
+          >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/5">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-lg font-medium text-zinc-100">Delete Output Field?</h2>
+                <h2 id="delete-field-title" className="text-lg font-medium text-zinc-100">Delete Output Field?</h2>
               </div>
-              <button onClick={() => setFieldToDelete(null)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button
+                onClick={() => setFieldToDelete(null)}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                aria-label="Close dialog"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
