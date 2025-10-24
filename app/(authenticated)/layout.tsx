@@ -6,9 +6,9 @@ export default function AuthenticatedLayout({
   children: React.ReactNode
 }) {
   return (
-    <>
+    <div className="h-screen flex flex-col">
       <Nav />
-      {children}
-    </>
+      <div className="flex-1 overflow-hidden">{children}</div>
+    </div>
   )
 }

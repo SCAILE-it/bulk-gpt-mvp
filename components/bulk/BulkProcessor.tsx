@@ -742,7 +742,7 @@ export default function BulkProcessor() {
 
   // === RENDER ===
   return (
-    <div className="h-[calc(100vh-69px)] bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="h-full bg-zinc-950 text-zinc-100 flex flex-col">
       {/* Beta Banner */}
       {showBetaBanner && (
         <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-2">
