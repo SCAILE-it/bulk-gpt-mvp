@@ -1029,7 +1029,7 @@ export default function BulkProcessor() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="w-full min-h-[120px] md:min-h-[180px] px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
+                className="w-full h-20 px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
                 placeholder="Write a bio for {{name}} at {{company}}"
               />
               <div className="flex items-center justify-between text-xs">
