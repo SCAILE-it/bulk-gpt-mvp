@@ -100,31 +100,47 @@ def is_retryable_error(exception: Exception) -> bool:
     before_sleep=before_sleep_log(logger, logging.INFO),
     reraise=True,
 )
-def call_gemini_with_retry(model, prompt: str) -> str:
+def call_gemini_with_retry(model, prompt: str) -> Dict[str, Any]:
     """
     Call Gemini API with automatic retry on transient failures.
-    
+
     Implements exponential backoff:
     - Attempt 1: Immediate
     - Attempt 2: Wait 4s
     - Attempt 3: Wait 8s
-    
+
     Args:
         model: Gemini GenerativeModel instance
         prompt: The prompt to send to Gemini
-    
+
     Returns:
-        The generated text response
-    
+        Dict with:
+        - text: The generated text response
+        - input_tokens: Number of prompt tokens consumed
+        - output_tokens: Number of output tokens generated
+        - model: Model name used
+
     Raises:
         Exception: If all retry attempts fail
     """
     response = model.generate_content(prompt)
-    
+
     if not response or not response.text:
         raise ValueError("No response generated from Gemini API")
-    
-    return response.text
+
+    # Extract token usage from response metadata
+    input_tokens = 0
+    output_tokens = 0
+    if hasattr(response, 'usage_metadata') and response.usage_metadata:
+        input_tokens = getattr(response.usage_metadata, 'prompt_token_count', 0)
+        output_tokens = getattr(response.usage_metadata, 'candidates_token_count', 0)
+
+    return {
+        "text": response.text,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "model": model.model_name,
+    }
 
 
 def fire_webhook(webhook_url: str, payload: Dict[str, Any]) -> bool:
@@ -218,19 +234,26 @@ def _process_single_row(
             model_name="gemini-2.5-flash",
             system_instruction=SYSTEM_PROMPT,
         )
-        
+
         # Use retry wrapper for resilient API calls
-        output = call_gemini_with_retry(model, final_prompt)
+        gemini_result = call_gemini_with_retry(model, final_prompt)
+        output = gemini_result["text"]
+        input_tokens = gemini_result["input_tokens"]
+        output_tokens = gemini_result["output_tokens"]
+        model_name = gemini_result["model"]
         status = "success"
         error_msg = None
-        
+
     except Exception as api_error:
         output = ""
+        input_tokens = 0
+        output_tokens = 0
+        model_name = "gemini-2.5-flash"
         status = "error"
         error_msg = str(api_error)
         print(f"[{batch_id}] Error on row {row_index + 1}: {error_msg}")
-    
-    # Insert result into database
+
+    # Insert result into database with token tracking
     try:
         supabase.table("batch_results").insert(
             {
@@ -241,16 +264,22 @@ def _process_single_row(
                 "row_index": row_index,
                 "status": status,
                 "error_message": error_msg,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "model": model_name,
             }
         ).execute()
     except Exception as db_error:
         print(f"[{batch_id}] Warning: Could not insert result {row_id}: {db_error}")
-    
+
     return {
         "id": row_id,
         "output": output,
         "status": status,
         "error": error_msg,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "model": model_name,
     }
 
 

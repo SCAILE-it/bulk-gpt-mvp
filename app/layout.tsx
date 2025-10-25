@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 import { Providers } from './providers'
+import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
   title: {
@@ -80,6 +81,12 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          duration={4000}
+        />
       </body>
     </html>
   )

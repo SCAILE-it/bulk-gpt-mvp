@@ -13,8 +13,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search } from 'lucide-react'
+import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search, RefreshCw, AlertCircle } from 'lucide-react'
 import { logError } from '@/lib/errors'
+import { toast } from 'sonner'
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 
 interface Batch {
   id: string
@@ -24,6 +26,9 @@ interface Batch {
   processed_rows: number
   created_at: string
   updated_at: string
+  total_input_tokens?: number
+  total_output_tokens?: number
+  model_used?: string
 }
 
 interface DashboardStats {
@@ -73,7 +78,33 @@ export default function DashboardPage() {
 
         if (batchesError) throw batchesError
 
-        setBatches(batchesData || [])
+        // Fetch token usage for each batch
+        const batchesWithTokens = await Promise.all(
+          (batchesData || []).map(async (batch) => {
+            const { data: tokenData } = await supabase
+              .from('batch_results')
+              .select('input_tokens, output_tokens, model')
+              .eq('batch_id', batch.id)
+              .limit(1000) // Reasonable limit for aggregation
+
+            if (!tokenData || tokenData.length === 0) {
+              return batch
+            }
+
+            const totalInputTokens = tokenData.reduce((sum, row) => sum + (row.input_tokens || 0), 0)
+            const totalOutputTokens = tokenData.reduce((sum, row) => sum + (row.output_tokens || 0), 0)
+            const modelUsed = tokenData.find(row => row.model)?.model
+
+            return {
+              ...batch,
+              total_input_tokens: totalInputTokens,
+              total_output_tokens: totalOutputTokens,
+              model_used: modelUsed,
+            }
+          })
+        )
+
+        setBatches(batchesWithTokens)
 
         // Calculate stats
         const { data: allBatches, error: statsError } = await supabase
@@ -159,9 +190,13 @@ export default function DashboardPage() {
     try {
       const supabase = createClient()
       if (!supabase) {
-        alert('Supabase client not configured')
+        toast.error('Database Error', {
+          description: 'Supabase client not configured. Please refresh the page.'
+        })
         return
       }
+
+      toast.loading('Downloading results...', { id: `download-${batchId}` })
 
       // Fetch batch_results for this batch
       const { data: results, error } = await supabase
@@ -176,12 +211,18 @@ export default function DashboardPage() {
           batchId,
           supabaseError: error
         })
-        alert('Failed to fetch results. Please try again.')
+        toast.error('Failed to Fetch Results', {
+          description: 'Please try again or contact support if the issue persists.',
+          id: `download-${batchId}`
+        })
         return
       }
 
       if (!results || results.length === 0) {
-        alert('No results found for this batch. The batch may still be processing.')
+        toast.warning('No Results Available', {
+          description: 'The batch may still be processing. Please try again in a few moments.',
+          id: `download-${batchId}`
+        })
         return
       }
 
@@ -211,13 +252,21 @@ export default function DashboardPage() {
       a.download = `results-${filename.replace('.csv', '')}-${new Date().toISOString().split('T')[0]}.csv`
       a.click()
       URL.revokeObjectURL(url)
+
+      toast.success('Download Complete', {
+        description: `Successfully downloaded results for ${filename}`,
+        id: `download-${batchId}`
+      })
     } catch (err) {
       logError(err instanceof Error ? err : new Error('Download batch results failed'), {
         source: 'dashboard/downloadBatchResults',
         batchId,
         filename
       })
-      alert('An error occurred while downloading results')
+      toast.error('Download Failed', {
+        description: 'An error occurred while downloading results. Please try again.',
+        id: `download-${batchId}`
+      })
     }
   }
 
@@ -255,22 +304,39 @@ export default function DashboardPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-6">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle className="text-destructive">Error</CardTitle>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <CardTitle className="text-destructive">Failed to Load Dashboard</CardTitle>
+            </div>
+            <CardDescription>
+              {error}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p>{error}</p>
+          <CardContent className="flex flex-col gap-3">
+            <Button
+              onClick={() => window.location.reload()}
+              variant="default"
+              className="w-full"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+            <Button
+              onClick={() => router.push('/bulk')}
+              variant="outline"
+              className="w-full"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Go to Bulk Processor
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -412,6 +478,7 @@ export default function DashboardPage() {
                     <TableHead>Filename</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Progress</TableHead>
+                    <TableHead className="text-right">Model & Tokens</TableHead>
                     <TableHead className="text-right">Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -423,6 +490,18 @@ export default function DashboardPage() {
                       <TableCell>{getStatusBadge(batch.status)}</TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground">
                         {batch.processed_rows} / {batch.total_rows} rows
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {batch.model_used ? (
+                          <div className="space-y-1">
+                            <div className="font-medium">{batch.model_used}</div>
+                            <div className="text-xs">
+                              ↑ {batch.total_input_tokens?.toLocaleString() || 0} / ↓ {batch.total_output_tokens?.toLocaleString() || 0}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground">
                         {formatDate(batch.created_at)}
