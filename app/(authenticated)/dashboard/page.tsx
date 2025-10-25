@@ -198,10 +198,10 @@ export default function DashboardPage() {
 
       toast.loading('Downloading results...', { id: `download-${batchId}` })
 
-      // Fetch batch_results for this batch
+      // Fetch batch_results for this batch (including token data)
       const { data: results, error } = await supabase
         .from('batch_results')
-        .select('input, output, status, error')
+        .select('input_data, output_data, status, error_message, input_tokens, output_tokens, model')
         .eq('batch_id', batchId)
         .order('created_at', { ascending: true })
 
@@ -228,20 +228,23 @@ export default function DashboardPage() {
 
       // Parse first result to get input column names
       const firstResult = results[0]
-      const inputData = typeof firstResult.input === 'string'
-        ? JSON.parse(firstResult.input)
-        : firstResult.input
+      const inputData = typeof firstResult.input_data === 'string'
+        ? JSON.parse(firstResult.input_data)
+        : firstResult.input_data
       const inputColumns = Object.keys(inputData)
 
-      // Generate CSV
-      const headers = [...inputColumns, 'AI_Output', 'Status', 'Error']
+      // Generate CSV with token data
+      const headers = [...inputColumns, 'AI_Output', 'Status', 'Error', 'Input_Tokens', 'Output_Tokens', 'Model']
       const csvRows = results.map(r => {
-        const input = typeof r.input === 'string' ? JSON.parse(r.input) : r.input
+        const input = typeof r.input_data === 'string' ? JSON.parse(r.input_data) : r.input_data
         const inputValues = inputColumns.map(col => `"${(input[col] || '').replace(/"/g, '""')}"`)
-        const output = `"${(r.output || '').replace(/"/g, '""')}"`
+        const output = `"${(r.output_data || '').replace(/"/g, '""')}"`
         const status = r.status || ''
-        const error = r.error ? `"${r.error.replace(/"/g, '""')}"` : '""'
-        return [...inputValues, output, status, error].join(',')
+        const error = r.error_message ? `"${r.error_message.replace(/"/g, '""')}"` : '""'
+        const inputTokens = r.input_tokens || 0
+        const outputTokens = r.output_tokens || 0
+        const model = r.model || ''
+        return [...inputValues, output, status, error, inputTokens, outputTokens, model].join(',')
       })
 
       const csvContent = [headers.join(','), ...csvRows].join('\n')
