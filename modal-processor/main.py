@@ -447,20 +447,41 @@ def _process_batch_internal(
 # FastAPI endpoint for HTTP POST requests
 @web_app.post("/")
 async def process_batch_endpoint(request: Request):
-    """HTTP endpoint for batch processing requests."""
+    """
+    HTTP endpoint for batch processing requests.
+
+    Uses fire-and-forget pattern: spawns batch processing in background
+    and returns immediately. The batch continues processing asynchronously.
+    """
     body = await request.json()
 
-    # Spawn Modal function to process batch
-    result = await process_batch_modal.remote.aio(
-        batch_id=body.get("batch_id"),
-        rows=body.get("rows", []),
+    batch_id = body.get("batch_id")
+    rows = body.get("rows", [])
+
+    if not batch_id:
+        return {"error": "batch_id is required", "status": "error"}
+
+    if not rows or len(rows) == 0:
+        return {"error": "rows array cannot be empty", "status": "error"}
+
+    # Spawn Modal function in background (fire-and-forget)
+    # DO NOT await - let it run asynchronously while we return immediately
+    process_batch_modal.spawn(
+        batch_id=batch_id,
+        rows=rows,
         prompt=body.get("prompt", ""),
         context=body.get("context", ""),
         output_schema=body.get("output_schema"),
         webhook_url=body.get("webhook_url"),
     )
 
-    return result
+    # Return immediately (batch continues processing in background)
+    return {
+        "status": "accepted",
+        "batch_id": batch_id,
+        "total_rows": len(rows),
+        "message": "Batch processing started in background",
+    }
 
 
 # Modal function that wraps the processing
