@@ -209,20 +209,39 @@ async function invokeModalAsync(
 ): Promise<void> {
   // Use retry logic for Modal API calls (transient failures, rate limits, etc.)
   try {
+    // 🔍 DEBUG: Log payload BEFORE JSON.stringify to see malformed data
+    console.log('📤 [DEBUG] Modal Payload (before stringify):', {
+      batch_id: batchId,
+      rows_sample: rows.slice(0, 2), // First 2 rows only
+      rows_count: rows.length,
+      prompt: `"${prompt}"`, // Show with quotes
+      prompt_length: prompt.length,
+      context: `"${context}"`,
+      context_length: context.length,
+      output_schema: outputColumns,
+    })
+
+    const payload = {
+      batch_id: batchId,
+      rows,
+      prompt,
+      context,
+      output_schema: outputColumns,
+      webhook_url: webhookUrl,
+    }
+
+    const bodyString = JSON.stringify(payload)
+    console.log('📤 [DEBUG] JSON payload length:', bodyString.length)
+    console.log('📤 [DEBUG] First 500 chars:', bodyString.substring(0, 500))
+    console.log('📤 [DEBUG] Last 200 chars:', bodyString.substring(bodyString.length - 200))
+
     const response = await fetchWithRetry(modalUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Batch-ID': batchId,
       },
-      body: JSON.stringify({
-        batch_id: batchId,
-        rows,
-        prompt,
-        context,
-        output_schema: outputColumns,
-        webhook_url: webhookUrl,
-      }),
+      body: bodyString,
       timeoutMs: 30000, // 30 seconds timeout
       retryOptions: {
         maxRetries: 3,
