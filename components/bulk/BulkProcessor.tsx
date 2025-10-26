@@ -962,7 +962,7 @@ export default function BulkProcessor() {
                       : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50 active:scale-[0.98]'
                   }`}
                 >
-                  <input {...getInputProps()} ref={fileInputRef} />
+                  <input {...getInputProps()} ref={fileInputRef} className="hidden" />
                   {isUploading ? (
                     <>
                       <Loader2 className="h-8 w-8 mx-auto mb-2 text-zinc-400 animate-spin" />
