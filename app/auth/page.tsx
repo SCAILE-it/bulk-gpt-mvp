@@ -149,7 +149,7 @@ function LoginForm() {
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Demo credentials: test@example.com / password
+            Demo credentials: test@bulkgpt.local / Test123456!
           </p>
         </CardContent>
       </Card>

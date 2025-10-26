@@ -18,19 +18,14 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3333',
+    baseURL: 'http://localhost:3334',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
 
   /* Configure projects for major browsers */
   projects: [
-    // Setup project - runs first to create authenticated session
-    {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
-    },
-    // Main tests - depend on setup and use authenticated session
+    // Main tests with real auth - uses email/password login
     {
       name: 'chromium',
       use: {
@@ -38,7 +33,21 @@ export default defineConfig({
         // Use saved authenticated session for all tests
         storageState: 'playwright/.auth/user.json',
       },
-      dependencies: ['setup'],
+      dependencies: ['real-auth-setup'],
+    },
+    // Real Supabase auth setup (optional - for integration testing)
+    {
+      name: 'real-auth-setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    // Chromium with real Supabase auth
+    {
+      name: 'chromium-real-auth',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['real-auth-setup'],
     },
     // No-auth tests - for visual checks, deployment verification
     {
