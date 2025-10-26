@@ -9,10 +9,10 @@ import path from 'path'
 
 const authFile = path.join(__dirname, '../playwright/.auth/user.json')
 
-// Test user credentials - using demo credentials shown on login page
+// Test user credentials - matches scripts/create-test-user.ts
 const TEST_USER = {
-  email: 'test@example.com',
-  password: 'password'
+  email: 'test@bulkgpt.local',
+  password: 'Test123456!'
 }
 
 setup('authenticate', async ({ page }) => {
@@ -22,24 +22,71 @@ setup('authenticate', async ({ page }) => {
   page.on('console', msg => console.log('Browser console:', msg.text()))
   page.on('pageerror', err => console.error('Page error:', err.message))
 
+  // Track network requests for debugging
+  let authApiCalled = false
+  page.on('response', response => {
+    if (response.url().includes('supabase.co/auth')) {
+      console.log(`🌐 Supabase auth API: ${response.status()} - ${response.url()}`)
+      authApiCalled = true
+    }
+  })
+
   // Navigate to login page
-  await page.goto('http://localhost:3333/auth')
+  await page.goto('http://localhost:3334/auth')
   await page.waitForLoadState('networkidle')
+
+  console.log('📧 Waiting for login form to appear...')
+
+  // Wait for form to be fully loaded (handles Suspense)
+  await page.waitForSelector('#email', { timeout: 30000 })
+
+  // Take screenshot for debugging
+  await page.screenshot({ path: 'test-results/auth-page-loaded.png' })
 
   console.log('📧 Filling in credentials...')
 
-  // Fill in login form
-  await page.locator('input[type="email"], input[name="email"]').fill(TEST_USER.email)
-  await page.locator('input[type="password"], input[name="password"]').fill(TEST_USER.password)
+  // Fill in login form using ID selectors (more reliable)
+  await page.locator('#email').fill(TEST_USER.email)
+  await page.locator('#password').fill(TEST_USER.password)
 
   console.log('🚀 Submitting login...')
 
-  // Click sign in button and wait for URL change
-  await page.locator('button[type="submit"], button:has-text("Sign in"), button:has-text("Log in")').click()
+  // Click sign in button and wait for navigation
+  const submitButton = page.locator('button[type="submit"], button:has-text("Sign in"), button:has-text("Log in")')
+
+  // Wait for Supabase auth API call to complete
+  const authResponsePromise = page.waitForResponse(
+    response => response.url().includes('/auth/v1/token') && response.status() === 200,
+    { timeout: 10000 }
+  ).catch(() => {
+    console.warn('⚠️ Did not detect Supabase auth API call')
+    return null
+  })
+
+  await submitButton.click()
+
+  // Wait for auth API to complete
+  const authResponse = await authResponsePromise
+  if (authResponse) {
+    console.log('✅ Supabase auth API call completed successfully')
+  }
+
+  // Give Supabase SSR cookies time to propagate (critical for middleware)
+  console.log('⏳ Waiting for session cookies to propagate...')
+  await page.waitForTimeout(2000)
+
+  // Check if cookies were set
+  const cookies = await page.context().cookies()
+  const authCookies = cookies.filter(c => c.name.includes('supabase') || c.name.includes('auth'))
+  console.log(`🍪 Found ${authCookies.length} auth cookies:`, authCookies.map(c => c.name).join(', '))
+
+  if (authCookies.length === 0) {
+    console.warn('⚠️ No Supabase auth cookies found - login may not have completed')
+  }
 
   // Wait for redirect to complete (to /wizard, /bulk, or /dashboard)
   try {
-    await page.waitForURL(/\/(bulk|wizard|dashboard)/, { timeout: 20000 })
+    await page.waitForURL(/\/(bulk|wizard|dashboard)/, { timeout: 30000 })
     console.log(`✅ Login successful! Redirected to: ${page.url()}`)
   } catch (err) {
     // Check for error messages on the page
@@ -51,6 +98,13 @@ setup('authenticate', async ({ page }) => {
 
     // Take screenshot for debugging
     await page.screenshot({ path: 'test-results/auth-failed.png' })
+
+    // Log final state for debugging
+    console.error('❌ Login redirect failed')
+    console.error('Current URL:', page.url())
+    console.error('Auth API called:', authApiCalled)
+    console.error('Cookies set:', authCookies.length)
+
     throw new Error(`Login did not redirect. Current URL: ${page.url()}`)
   }
 
