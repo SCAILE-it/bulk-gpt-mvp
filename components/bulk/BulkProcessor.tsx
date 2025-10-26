@@ -21,6 +21,7 @@ import { useFileUpload, type RecentFile } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
+import { PromptSection } from './PromptSection'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
@@ -128,9 +129,6 @@ export default function BulkProcessor() {
   // === KEYBOARD SHORTCUTS HELP ===
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
 
-  // === PROMPT PREVIEW ===
-  const [previewRowIndex, setPreviewRowIndex] = useState(0)
-
   // === DELETE CONFIRMATION ===
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null)
 
@@ -140,24 +138,6 @@ export default function BulkProcessor() {
   const advancedSettingsModalRef = useFocusTrap<HTMLDivElement>(showAdvancedSettingsModal)
   const keyboardHelpModalRef = useFocusTrap<HTMLDivElement>(showKeyboardHelp)
   const deleteConfirmationModalRef = useFocusTrap<HTMLDivElement>(fieldToDelete !== null)
-
-  // Generate prompt preview with variables substituted
-  const promptPreview = useMemo(() => {
-    if (!currentCsvData || !prompt || previewRowIndex >= currentCsvData.rows.length) {
-      return null
-    }
-
-    const row = currentCsvData.rows[previewRowIndex]
-    let preview = prompt
-
-    // Replace all {{variable}} with actual values from the selected row
-    currentCsvData.columns.forEach(column => {
-      const regex = new RegExp(`\\{\\{${column}\\}\\}`, 'g')
-      preview = preview.replace(regex, row.data[column] || '')
-    })
-
-    return preview
-  }, [currentCsvData, prompt, previewRowIndex])
 
   // === PROCESSING STATE ===
   const [batchId, setBatchId] = useState<string | null>(null)
@@ -1011,69 +991,13 @@ export default function BulkProcessor() {
             <div className="h-px bg-zinc-800/50" />
 
             {/* PROMPT */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="prompt" className="text-xs font-medium text-zinc-300">
-                  Prompt
-                </label>
-                <button
-                  onClick={() => setShowTemplateModal(true)}
-                  className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors flex items-center gap-1"
-                >
-                  <FileText className="h-3 w-3" />
-                  Browse Templates
-                </button>
-              </div>
+            <PromptSection
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              csvData={csvData}
+              onOpenTemplates={() => setShowTemplateModal(true)}
+            />
 
-              <textarea
-                id="prompt"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="w-full h-20 px-3 py-2 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 font-mono resize-y focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
-                placeholder="Write a bio for {{name}} at {{company}}"
-              />
-              <div className="flex items-center justify-between text-xs">
-                {csvData && (
-                  <p className="text-zinc-300">
-                    Variables: {csvData.columns.map(h => `{{${h}}}`).join(', ')}
-                  </p>
-                )}
-                <p className={`${
-                  prompt.length === 0 ? 'text-zinc-600' :
-                  prompt.length < 20 ? 'text-orange-500' :
-                  prompt.length > 2000 ? 'text-yellow-500' :
-                  'text-zinc-400'
-                }`}>
-                  {prompt.length} characters
-                  {prompt.length > 0 && prompt.length < 20 && ' (too short)'}
-                  {prompt.length > 2000 && ' (may be too long)'}
-                </p>
-              </div>
-
-              {/* PROMPT PREVIEW WITH ROW SELECTOR */}
-              {currentCsvData && prompt && promptPreview && variableValidation.isValid && (
-                <div className="space-y-1.5 p-2 bg-zinc-900/40 border border-white/5 rounded-md">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-zinc-400">Preview with data</label>
-                    <select
-                      value={previewRowIndex}
-                      onChange={(e) => setPreviewRowIndex(Number(e.target.value))}
-                      className="text-xs px-2 py-1 bg-zinc-900 border border-white/10 rounded text-zinc-300 focus:outline-none focus:ring-1 focus:ring-white/20"
-                    >
-                      {currentCsvData.rows.slice(0, Math.min(10, currentCsvData.totalRows)).map((row, idx) => (
-                        <option key={idx} value={idx}>
-                          Row {idx + 1}: {Object.values(row.data).slice(0, 2).join(', ')}...
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="p-2 bg-zinc-950/50 border border-white/5 rounded text-xs text-zinc-300 font-mono whitespace-pre-wrap max-h-24 overflow-y-auto">
-                    {promptPreview}
-                  </div>
-                </div>
-              )}
-
-              {/* VARIABLE DETECTION SUCCESS */}
               {csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
                 <div className="flex items-start gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
@@ -1115,7 +1039,6 @@ export default function BulkProcessor() {
                   </p>
                 </div>
               )}
-            </div>
 
             {/* ADVANCED SETTINGS (Modal) */}
             <div className="flex items-center gap-2">
