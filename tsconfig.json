@@ -39,6 +39,7 @@
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "playwright-tests/**/*",
-    "e2e/**/*"
+    "e2e/**/*",
+    "scripts/**/*"
   ]
 }
