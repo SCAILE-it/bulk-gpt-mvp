@@ -167,7 +167,7 @@ export default function BulkProcessor() {
   }, [currentCsvData?.columns])
 
   // Auto-optimize job with AI (runs automatically when user types prompt)
-  const { optimizedPrompt, outputColumns, reasoning, isOptimizing, error: optimizerError } = useAutoJobOptimizer(
+  const { optimizedPrompt, outputColumns, reasoning, isOptimizing } = useAutoJobOptimizer(
     prompt,
     csvColumns
   )
