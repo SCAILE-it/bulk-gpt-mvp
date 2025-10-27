@@ -176,7 +176,7 @@ export default function BulkProcessor() {
 
   // === VARIABLE VALIDATION ===
   const variableValidation = useMemo(() => {
-    if (!csvData || !prompt) {
+    if (!currentCsvData || !prompt) {
       return { missing: [], unused: [], isValid: true }
     }
 
@@ -189,16 +189,16 @@ export default function BulkProcessor() {
     }
 
     // Compare with CSV columns
-    const csvColumns = new Set(csvData.columns)
-    const missing = Array.from(promptVars).filter(v => !csvColumns.has(v))
-    const unused = Array.from(csvColumns).filter(c => !promptVars.has(c))
+    const csvCols = new Set(currentCsvData.columns)
+    const missing = Array.from(promptVars).filter(v => !csvCols.has(v))
+    const unused = Array.from(csvCols).filter(c => !promptVars.has(c))
 
     return {
       missing,
       unused,
       isValid: missing.length === 0
     }
-  }, [csvData, prompt])
+  }, [currentCsvData, prompt])
 
   // === WEBHOOK URL VALIDATION ===
   const webhookValidation = useMemo(() => {
