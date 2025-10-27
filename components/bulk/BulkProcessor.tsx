@@ -21,7 +21,9 @@ import { useFileUpload, type RecentFile } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
+import { useAutoJobOptimizer } from '@/hooks/useAutoJobOptimizer'
 import { PromptSection } from './PromptSection'
+import { JobPreview } from './JobPreview'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
@@ -158,6 +160,17 @@ export default function BulkProcessor() {
   const currentIsProcessing = useV2BatchProcessor ? v2BatchProcessor.isProcessing : isProcessing
   const currentResults = useV2BatchProcessor ? v2BatchProcessor.results : results
   const currentProgress = useV2BatchProcessor ? v2BatchProcessor.progress : progress
+
+  // Memoize CSV columns to prevent infinite render loop (array created on every render)
+  const csvColumns = useMemo(() => {
+    return currentCsvData?.columns || []
+  }, [currentCsvData?.columns])
+
+  // Auto-optimize job with AI (runs automatically when user types prompt)
+  const { optimizedPrompt, outputColumns, reasoning, isOptimizing, error: optimizerError } = useAutoJobOptimizer(
+    prompt,
+    csvColumns
+  )
 
   // Recent files feature removed - users can re-upload files if needed
 
@@ -1094,6 +1107,14 @@ export default function BulkProcessor() {
               onPromptChange={setPrompt}
               csvData={csvData}
               onOpenTemplates={() => setShowTemplateModal(true)}
+            />
+
+            {/* AI-OPTIMIZED JOB PREVIEW */}
+            <JobPreview
+              optimizedPrompt={optimizedPrompt || ''}
+              outputColumns={outputColumns}
+              reasoning={reasoning}
+              isOptimizing={isOptimizing}
             />
 
               {csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
