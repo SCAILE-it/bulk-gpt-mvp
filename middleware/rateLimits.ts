@@ -6,13 +6,13 @@
 export const RATE_LIMITS = {
   // Batch processing limits
   maxRowsPerBatch: 1000,
-  maxBatchesPerUser: 5,
-  maxConcurrentBatches: 1,
-  
+  maxBatchesPerUser: 100, // Increased from 5 - users should be able to process multiple batches per day
+  maxConcurrentBatches: 10, // Increased from 1 - allow parallel batch processing (Modal handles concurrency)
+
   // API rate limits
   requestsPerMinute: 60,
   requestsPerHour: 500,
-  
+
   // File upload limits
   maxFileSize: 10 * 1024 * 1024, // 10MB
   maxUploadsPerHour: 20,
