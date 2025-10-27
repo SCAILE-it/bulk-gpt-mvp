@@ -22,6 +22,9 @@ import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { PromptSection } from './PromptSection'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+import { logError } from '@/lib/errors'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
@@ -636,28 +639,123 @@ export default function BulkProcessor() {
   }, [])
 
   // === EXPORT ===
-  const handleExport = useCallback(() => {
-    if (currentResults.length === 0) return
+  const handleExport = useCallback(async () => {
+    if (!currentBatchId) {
+      toast.error('No Batch Available', {
+        description: 'Please run a batch first before exporting results.'
+      })
+      return
+    }
 
-    const csv = [
-      // Header
-      [...Object.keys(currentResults[0].input), ...outputFields, 'status'].join(','),
-      // Rows
-      ...currentResults.map(r => [
-        ...Object.values(r.input).map(v => `"${v}"`),
-        ...outputFields.map(() => `"${r.output}"`),
-        r.status,
-      ].join(',')),
-    ].join('\n')
+    try {
+      const supabase = createClient()
+      if (!supabase) {
+        toast.error('Database Error', {
+          description: 'Supabase client not configured. Please refresh the page.'
+        })
+        return
+      }
 
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `results-${currentBatchId || Date.now()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [currentResults, outputFields, currentBatchId])
+      toast.loading('Preparing download...', { id: `export-${currentBatchId}` })
+
+      // Fetch completed results from database
+      const { data: results, error } = await supabase
+        .from('batch_results')
+        .select('input_data, output_data, status, error_message')
+        .eq('batch_id', currentBatchId)
+        .order('id', { ascending: true })
+
+      if (error) {
+        logError(new Error('Batch results fetch failed'), {
+          source: 'BulkProcessor/handleExport',
+          batchId: currentBatchId,
+          supabaseError: error
+        })
+        toast.error('Failed to Fetch Results', {
+          description: 'Please try again or check the Dashboard for completed batches.',
+          id: `export-${currentBatchId}`
+        })
+        return
+      }
+
+      if (!results || results.length === 0) {
+        toast.warning('No Results Available', {
+          description: 'The batch may still be processing. Please wait a few moments and try again.',
+          id: `export-${currentBatchId}`
+        })
+        return
+      }
+
+      // Parse first result to get input column names
+      const firstResult = results[0]
+      const inputData = typeof firstResult.input_data === 'string'
+        ? JSON.parse(firstResult.input_data)
+        : firstResult.input_data
+      const inputColumns = Object.keys(inputData)
+
+      // Generate CSV with proper output field mapping
+      const outputFieldNames = outputFields
+      const headers = [...inputColumns, ...outputFieldNames, 'Status', 'Error']
+
+      const csvRows = results.map(row => {
+        const input = typeof row.input_data === 'string'
+          ? JSON.parse(row.input_data)
+          : row.input_data
+        const inputValues = inputColumns.map(col => `"${(input[col] || '').replace(/"/g, '""')}"`)
+
+        // Parse output_data to extract individual fields
+        let outputValues: string[] = []
+        if (row.output_data) {
+          try {
+            const outputJson = typeof row.output_data === 'string'
+              ? JSON.parse(row.output_data)
+              : row.output_data
+
+            // Extract each output field by name
+            outputValues = outputFieldNames.map(fieldName => {
+              const value = outputJson[fieldName] || ''
+              return `"${value.toString().replace(/"/g, '""')}"`
+            })
+          } catch {
+            // If parsing fails, use raw output for all fields
+            const rawOutput = `"${row.output_data.toString().replace(/"/g, '""')}"`
+            outputValues = outputFieldNames.map(() => rawOutput)
+          }
+        } else {
+          // Empty output fields if no data
+          outputValues = outputFieldNames.map(() => '""')
+        }
+
+        const status = row.status || 'unknown'
+        const error = row.error_message ? `"${row.error_message.replace(/"/g, '""')}"` : '""'
+
+        return [...inputValues, ...outputValues, status, error].join(',')
+      })
+
+      const csvContent = [headers.join(','), ...csvRows].join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `results-${currentBatchId}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+
+      toast.success('Download Complete', {
+        description: `Successfully downloaded ${results.length} result rows.`,
+        id: `export-${currentBatchId}`
+      })
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error('Export failed'), {
+        source: 'BulkProcessor/handleExport',
+        batchId: currentBatchId
+      })
+      toast.error('Export Failed', {
+        description: 'An unexpected error occurred. Please try again.',
+        id: `export-${currentBatchId}`
+      })
+    }
+  }, [currentBatchId, outputFields])
 
   // === FETCH API TOKEN ===
   const handleFetchToken = useCallback(async () => {
