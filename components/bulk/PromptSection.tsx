@@ -34,6 +34,7 @@ export function PromptSection({ prompt, onPromptChange, csvData, onOpenTemplates
         onChange={(e) => onPromptChange(e.target.value)}
         className="w-full h-20 bg-zinc-900/70 border-white/5 text-zinc-300 font-mono resize-y focus-visible:ring-white/10 focus-visible:border-white/10"
         placeholder="Write a bio for {{name}} at {{company}}"
+        data-testid="prompt-textarea"
       />
 
       <div className="flex items-center justify-between text-xs">

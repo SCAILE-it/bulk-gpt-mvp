@@ -1004,7 +1004,7 @@ export default function BulkProcessor() {
                         <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
                         <span className="text-xs text-zinc-300 font-medium">{currentFile?.name || 'data.csv'}</span>
                       </div>
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-xs text-zinc-500" data-testid="row-count-display">
                         {currentCsvData.totalRows} rows • {currentCsvData.columns.length} columns
                       </span>
                     </div>
@@ -1041,7 +1041,7 @@ export default function BulkProcessor() {
                       </div>
                     )}
                   </div>
-                  <input {...getInputProps()} ref={fileInputRef} className="hidden" />
+                  <input {...getInputProps()} ref={fileInputRef} className="hidden" data-testid="file-input" />
                 </>
               ) : (
                 // Show Upload Dropzone when no file or uploading
@@ -1053,7 +1053,7 @@ export default function BulkProcessor() {
                       : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50 active:scale-[0.98]'
                   }`}
                 >
-                  <input {...getInputProps()} ref={fileInputRef} className="hidden" />
+                  <input {...getInputProps()} ref={fileInputRef} className="hidden" data-testid="file-input" />
                   {isUploading ? (
                     <>
                       <Loader2 className="h-8 w-8 mx-auto mb-2 text-zinc-400 animate-spin" />
@@ -1305,6 +1305,7 @@ export default function BulkProcessor() {
                 disabled={!csvData || !prompt || currentIsProcessing || !variableValidation.isValid || !webhookValidation.isValid}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] sm:min-h-0"
                 title="Run all rows (⌘Enter)"
+                data-testid="run-button"
               >
                 {currentIsProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 <span>Run All {csvData ? `(${csvData.totalRows})` : ''}</span>
