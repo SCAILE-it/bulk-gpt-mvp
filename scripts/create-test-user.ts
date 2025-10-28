@@ -3,6 +3,11 @@
  * Run with: npx tsx scripts/create-test-user.ts
  */
 
+// Load environment variables from .env.local
+import { config } from 'dotenv'
+import { resolve } from 'path'
+config({ path: resolve(process.cwd(), '.env.local') })
+
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

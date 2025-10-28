@@ -10,6 +10,11 @@
  *   1 - One or more checks failed
  */
 
+// Load environment variables from .env.local
+import { config } from 'dotenv'
+import { resolve } from 'path'
+config({ path: resolve(process.cwd(), '.env.local') })
+
 import { createClient } from '@supabase/supabase-js'
 
 interface CheckResult {
