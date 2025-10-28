@@ -517,6 +517,7 @@ export default function DashboardPage() {
                             onClick={() => downloadBatchResults(batch.id, batch.csv_filename)}
                             className="h-8 w-8 p-0"
                             title="Download results CSV"
+                            data-testid="download-results-button"
                           >
                             <Download className="h-4 w-4" />
                           </Button>

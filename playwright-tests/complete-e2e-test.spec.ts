@@ -90,7 +90,7 @@ test.describe('Complete E2E Flow', () => {
     // Step 8: Find and click download button
     console.log('💾 Step 8: Looking for download button...');
     const firstRow = page.locator('table tbody tr').first();
-    const downloadButton = firstRow.locator('button:has-text("Download")').first();
+    const downloadButton = firstRow.locator('[data-testid="download-results-button"]').first();
 
     const downloadVisible = await downloadButton.isVisible();
     if (!downloadVisible) {
