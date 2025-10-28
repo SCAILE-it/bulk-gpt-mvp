@@ -75,6 +75,44 @@ npm run build
 npm run lint
 ```
 
+## 🧪 Testing
+
+**Comprehensive E2E testing infrastructure with automated setup** - See [docs/TESTING.md](./docs/TESTING.md) for full documentation.
+
+### Quick Start
+
+```bash
+# One-time setup (< 5 minutes)
+npm run test:setup   # Creates test user, starts server, validates environment
+
+# Run all E2E tests
+npm run test:e2e
+
+# Cleanup after testing
+npm run test:cleanup
+```
+
+### Key Features
+
+- ✅ **Automated environment validation** - Pre-flight checks catch issues before tests run
+- ✅ **Real Supabase authentication** - Uses actual auth API (test@bulkgpt.local)
+- ✅ **Port isolation** - Tests run on port 3334 (no conflicts with dev server)
+- ✅ **Automated dev server** - Auto-starts and health checks
+- ✅ **Comprehensive troubleshooting** - Solutions for common issues documented
+
+### Available Commands
+
+```bash
+npm run test:env      # Verify environment setup
+npm run test:server   # Start dev server on port 3334
+npm run test:user     # Create test user in Supabase
+npm run test:setup    # Complete automated setup
+npm run test:e2e      # Run Playwright E2E tests
+npm run test:cleanup  # Stop server and clean up
+```
+
+**📖 For detailed documentation, troubleshooting, and CI/CD integration, see [docs/TESTING.md](./docs/TESTING.md)**
+
 ## ⚠️ Known Issues
 
 See [CURRENT_STATUS.md](./CURRENT_STATUS.md) for critical issues that must be fixed:
