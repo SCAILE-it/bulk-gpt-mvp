@@ -3,24 +3,23 @@
  * ABOUTME: Returns daily/monthly/lifetime usage data
  */
 
-import { NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
 import { getUserUsage } from '@/lib/api-keys'
+import { authenticateRequest } from '@/lib/auth-middleware'
 import { logError } from '@/lib/errors'
 
 /**
  * GET /api/usage - Get usage statistics for the authenticated user
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const userId = await authenticateRequest(request)
 
-    if (authError || !user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const usage = await getUserUsage(user.id)
+    const usage = await getUserUsage(userId)
 
     if (!usage) {
       return NextResponse.json({ error: 'Failed to get usage' }, { status: 500 })

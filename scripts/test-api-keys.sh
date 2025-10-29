@@ -15,10 +15,11 @@ echo ""
 
 # Step 1: Authenticate
 echo "Step 1: Authenticating test user..."
-AUTH_RESPONSE=$(curl -s -X POST "${SUPABASE_URL}/auth/v1/signup" \
+# Try to login first with existing test user
+AUTH_RESPONSE=$(curl -s -X POST "${SUPABASE_URL}/auth/v1/token?grant_type=password" \
   -H "apikey: ${SUPABASE_ANON_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"email":"e2etest'$(date +%s)'@bulkgpt.local","password":"TestPass123"}')
+  -d '{"email":"bulkgpt-test-confirmed@tempmail.com","password":"TestPass123456"}')
 
 ACCESS_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.access_token // empty')
 

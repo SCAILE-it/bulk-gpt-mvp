@@ -4,23 +4,22 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
 import { generateApiKey, listApiKeys, revokeApiKey } from '@/lib/api-keys'
+import { authenticateRequest } from '@/lib/auth-middleware'
 import { logError } from '@/lib/errors'
 
 /**
  * GET /api/keys - List all API keys for the authenticated user
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const userId = await authenticateRequest(request)
 
-    if (authError || !user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const keys = await listApiKeys(user.id)
+    const keys = await listApiKeys(userId)
 
     return NextResponse.json({ keys })
   } catch (error) {
@@ -40,10 +39,9 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const userId = await authenticateRequest(request)
 
-    if (authError || !user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -64,7 +62,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const apiKey = await generateApiKey(user.id, name.trim())
+    const apiKey = await generateApiKey(userId, name.trim())
 
     return NextResponse.json({
       key: apiKey.key, // Full key returned ONLY on creation
@@ -90,10 +88,9 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const userId = await authenticateRequest(request)
 
-    if (authError || !user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -107,7 +104,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await revokeApiKey(user.id, keyId)
+    await revokeApiKey(userId, keyId)
 
     return NextResponse.json({ success: true })
   } catch (error) {
