@@ -21,7 +21,7 @@ import { useFileUpload, type RecentFile } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
-import { useAutoJobOptimizer } from '@/hooks/useAutoJobOptimizer'
+import { useManualJobOptimizer } from '@/hooks/useManualJobOptimizer'
 import { PromptSection } from './PromptSection'
 import { JobPreview } from './JobPreview'
 import { createClient } from '@/lib/supabase/client'
@@ -166,11 +166,34 @@ export default function BulkProcessor() {
     return currentCsvData?.columns || []
   }, [currentCsvData?.columns])
 
-  // Auto-optimize job with AI (runs automatically when user types prompt)
-  const { optimizedPrompt, outputColumns, reasoning, isOptimizing } = useAutoJobOptimizer(
-    prompt,
-    csvColumns
-  )
+  // Manual AI optimization (user triggers with button)
+  const {
+    optimizedPrompt,
+    setOptimizedPrompt,
+    outputColumns,
+    reasoning,
+    isOptimizing,
+    triggerOptimization,
+    clearOptimization,
+  } = useManualJobOptimizer(prompt, csvColumns)
+
+  // Handle accepting AI suggestion
+  const handleAcceptOptimization = useCallback(() => {
+    if (optimizedPrompt) {
+      setPrompt(optimizedPrompt)
+      // Use AI-detected output columns
+      if (outputColumns.length > 0) {
+        setOutputFields(outputColumns.map((col) => col.name))
+      }
+      clearOptimization()
+      toast.success('AI suggestion applied!')
+    }
+  }, [optimizedPrompt, outputColumns, clearOptimization])
+
+  // Handle rejecting AI suggestion
+  const handleRejectOptimization = useCallback(() => {
+    clearOptimization()
+  }, [clearOptimization])
 
   // Recent files feature removed - users can re-upload files if needed
 
@@ -1078,17 +1101,24 @@ export default function BulkProcessor() {
                       <p className="text-sm text-zinc-200 font-medium mb-1">
                         {isDragActive ? 'Drop here' : 'Drop your CSV file here'}
                       </p>
-                      <p className="text-xs text-zinc-300 mb-2 font-medium underline decoration-dotted">
-                        or click anywhere to browse
-                      </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-zinc-300 mb-2">or</p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          fileInputRef.current?.click()
+                        }}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-md text-sm font-medium text-zinc-200 transition-all active:scale-95"
+                      >
+                        Browse Files
+                      </button>
+                      <p className="text-xs text-zinc-500 mt-3">
                         Max 10MB • CSV format • Up to 1,000 rows
                       </p>
                       <a
                         href="/sample.csv"
                         download
                         onClick={(e) => e.stopPropagation()}
-                        className="text-xs text-zinc-400 hover:text-zinc-300 mt-3 inline-flex items-center gap-1 hover:underline"
+                        className="text-xs text-zinc-400 hover:text-zinc-300 mt-2 inline-flex items-center gap-1 hover:underline"
                       >
                         Download sample template →
                       </a>
@@ -1122,13 +1152,42 @@ export default function BulkProcessor() {
               onOpenTemplates={() => setShowTemplateModal(true)}
             />
 
+            {/* OPTIMIZE WITH AI BUTTON */}
+            {prompt && csvData && !optimizedPrompt && !isOptimizing && (
+              <button
+                onClick={triggerOptimization}
+                className="mt-3 w-full px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-md text-sm font-medium text-blue-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Optimize with AI
+              </button>
+            )}
+
             {/* AI-OPTIMIZED JOB PREVIEW */}
-            <JobPreview
-              optimizedPrompt={optimizedPrompt || ''}
-              outputColumns={outputColumns}
-              reasoning={reasoning}
-              isOptimizing={isOptimizing}
-            />
+            {optimizedPrompt && (
+              <JobPreview
+                optimizedPrompt={optimizedPrompt}
+                setOptimizedPrompt={setOptimizedPrompt}
+                outputColumns={outputColumns}
+                reasoning={reasoning}
+                isOptimizing={isOptimizing}
+                onAccept={handleAcceptOptimization}
+                onReject={handleRejectOptimization}
+              />
+            )}
+
+            {/* Show loading state */}
+            {isOptimizing && !optimizedPrompt && (
+              <JobPreview
+                optimizedPrompt={''}
+                setOptimizedPrompt={() => {}}
+                outputColumns={[]}
+                reasoning={null}
+                isOptimizing={true}
+                onAccept={() => {}}
+                onReject={() => {}}
+              />
+            )}
 
               {csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
                 <div className="flex items-start gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
