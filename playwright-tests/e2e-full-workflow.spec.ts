@@ -129,7 +129,7 @@ test.describe('BULK-GPT Full Workflow - E2E Tests', () => {
   test('T6: Process button is disabled without CSV + Prompt', async ({ page }) => {
     console.log('🧪 T6: Testing process button initial state...')
 
-    const processBtn = page.locator('button').filter({ hasText: 'Start Processing' })
+    const processBtn = page.locator('button').filter({ hasText: 'Run' })
     await expect(processBtn).toBeVisible()
     console.log('✅ Process button visible')
 
@@ -193,7 +193,7 @@ test.describe('BULK-GPT Full Workflow - E2E Tests', () => {
 
     await page.waitForTimeout(2000)
 
-    const processBtn = page.locator('button').filter({ hasText: 'Start Processing' })
+    const processBtn = page.locator('button').filter({ hasText: 'Run' })
     
     // Check if button is now enabled
     const isDisabled = await processBtn.isDisabled()

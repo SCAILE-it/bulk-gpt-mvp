@@ -164,7 +164,7 @@ test.describe('Zola Integration - Theme & Icons', () => {
     }
     
     // Find Start Processing button
-    const processButton = page.locator('button:has-text("Start Processing")')
+    const processButton = page.locator('button:has-text("Run")')
     
     if (await processButton.count() > 0) {
       // Should have SVG icon

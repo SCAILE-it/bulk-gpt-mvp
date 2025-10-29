@@ -46,10 +46,10 @@ test.describe('Bulk GPT End-to-End Tests', () => {
   //   await expect(contextTextarea).toHaveAttribute('placeholder', /Optional context/)
   // })
 
-  test('✅ should have Start Processing button initially disabled', async ({ page }) => {
+  test('✅ should have Run button initially disabled', async ({ page }) => {
     // Initially, button should be disabled (no CSV and no prompt)
-    const startButton = page.getByRole('button', { name: 'Start Processing' })
-    await expect(startButton).toBeDisabled()
+    const runButton = page.locator('[data-testid="run-button"]')
+    await expect(runButton).toBeDisabled()
   })
 
   test('✅ should accept text input in prompt textarea', async ({ page }) => {

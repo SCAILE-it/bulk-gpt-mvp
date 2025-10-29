@@ -107,7 +107,7 @@ test.describe('Phase 1: Surface Backend Features', () => {
     await page.waitForURL(/step=2/)
     
     // Look for keyboard hints (kbd elements or specific text)
-    const continueButton = page.locator('button:has-text("Continue"), button:has-text("Start Processing")')
+    const continueButton = page.locator('button:has-text("Continue"), button:has-text("Run")')
     const buttonText = await continueButton.first().textContent()
     
     // Should contain keyboard hint symbols (⌘ or Ctrl or similar)

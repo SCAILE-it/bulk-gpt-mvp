@@ -86,12 +86,12 @@ Keep it to 2-3 sentences focusing on professional expertise.`
 
     // ====== STEP 4: Verify Button Enabled ======
     console.log('\n▶️  STEP 4: Verify Start Button Enabled')
-    const startButton = page.getByRole('button', { name: /Start Processing|▶️/ })
+    const startButton = page.getByRole('button', { name: /Run|▶️/ })
     await expect(startButton).toBeEnabled()
-    console.log('✅ Start Processing button is enabled')
+    console.log('✅ Run button is enabled')
 
-    // ====== STEP 5: Start Processing (Fire-and-Forget) ======
-    console.log('\n🚀 STEP 5: Start Processing')
+    // ====== STEP 5: Run (Fire-and-Forget) ======
+    console.log('\n🚀 STEP 5: Run')
     
     // Listen for API responses
     const processPromise = page.waitForResponse(
@@ -433,7 +433,7 @@ Emma Davis,DataMart,Analytics Lead`
 
     // Measure time to process
     const startTime = Date.now()
-    const startButton = page.getByRole('button', { name: /Start Processing/ })
+    const startButton = page.getByRole('button', { name: /Run/ })
     await startButton.click()
 
     // Wait for response
