@@ -52,7 +52,7 @@ test.describe('Full Flow Screenshot Capture', () => {
 
     // Navigate to wizard (will redirect to auth if not authenticated)
     console.log('🧙 Navigating to wizard...')
-    await page.goto('http://localhost:3334/wizard')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // SCREENSHOT 3: Wizard redirect or landing
@@ -73,7 +73,7 @@ test.describe('Full Flow Screenshot Capture', () => {
       // Try to take a screenshot of what the wizard WOULD look like
       // by directly visiting it (even though auth will block)
       console.log('📸 Attempting to capture wizard UI structure...')
-      await page.goto('http://localhost:3334/wizard', { waitUntil: 'domcontentloaded' })
+      await page.goto('http://localhost:3334/bulk', { waitUntil: 'domcontentloaded' })
       await page.screenshot({
         path: '/tmp/flow-4-wizard-blocked.png',
         fullPage: true

@@ -8,7 +8,7 @@ test.describe('Modal → Supabase Integration Verification', () => {
     const BASE_URL = 'http://localhost:3334';
     
     console.log('Step 1: Navigate to wizard');
-    await page.goto(`${BASE_URL}/wizard`);
+    await page.goto(`${BASE_URL}/bulk`);
     
     // Step 2: Upload CSV
     console.log('Step 2: Upload test CSV');

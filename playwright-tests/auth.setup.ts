@@ -84,9 +84,9 @@ setup('authenticate', async ({ page }) => {
     console.warn('⚠️ No Supabase auth cookies found - login may not have completed')
   }
 
-  // Wait for redirect to complete (to /wizard, /bulk, or /dashboard)
+  // Wait for redirect to complete (to /bulk or /dashboard)
   try {
-    await page.waitForURL(/\/(bulk|wizard|dashboard)/, { timeout: 30000 })
+    await page.waitForURL(/\/(bulk|dashboard)/, { timeout: 30000 })
     console.log(`✅ Login successful! Redirected to: ${page.url()}`)
   } catch (err) {
     // Check for error messages on the page

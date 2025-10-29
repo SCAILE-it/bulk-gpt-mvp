@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Phase 1: Surface Backend Features', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to wizard
-    await page.goto('http://localhost:5173/wizard')
+    await page.goto('http://localhost:5173/bulk')
     
     // Check if auth is required
     const currentUrl = page.url()
@@ -145,7 +145,7 @@ test.describe('Phase 1: Surface Backend Features', () => {
 
 test.describe('Phase 1: Visual Regression', () => {
   test('Step 1: Upload page screenshot', async ({ page }) => {
-    await page.goto('http://localhost:5173/wizard')
+    await page.goto('http://localhost:5173/bulk')
     
     const currentUrl = page.url()
     if (currentUrl.includes('/auth')) {
@@ -166,7 +166,7 @@ test.describe('Phase 1: Visual Regression', () => {
   })
 
   test('Step 2: Configure page screenshot', async ({ page }) => {
-    await page.goto('http://localhost:5173/wizard')
+    await page.goto('http://localhost:5173/bulk')
     
     const currentUrl = page.url()
     if (currentUrl.includes('/auth')) {
@@ -191,7 +191,7 @@ test.describe('Phase 1: Visual Regression', () => {
 
 test.describe('Phase 1: Accessibility', () => {
   test('Row count has proper ARIA attributes', async ({ page }) => {
-    await page.goto('http://localhost:5173/wizard')
+    await page.goto('http://localhost:5173/bulk')
     
     const currentUrl = page.url()
     if (currentUrl.includes('/auth')) {

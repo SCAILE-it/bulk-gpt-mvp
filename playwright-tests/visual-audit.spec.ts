@@ -11,7 +11,7 @@ test.describe('Visual Audit - Wizard UX', () => {
     await page.waitForTimeout(1000);
 
     // Navigate to wizard
-    await page.goto('http://localhost:5180/wizard');
+    await page.goto('http://localhost:5180/bulk');
     await page.waitForLoadState('networkidle');
 
     // Step 1: Upload - Initial state
@@ -110,7 +110,7 @@ Bob Johnson,bob@example.com,StartupCo,Founder`;
     await page.click('button:has-text("Sign in")');
     await page.waitForTimeout(1000);
 
-    await page.goto('http://localhost:5180/wizard');
+    await page.goto('http://localhost:5180/bulk');
     await page.waitForLoadState('networkidle');
 
     // Zoom in on upload area to see spacing
@@ -148,7 +148,7 @@ Bob Johnson,bob@example.com,StartupCo,Founder`;
     await page.click('button:has-text("Sign in")');
     await page.waitForTimeout(1000);
 
-    await page.goto('http://localhost:5180/wizard');
+    await page.goto('http://localhost:5180/bulk');
     await page.waitForLoadState('networkidle');
 
     // Test drag hover state
