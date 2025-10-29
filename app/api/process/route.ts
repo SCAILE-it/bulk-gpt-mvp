@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 import { validatePrompt } from '@/lib/validation'
 import type { OutputColumn } from '@/lib/types'
 import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
 import { logError } from '@/lib/errors'
 import { devLog } from '@/lib/dev-logger'
 import { fetchWithRetry } from '@/lib/retry'
+import { authenticateRequest } from '@/lib/auth-middleware'
+import { checkUsageLimits } from '@/lib/api-keys'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
 
@@ -33,37 +35,17 @@ export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
  */
 export async function POST(request: NextRequest): Promise<Response> {
   let userId: string | null = null
-  
+
   try {
-    // Get user from session (cookie-based) or Bearer token
-    const authHeader = request.headers.get('Authorization')
-    const supabase = await createServerSupabaseClient()
+    // Authenticate request (supports cookie, Bearer token, or API key)
+    userId = await authenticateRequest(request)
 
-    let user = null
-    let authError = null
-
-    if (authHeader?.startsWith('Bearer ')) {
-      // API token auth (for curl/n8n)
-      const token = authHeader.slice(7)
-      const { data, error } = await supabase.auth.getUser(token)
-      user = data.user
-      authError = error
-    } else {
-      // Cookie-based auth (for browser)
-      const { data, error } = await supabase.auth.getUser()
-      user = data.user
-      authError = error
-    }
-
-    if (authError || !user) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized - please sign in or provide valid Bearer token' },
+        { error: 'Unauthorized - please sign in or provide valid Bearer token/API key' },
         { status: 401 }
       )
     }
-    
-    // Store userId for error handling
-    userId = user.id
 
     const body = await request.json()
 
@@ -94,8 +76,17 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const { csvFilename, rows, prompt, context = '', outputColumns = [], webhookUrl } = body
 
-    // Check rate limits
-    const rateLimitCheck = checkRateLimits(user.id, rows.length)
+    // Check usage limits (database-backed)
+    const usageLimitCheck = await checkUsageLimits(userId, rows.length)
+    if (!usageLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: usageLimitCheck.reason },
+        { status: 429 }
+      )
+    }
+
+    // Check rate limits (in-memory, for burst protection)
+    const rateLimitCheck = checkRateLimits(userId, rows.length)
     if (!rateLimitCheck.allowed) {
       return NextResponse.json(
         { 
@@ -116,7 +107,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         .from('batches')
         .insert({
           id: batchId,
-          user_id: user.id,
+          user_id: userId,
           csv_filename: csvFilename,
           total_rows: rows.length,
           status: 'pending',
@@ -161,7 +152,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       // Mark batch as failed (best effort, don't block response)
       markBatchFailed(batchId)
       // Release rate limit on failure
-      releaseBatch(user.id)
+      releaseBatch(userId)
     })
 
     // Return immediately with batch ID

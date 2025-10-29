@@ -1,6 +1,15 @@
 -- Lead Finder Tables Migration
 -- Adds support for AI-powered lead finding with Apollo.io integration
 
+-- Helper function to auto-update updated_at column
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 1. Lead searches table (tracks user search prompts and Apollo filters)
 CREATE TABLE IF NOT EXISTS public.lead_searches (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,

@@ -1,6 +1,7 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { releaseBatch } from '@/middleware/rateLimits'
+import { authenticateRequest } from '@/lib/auth-middleware'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,6 +18,15 @@ export async function GET(
 ) {
   const { batchId } = params
 
+  // Authenticate request
+  const userId = await authenticateRequest(request)
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
@@ -32,15 +42,16 @@ export async function GET(
       // Poll for updates every 2 seconds
       const interval = setInterval(async () => {
         try {
-          // Get batch status
+          // Get batch status (verify ownership)
           const { data: batch } = await supabaseAdmin
             .from('batches')
             .select('status, total_rows, processed_rows, user_id')
             .eq('id', batchId)
+            .eq('user_id', userId)
             .single()
 
           if (!batch) {
-            sendEvent('error', { message: 'Batch not found' })
+            sendEvent('error', { message: 'Batch not found or access denied' })
             clearInterval(interval)
             controller.close()
             return

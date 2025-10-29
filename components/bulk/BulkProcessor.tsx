@@ -196,7 +196,7 @@ export default function BulkProcessor() {
     return {
       missing,
       unused,
-      isValid: missing.length === 0
+      isValid: promptVars.size > 0 && missing.length === 0 // Require at least one variable AND all variables must exist in CSV
     }
   }, [currentCsvData, prompt])
 
@@ -386,10 +386,23 @@ export default function BulkProcessor() {
     onDrop: (acceptedFiles) => {
       if (acceptedFiles[0]) handleFileUpload(acceptedFiles[0])
     },
+    onDropRejected: (fileRejections) => {
+      if (!fileRejections[0]) return
+      const { file, errors } = fileRejections[0]
+
+      if (errors.find(e => e.code === 'file-invalid-type')) {
+        const ext = file.name.split('.').pop() || 'unknown'
+        setError(`File type not supported. Please upload a CSV file (found: ${ext}). Export your spreadsheet as CSV from Excel or Google Sheets.`)
+      } else if (errors.find(e => e.code === 'file-too-large')) {
+        setError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB. Try reducing the number of rows or removing unnecessary columns.`)
+      } else {
+        setError(`File rejected: ${errors[0]?.message || 'Unknown error'}`)
+      }
+    },
     multiple: false,
     accept: { 'text/csv': ['.csv'] },
-    noClick: false, // Enable click to select
-    noKeyboard: false, // Enable keyboard access
+    noClick: false,
+    noKeyboard: false,
   })
 
   // === KEYBOARD SHORTCUTS ===

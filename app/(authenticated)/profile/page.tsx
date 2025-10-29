@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { User, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { logError } from '@/lib/errors'
+import { ApiKeyList } from '@/components/api-keys/ApiKeyList'
+import { UsageDisplay } from '@/components/usage/UsageDisplay'
 
 interface UserProfile {
   id: string
@@ -285,6 +287,32 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* API Keys Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>API Access</CardTitle>
+            <CardDescription>
+              Manage API keys for programmatic access
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ApiKeyList />
+          </CardContent>
+        </Card>
+
+        {/* Usage Stats Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Usage & Limits</CardTitle>
+            <CardDescription>
+              Track your usage and plan limits
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <UsageDisplay />
           </CardContent>
         </Card>
       </div>
