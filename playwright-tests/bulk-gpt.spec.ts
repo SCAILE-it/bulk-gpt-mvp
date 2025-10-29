@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Bulk GPT End-to-End Tests', () => {
+// NOTE: This test suite tests the old UI design and is now obsolete.
+// The current working test suite is bulk-processor.spec.ts
+test.describe.skip('Bulk GPT End-to-End Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the app
     await page.goto('/')
@@ -137,7 +139,7 @@ test.describe('Bulk GPT End-to-End Tests', () => {
   })
 })
 
-test.describe('UI Accessibility & Structure', () => {
+test.describe.skip('UI Accessibility & Structure', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
@@ -231,7 +233,7 @@ test.describe('UI Accessibility & Structure', () => {
   })
 })
 
-test.describe('API Ready Tests', () => {
+test.describe.skip('API Ready Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
