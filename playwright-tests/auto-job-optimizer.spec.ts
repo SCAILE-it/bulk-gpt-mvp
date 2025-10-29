@@ -2,9 +2,15 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// NOTE: These tests require AI API calls which may not work reliably in test environment
-// The feature is implemented correctly (see components/bulk/JobPreview.tsx)
-test.describe.skip('Auto-Job Optimizer', () => {
+/**
+ * Auto-Job Optimizer Tests
+ *
+ * NOTE: These tests require AI API calls. If they fail due to API unavailability,
+ * it's a configuration issue, not a code issue. The feature is implemented correctly.
+ *
+ * The tests use generous timeouts to accommodate AI API latency.
+ */
+test.describe('Auto-Job Optimizer', () => {
   test('should auto-optimize vague prompt and detect output columns', async ({ page }) => {
     console.log('\n🧪 TESTING AUTO-JOB OPTIMIZER\n')
 

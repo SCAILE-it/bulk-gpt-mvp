@@ -15,20 +15,15 @@
       "href": "https://bulk-gpt-app.vercel.app/dashboard"
     },
     {
-      "text": "Dashboard",
-      "href": "https://bulk-gpt-app.vercel.app/dashboard"
-    },
-    {
-      "text": "Process",
+      "text": "RUN",
       "href": "https://bulk-gpt-app.vercel.app/bulk"
     },
     {
-      "text": "Profile",
-      "href": "https://bulk-gpt-app.vercel.app/profile"
+      "text": "EXECUTIONS",
+      "href": "https://bulk-gpt-app.vercel.app/dashboard"
     }
   ],
   "fontSizes": [
-    "11px",
     "12px",
     "14px",
     "16px",
