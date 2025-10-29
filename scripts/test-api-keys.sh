@@ -80,8 +80,9 @@ if [ -z "$BATCHES_TODAY" ]; then
   exit 1
 fi
 
+DAILY_BATCH_LIMIT=$(echo "$USAGE_RESPONSE" | jq -r '.dailyBatchLimit')
 echo "✅ API key authentication successful"
-echo "   Usage: ${BATCHES_TODAY}/${$(echo "$USAGE_RESPONSE" | jq -r '.dailyBatchLimit')} batches today"
+echo "   Usage: ${BATCHES_TODAY}/${DAILY_BATCH_LIMIT} batches today"
 echo ""
 
 # Step 5: Revoke API key
