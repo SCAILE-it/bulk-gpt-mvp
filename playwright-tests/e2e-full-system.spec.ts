@@ -74,14 +74,15 @@ Keep it to 2-3 sentences focusing on professional expertise.`
     console.log('✅ Prompt entered')
 
     // ====== STEP 3: Optional Context ======
-    console.log('\n💡 STEP 3: Enter Context (optional)')
-    const context_text = 'Emphasize technical achievements and industry experience. Keep professional tone.'
-    
-    const contextTextarea = page.locator('textarea#context')
-    await contextTextarea.fill(context_text)
-    await page.waitForTimeout(500)
-
-    console.log('✅ Context entered')
+    // Context textarea removed from UI - step disabled
+    // console.log('\n💡 STEP 3: Enter Context (optional)')
+    // const context_text = 'Emphasize technical achievements and industry experience. Keep professional tone.'
+    //
+    // const contextTextarea = page.locator('textarea#context')
+    // await contextTextarea.fill(context_text)
+    // await page.waitForTimeout(500)
+    //
+    // console.log('✅ Context entered')
 
     // ====== STEP 4: Verify Button Enabled ======
     console.log('\n▶️  STEP 4: Verify Start Button Enabled')

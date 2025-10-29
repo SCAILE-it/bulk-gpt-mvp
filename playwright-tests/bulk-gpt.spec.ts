@@ -26,9 +26,9 @@ test.describe('Bulk GPT End-to-End Tests', () => {
     const promptTextarea = page.locator('textarea#prompt')
     await expect(promptTextarea).toBeVisible()
 
-    // Context textarea should be visible
-    const contextTextarea = page.locator('textarea#context')
-    await expect(contextTextarea).toBeVisible()
+    // Context textarea removed from UI - test disabled
+    // const contextTextarea = page.locator('textarea#context')
+    // await expect(contextTextarea).toBeVisible()
 
     // File input should be present (though hidden)
     const fileInput = page.locator('input[type="file"]')
@@ -40,10 +40,11 @@ test.describe('Bulk GPT End-to-End Tests', () => {
     await expect(promptTextarea).toHaveAttribute('placeholder', /Enter your prompt/)
   })
 
-  test('✅ should have context textarea with correct placeholder', async ({ page }) => {
-    const contextTextarea = page.locator('textarea#context')
-    await expect(contextTextarea).toHaveAttribute('placeholder', /Optional context/)
-  })
+  // Context textarea removed from UI - test disabled
+  // test('✅ should have context textarea with correct placeholder', async ({ page }) => {
+  //   const contextTextarea = page.locator('textarea#context')
+  //   await expect(contextTextarea).toHaveAttribute('placeholder', /Optional context/)
+  // })
 
   test('✅ should have Start Processing button initially disabled', async ({ page }) => {
     // Initially, button should be disabled (no CSV and no prompt)
@@ -61,15 +62,16 @@ test.describe('Bulk GPT End-to-End Tests', () => {
     await expect(promptTextarea).toHaveValue(testPrompt)
   })
 
-  test('✅ should accept text input in context textarea', async ({ page }) => {
-    const contextTextarea = page.locator('textarea#context')
-    
-    const testContext = 'Use professional tone'
-    await contextTextarea.fill(testContext)
-
-    // Verify context is entered
-    await expect(contextTextarea).toHaveValue(testContext)
-  })
+  // Context textarea removed from UI - test disabled
+  // test('✅ should accept text input in context textarea', async ({ page }) => {
+  //   const contextTextarea = page.locator('textarea#context')
+  //
+  //   const testContext = 'Use professional tone'
+  //   await contextTextarea.fill(testContext)
+  //
+  //   // Verify context is entered
+  //   await expect(contextTextarea).toHaveValue(testContext)
+  // })
 
   test('✅ should show page header with description', async ({ page }) => {
     // Header should be visible
@@ -207,7 +209,7 @@ test.describe('UI Accessibility & Structure', () => {
     // Find all labels
     const labels = page.locator('label')
     
-    // Should have at least Prompt Template and Context labels
+    // Should have at least Prompt Template label (Context removed from UI)
     const labelTexts: string[] = []
     for (let i = 0; i < await labels.count(); i++) {
       const text = await labels.nth(i).textContent()

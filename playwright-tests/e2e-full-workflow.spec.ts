@@ -112,18 +112,19 @@ test.describe('BULK-GPT Full Workflow - E2E Tests', () => {
     console.log('✅ Prompt text entered:', testPrompt)
   })
 
-  test('T5: Context field is optional but functional', async ({ page }) => {
-    console.log('🧪 T5: Testing context input...')
-
-    const contextTextarea = page.locator('textarea').nth(1)
-    await expect(contextTextarea).toBeVisible()
-    console.log('✅ Context textarea visible')
-
-    const testContext = 'Focus on business metrics and KPIs'
-    await contextTextarea.fill(testContext)
-    await expect(contextTextarea).toHaveValue(testContext)
-    console.log('✅ Context text entered:', testContext)
-  })
+  // Context textarea removed from UI - test disabled
+  // test('T5: Context field is optional but functional', async ({ page }) => {
+  //   console.log('🧪 T5: Testing context input...')
+  //
+  //   const contextTextarea = page.locator('textarea').nth(1)
+  //   await expect(contextTextarea).toBeVisible()
+  //   console.log('✅ Context textarea visible')
+  //
+  //   const testContext = 'Focus on business metrics and KPIs'
+  //   await contextTextarea.fill(testContext)
+  //   await expect(contextTextarea).toHaveValue(testContext)
+  //   console.log('✅ Context text entered:', testContext)
+  // })
 
   test('T6: Process button is disabled without CSV + Prompt', async ({ page }) => {
     console.log('🧪 T6: Testing process button initial state...')
@@ -366,14 +367,10 @@ test.describe('BULK-GPT Full Workflow - E2E Tests', () => {
   test('T16: Form state persists during session', async ({ page }) => {
     console.log('🧪 T16: Testing form state persistence...')
 
-    // Fill form
+    // Fill form (context textarea removed from UI)
     const promptTextarea = page.locator('textarea').first()
     const testPrompt = 'Test prompt for persistence'
     await promptTextarea.fill(testPrompt)
-
-    const contextTextarea = page.locator('textarea').nth(1)
-    const testContext = 'Test context'
-    await contextTextarea.fill(testContext)
 
     console.log('✅ Form filled')
 
@@ -382,7 +379,6 @@ test.describe('BULK-GPT Full Workflow - E2E Tests', () => {
 
     // Check values still there
     await expect(promptTextarea).toHaveValue(testPrompt)
-    await expect(contextTextarea).toHaveValue(testContext)
 
     console.log('✅ Form state persisted')
   })
