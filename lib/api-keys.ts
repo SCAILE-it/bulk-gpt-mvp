@@ -4,7 +4,7 @@
  */
 
 import { createHash, randomBytes } from 'crypto'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 import { logError } from '@/lib/errors'
 
 export interface ApiKey {
@@ -41,9 +41,7 @@ export async function generateApiKey(userId: string, name: string): Promise<ApiK
   const prefix = key.slice(0, 12) // bgpt_<first8>
   const hash = createHash('sha256').update(key).digest('hex')
 
-  const supabase = await createServerSupabaseClient()
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('user_api_keys')
     .insert({
       user_id: userId,
@@ -77,9 +75,8 @@ export async function verifyApiKey(key: string): Promise<string | null> {
   }
 
   const hash = createHash('sha256').update(key).digest('hex')
-  const supabase = await createServerSupabaseClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('user_api_keys')
     .select('user_id, revoked_at')
     .eq('key_hash', hash)
@@ -90,7 +87,7 @@ export async function verifyApiKey(key: string): Promise<string | null> {
 
   // Update last used timestamp asynchronously (fire and forget)
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  supabase
+  supabaseAdmin
     .from('user_api_keys')
     .update({ last_used_at: new Date().toISOString() })
     .eq('key_hash', hash)
@@ -102,9 +99,7 @@ export async function verifyApiKey(key: string): Promise<string | null> {
  * List all API keys for a user (excludes revoked by default)
  */
 export async function listApiKeys(userId: string, includeRevoked = false): Promise<ApiKey[]> {
-  const supabase = await createServerSupabaseClient()
-
-  let query = supabase
+  let query = supabaseAdmin
     .from('user_api_keys')
     .select('id, name, key_prefix, created_at, last_used_at, revoked_at')
     .eq('user_id', userId)
@@ -132,9 +127,7 @@ export async function listApiKeys(userId: string, includeRevoked = false): Promi
  * Revoke an API key (soft delete - sets revoked_at timestamp)
  */
 export async function revokeApiKey(userId: string, keyId: string): Promise<void> {
-  const supabase = await createServerSupabaseClient()
-
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('user_api_keys')
     .update({ revoked_at: new Date().toISOString() })
     .eq('id', keyId)
@@ -147,9 +140,7 @@ export async function revokeApiKey(userId: string, keyId: string): Promise<void>
  * Get usage statistics for a user
  */
 export async function getUserUsage(userId: string): Promise<UsageStats | null> {
-  const supabase = await createServerSupabaseClient()
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('user_usage')
     .select('*')
     .eq('user_id', userId)
@@ -196,9 +187,7 @@ export async function checkUsageLimits(userId: string, rowCount: number): Promis
   allowed: boolean
   reason?: string
 }> {
-  const supabase = await createServerSupabaseClient()
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .rpc('check_usage_limits', { p_user_id: userId })
     .single() as {
       data: {
