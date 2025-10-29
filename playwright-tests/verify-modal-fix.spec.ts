@@ -5,7 +5,7 @@ test.describe('Modal → Supabase Integration Verification', () => {
     // Set longer timeout for this test (includes API calls)
     test.setTimeout(120000);
 
-    const BASE_URL = 'http://localhost:5177';
+    const BASE_URL = 'http://localhost:3334';
     
     console.log('Step 1: Navigate to wizard');
     await page.goto(`${BASE_URL}/wizard`);

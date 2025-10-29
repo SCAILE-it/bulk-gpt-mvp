@@ -27,7 +27,7 @@ Jane Smith,Tech Inc`;
 
     // Step 1: Navigate to bulk processor
     console.log('📍 Step 1: Navigate to /bulk');
-    await page.goto('http://localhost:3333/bulk', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3334/bulk', { waitUntil: 'networkidle' });
 
     // Wait for page to be interactive
     await page.waitForTimeout(2000);
@@ -91,7 +91,7 @@ Jane Smith,Tech Inc`;
 
     // Step 6: Navigate to dashboard
     console.log('📊 Step 6: Navigate to dashboard');
-    await page.goto('http://localhost:3333/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3334/dashboard', { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
 
     // Step 7: Verify token tracking display
@@ -127,7 +127,7 @@ Jane Smith,Tech Inc`;
     console.log('✅ Dashboard screenshot saved');
 
     // Go back to bulk page for screenshot
-    await page.goto('http://localhost:3333/bulk', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3334/bulk', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
     await page.screenshot({
       path: 'test-results/token-tracking-bulk.png',
@@ -137,7 +137,7 @@ Jane Smith,Tech Inc`;
 
     // Step 9: Verify download functionality
     console.log('💾 Step 9: Test download functionality');
-    await page.goto('http://localhost:3333/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3334/dashboard', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
     const downloadButton = page.locator('button:has-text("Download"), [aria-label*="download" i]').first();
@@ -166,7 +166,7 @@ Jane Smith,Tech Inc`;
     console.log('🧪 Testing dashboard loading state...');
 
     // Navigate to dashboard
-    await page.goto('http://localhost:3333/dashboard');
+    await page.goto('http://localhost:3334/dashboard');
 
     // Check if skeleton appears (it may be very brief)
     const skeletonVisible = await page.locator('.animate-pulse, [class*="skeleton"]')
@@ -196,7 +196,7 @@ Jane Smith,Tech Inc`;
   test('should show toast notifications for errors', async ({ page }) => {
     console.log('🧪 Testing toast notifications...');
 
-    await page.goto('http://localhost:3333/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3334/dashboard', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
     // Try to trigger an error by downloading non-existent batch

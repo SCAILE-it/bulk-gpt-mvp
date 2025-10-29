@@ -4,7 +4,7 @@ import path from 'path'
 test.describe('Phase 1 (P0) - Critical UX Fixes Verification', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to bulk processor on local dev server
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
   })
 

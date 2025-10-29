@@ -10,7 +10,7 @@ test.describe('Full Flow Screenshot Capture', () => {
     console.log('🎬 Starting full flow screenshot capture...')
 
     // Navigate to app
-    await page.goto('http://localhost:5177')
+    await page.goto('http://localhost:3334')
     await page.waitForLoadState('networkidle')
 
     // SCREENSHOT 1: Auth Page
@@ -52,7 +52,7 @@ test.describe('Full Flow Screenshot Capture', () => {
 
     // Navigate to wizard (will redirect to auth if not authenticated)
     console.log('🧙 Navigating to wizard...')
-    await page.goto('http://localhost:5177/wizard')
+    await page.goto('http://localhost:3334/wizard')
     await page.waitForLoadState('networkidle')
 
     // SCREENSHOT 3: Wizard redirect or landing
@@ -73,7 +73,7 @@ test.describe('Full Flow Screenshot Capture', () => {
       // Try to take a screenshot of what the wizard WOULD look like
       // by directly visiting it (even though auth will block)
       console.log('📸 Attempting to capture wizard UI structure...')
-      await page.goto('http://localhost:5177/wizard', { waitUntil: 'domcontentloaded' })
+      await page.goto('http://localhost:3334/wizard', { waitUntil: 'domcontentloaded' })
       await page.screenshot({
         path: '/tmp/flow-4-wizard-blocked.png',
         fullPage: true
@@ -82,7 +82,7 @@ test.describe('Full Flow Screenshot Capture', () => {
 
     // Try homepage
     console.log('🏠 Capturing homepage...')
-    await page.goto('http://localhost:5177')
+    await page.goto('http://localhost:3334')
     await page.waitForLoadState('networkidle')
     await page.screenshot({
       path: '/tmp/flow-5-homepage.png',

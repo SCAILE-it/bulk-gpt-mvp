@@ -31,7 +31,7 @@ test.describe('Bulk Processor - /bulk Route', () => {
 
   test.beforeEach(async ({ page }) => {
     // Navigate to bulk processor
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
 
     // Wait for page to load
     await page.waitForLoadState('networkidle')
@@ -450,7 +450,7 @@ test.describe('Bulk Processor - /bulk Route', () => {
 test.describe('DIAGNOSTIC: Page Structure', () => {
 
   test('dump page structure for debugging', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // Get all buttons

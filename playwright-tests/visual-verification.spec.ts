@@ -4,7 +4,7 @@ const SCREENSHOT_DIR = 'test-reports/visual-verification-screenshots';
 
 test.describe('Visual Verification - Phase 3 UX Features', () => {
   test.beforeEach(async ({ page }) => {
-    // Use baseURL from config (localhost:3333) with authenticated session
+    // Use baseURL from config (localhost:3334) with authenticated session
     await page.goto('/bulk', { waitUntil: 'networkidle' });
   });
 

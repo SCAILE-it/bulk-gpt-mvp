@@ -28,7 +28,7 @@ test('verify buttons visible on ALL viewport sizes - mobile to 4K', async ({ pag
     console.log('='.repeat(80))
 
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1000)
 
@@ -64,7 +64,7 @@ test('verify buttons visible on ALL viewport sizes - mobile to 4K', async ({ pag
 
   console.log(`\n${'='.repeat(80)}`)
   console.log('SUMMARY')
-  console.log('='.repeat(80)}`)
+  console.log('='.repeat(80))
   console.log('Screenshots saved to test-results/universal/')
   console.log('All viewport sizes tested from mobile (375px) to 4K (3840px)')
   console.log('Layout should work WITHOUT hardcoded heights - uses flexbox from layout level')

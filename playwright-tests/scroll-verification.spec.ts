@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Left Sidebar Scroll Verification', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to bulk processor
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
   })
 

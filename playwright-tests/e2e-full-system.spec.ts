@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test'
  *   npx playwright test -g "Full System Flow"
  */
 
-const BASE_URL = 'http://localhost:5177'
+const BASE_URL = 'http://localhost:3334'
 const API_TIMEOUT = 30000 // 30 seconds for API calls
 const POLLING_TIMEOUT = 60000 // 60 seconds for Modal processing
 

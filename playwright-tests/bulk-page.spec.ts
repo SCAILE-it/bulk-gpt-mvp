@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 
 test('screenshot bulk processor page', async ({ page }) => {
   // Authenticate
-  await page.goto('http://localhost:5177');
+  await page.goto('http://localhost:3334');
   await page.fill('input[type="email"]', 'test@example.com');
   await page.fill('input[type="password"]', 'password');
   await Promise.all([
@@ -15,7 +15,7 @@ test('screenshot bulk processor page', async ({ page }) => {
   ]);
 
   // Navigate to /bulk
-  await page.goto('http://localhost:5177/bulk');
+  await page.goto('http://localhost:3334/bulk');
   await page.waitForTimeout(2000); // Wait for render
 
   // Take screenshot

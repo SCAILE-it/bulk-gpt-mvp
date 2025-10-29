@@ -4,7 +4,7 @@ import path from 'path'
 test.describe('CSV Preview Relocation Verification', () => {
   test('CSV preview appears in left sidebar, not right panel', async ({ page }) => {
     // Navigate to bulk processor
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // Upload CSV file

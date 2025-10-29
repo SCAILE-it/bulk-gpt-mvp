@@ -20,7 +20,7 @@ test.describe('UI Audit - Full User Journey', () => {
     }
 
     // Step 1: Load the bulk processing page
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
     await screenshot('01-initial-load')
 

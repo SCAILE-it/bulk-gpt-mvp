@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Dense Upload UI', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5177/wizard')
+    await page.goto('http://localhost:3334/wizard')
 
     // Check if auth is required
     const currentUrl = page.url()
@@ -111,7 +111,7 @@ test.describe('Dense Upload UI', () => {
 
 test.describe('Dense Upload UI - Visual Regression', () => {
   test('upload screen screenshot', async ({ page }) => {
-    await page.goto('http://localhost:5177/wizard')
+    await page.goto('http://localhost:3334/wizard')
 
     const currentUrl = page.url()
     if (currentUrl.includes('/auth')) {

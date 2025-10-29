@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('UX Audit - Screenshot Capture', () => {
 
   test('capture initial state', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // Full page screenshot
@@ -14,7 +14,7 @@ test.describe('UX Audit - Screenshot Capture', () => {
   })
 
   test('capture with CSV uploaded', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // Create and upload CSV
@@ -40,7 +40,7 @@ Bob Johnson,bob@startup.io,Startup Inc,Founder`
   })
 
   test('capture prompt area focus', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // Upload CSV first
@@ -71,7 +71,7 @@ John Doe,john@acme.com,Acme Corp`
 
   test('capture desktop viewport', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 })
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     await page.screenshot({
@@ -82,7 +82,7 @@ John Doe,john@acme.com,Acme Corp`
 
   test('capture laptop viewport', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     await page.screenshot({

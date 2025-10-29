@@ -4,7 +4,7 @@ import * as path from 'path'
 
 test.describe('Accessibility Improvements Verification', () => {
   test('should have ARIA labels on icon-only buttons', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // Upload CSV to reveal more UI elements
@@ -59,7 +59,7 @@ Jane Smith,jane@techco.com,TechCo Inc`
   })
 
   test('should have proper modal accessibility attributes', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     console.log('✓ Testing modal accessibility attributes...')
@@ -104,7 +104,7 @@ Jane Smith,jane@techco.com,TechCo Inc`
   })
 
   test('should show delete confirmation modal with accessibility', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     // Upload CSV
@@ -177,7 +177,7 @@ John,john@test.com`
   })
 
   test('should have accessible modal close buttons', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     console.log('✓ Testing modal close button accessibility...')
@@ -205,7 +205,7 @@ John,john@test.com`
   })
 
   test('summary: accessibility improvements verification', async ({ page }) => {
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
 
     console.log('\n📊 ACCESSIBILITY VERIFICATION SUMMARY\n')

@@ -2,7 +2,7 @@ import { test } from '@playwright/test'
 
 test('debug layout heights to find extra 69px', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('http://localhost:3333/bulk')
+  await page.goto('http://localhost:3334/bulk')
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(1000)
 

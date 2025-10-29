@@ -15,7 +15,7 @@ test('test typical Mac viewport sizes', async ({ page }) => {
     console.log('='.repeat(80))
 
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
-    await page.goto('http://localhost:3333/bulk')
+    await page.goto('http://localhost:3334/bulk')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1000)
 

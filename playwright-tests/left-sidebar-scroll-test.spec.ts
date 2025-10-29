@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import path from 'path'
 
 test.describe('Left Sidebar Scroll Fix Verification', () => {
-  const TEST_URL = 'http://localhost:3333'
+  const TEST_URL = 'http://localhost:3334'
 
   // Test at multiple viewport heights (standard laptop to desktop)
   const viewportTests = [

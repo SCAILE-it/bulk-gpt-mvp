@@ -1,7 +1,7 @@
 import { test } from '@playwright/test'
 
 test('verify Test and Run buttons are visible at bottom', async ({ page }) => {
-  await page.goto('http://localhost:3333/bulk')
+  await page.goto('http://localhost:3334/bulk')
   await page.waitForLoadState('networkidle')
 
   // Take screenshot of JUST the left panel to see the buttons

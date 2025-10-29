@@ -17,7 +17,7 @@ test.describe('Left Sidebar Scroll Verification (No Auth)', () => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height })
 
       // Navigate directly to bulk (might redirect to auth, but we'll measure the layout anyway)
-      await page.goto('http://localhost:3333/bulk')
+      await page.goto('http://localhost:3334/bulk')
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(1000) // Wait for layout to stabilize
 
