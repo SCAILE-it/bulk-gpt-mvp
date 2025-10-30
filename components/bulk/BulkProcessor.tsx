@@ -24,6 +24,7 @@ import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { useManualJobOptimizer } from '@/hooks/useManualJobOptimizer'
 import { PromptSection } from './PromptSection'
 import { JobPreview } from './JobPreview'
+import { CSVPreviewTable } from './CSVPreviewTable'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
@@ -1512,7 +1513,11 @@ export default function BulkProcessor() {
                 </table>
               </div>
             </>
+          ) : currentCsvData ? (
+            // Show CSV preview when CSV is uploaded but no results yet
+            <CSVPreviewTable csvData={currentCsvData} />
           ) : (
+            // Empty state - no CSV uploaded
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center space-y-4 max-w-md">
                 <div className="mx-auto w-16 h-16 rounded-full bg-blue-500/10 border-2 border-blue-500/20 flex items-center justify-center">
