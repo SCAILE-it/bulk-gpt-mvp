@@ -142,18 +142,22 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     // Invoke Modal processor asynchronously (fire and forget)
     const modalUrl = process.env.MODAL_API_URL || 'https://scaile--bulk-gpt-processor-mvp-fastapi-app.modal.run'
-    
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns, webhookUrl).catch((error) => {
+
+    // Add small delay to ensure batch commit is visible to Modal's DB connection
+    // (Fixes race condition where Modal tries to insert batch_results before batch exists)
+    setTimeout(() => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns, webhookUrl).catch((error) => {
       logError(error instanceof Error ? error : new Error('Modal invocation failed'), {
         source: 'api/process/POST/invokeModalAsync',
         batchId
       })
-      // Mark batch as failed (best effort, don't block response)
-      markBatchFailed(batchId)
-      // Release rate limit on failure
-      releaseBatch(userId)
-    })
+        // Mark batch as failed (best effort, don't block response)
+        markBatchFailed(batchId)
+        // Release rate limit on failure
+        releaseBatch(userId)
+      })
+    }, 500) // 500ms delay to ensure DB commit propagation
 
     // Return immediately with batch ID
     return NextResponse.json(
