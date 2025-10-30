@@ -1521,6 +1521,7 @@ export default function BulkProcessor() {
             <ResultsTable
               results={currentResults}
               columns={currentCsvData?.columns || []}
+              outputColumns={outputFields}
               progress={currentProgress}
               processingStartTime={processingStartTime}
               onExport={handleExport}

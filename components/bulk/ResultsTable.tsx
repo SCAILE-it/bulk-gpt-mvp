@@ -24,6 +24,7 @@ interface Progress {
 interface ResultsTableProps {
   results: Result[]
   columns: string[]
+  outputColumns?: string[]
   progress?: Progress
   processingStartTime?: number
   onExport: () => void
@@ -32,6 +33,7 @@ interface ResultsTableProps {
 export function ResultsTable({
   results,
   columns,
+  outputColumns = [],
   progress,
   processingStartTime,
   onExport
@@ -92,7 +94,13 @@ export function ResultsTable({
               {columns.map(h => (
                 <th key={h} className="px-4 py-2 text-left font-medium text-zinc-500">{h}</th>
               ))}
-              <th className="px-4 py-2 text-left font-medium text-zinc-500">Output</th>
+              {outputColumns.length > 0 ? (
+                outputColumns.map(col => (
+                  <th key={col} className="px-4 py-2 text-left font-medium text-zinc-500">{col}</th>
+                ))
+              ) : (
+                <th className="px-4 py-2 text-left font-medium text-zinc-500">Output</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -145,15 +153,84 @@ export function ResultsTable({
                     {result.input[h] || '—'}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-zinc-300">
-                  {result.error ? (
-                    <span className="text-red-400 text-xs">{result.error}</span>
-                  ) : result.output ? (
-                    <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">{String(result.output)}</span>
-                  ) : (
-                    <span className="text-zinc-600">—</span>
-                  )}
-                </td>
+                {outputColumns.length > 0 ? (
+                  // Parse JSON output and render each field as a separate column
+                  outputColumns.map(col => {
+                    if (result.error) {
+                      return (
+                        <td key={col} className="px-4 py-3">
+                          <span className="text-red-400 text-xs">{result.error}</span>
+                        </td>
+                      )
+                    }
+
+                    if (!result.output) {
+                      return (
+                        <td key={col} className="px-4 py-3">
+                          <span className="text-zinc-600">—</span>
+                        </td>
+                      )
+                    }
+
+                    try {
+                      // Parse the JSON output
+                      const outputData = typeof result.output === 'string'
+                        ? JSON.parse(result.output)
+                        : result.output
+
+                      const value = outputData[col]
+
+                      // Handle different value types
+                      if (value === null || value === undefined) {
+                        return (
+                          <td key={col} className="px-4 py-3">
+                            <span className="text-zinc-600">—</span>
+                          </td>
+                        )
+                      }
+
+                      // If value is an array or object, stringify it
+                      const displayValue = typeof value === 'object'
+                        ? JSON.stringify(value, null, 2)
+                        : String(value)
+
+                      return (
+                        <td key={col} className="px-4 py-3 text-zinc-300">
+                          <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">
+                            {displayValue}
+                          </span>
+                        </td>
+                      )
+                    } catch (error) {
+                      // If JSON parsing fails, show the raw output in the first column only
+                      if (col === outputColumns[0]) {
+                        return (
+                          <td key={col} className="px-4 py-3 text-zinc-300">
+                            <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">
+                              {String(result.output)}
+                            </span>
+                          </td>
+                        )
+                      }
+                      return (
+                        <td key={col} className="px-4 py-3">
+                          <span className="text-zinc-600">—</span>
+                        </td>
+                      )
+                    }
+                  })
+                ) : (
+                  // Fallback to single output column (original behavior)
+                  <td className="px-4 py-3 text-zinc-300">
+                    {result.error ? (
+                      <span className="text-red-400 text-xs">{result.error}</span>
+                    ) : result.output ? (
+                      <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">{String(result.output)}</span>
+                    ) : (
+                      <span className="text-zinc-600">—</span>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
