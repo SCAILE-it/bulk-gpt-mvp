@@ -11,7 +11,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle, XCircle,
   Loader2, Plus, X, ChevronDown, HelpCircle,
-  Settings, Table2, Webhook, Code, Search, Filter, Sparkles, Database, FileEdit, AlertTriangle
+  Table2, Webhook, Code, Search, Filter, Sparkles, Database, FileEdit, AlertTriangle
 } from 'lucide-react'
 import { parseCSV } from '@/lib/csv-parser'
 import type { ParsedCSV } from '@/lib/types'
@@ -465,7 +465,7 @@ export default function BulkProcessor() {
     }
   }, [fieldToDelete, outputFields])
 
-  // === TEST (1 ROW) ===
+  // === TEST (1 ROW) - Now polls for async results ===
   const handleTest = useCallback(async () => {
     if (!currentCsvData || !prompt) return
 
@@ -485,6 +485,7 @@ export default function BulkProcessor() {
     setError(null)
 
     try {
+      // Step 1: Create batch (async)
       const response = await fetch('/api/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -505,37 +506,80 @@ export default function BulkProcessor() {
 
       const data = await response.json()
 
-      // Validate we have actual results, not just batch creation response
-      if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-        throw new Error('No results returned from API. Batch may still be processing.')
+      // API returns 202 with batchId, status: 'pending'
+      if (!data.batchId) {
+        throw new Error('No batch ID returned from API')
       }
 
-      // Extract the actual output from the first result
-      const firstResult = data.results[0]
-      let outputValue: string
+      const testBatchId = data.batchId
 
-      if (firstResult.output !== undefined && firstResult.output !== null) {
-        // Use the output value - stringify if it's an object
-        outputValue = typeof firstResult.output === 'string'
-          ? firstResult.output
-          : JSON.stringify(firstResult.output, null, 2)
-      } else {
-        // If output is missing, show a meaningful error
-        throw new Error('API returned results but output field is missing')
+      // Step 2: Poll for completion (max 30 seconds)
+      const maxAttempts = 15 // 15 attempts * 2 seconds = 30 seconds
+      const pollInterval = 2000 // 2 seconds
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval))
+
+        const statusResponse = await fetch(`/api/batch/${testBatchId}/status`)
+        if (!statusResponse.ok) continue
+
+        const statusData = await statusResponse.json()
+
+        // Check if completed
+        if (statusData.status === 'completed') {
+          // Fetch the result
+          const supabase = createClient()
+          if (!supabase) {
+            throw new Error('Database client not configured')
+          }
+
+          const { data: results, error: fetchError } = await supabase
+            .from('batch_results')
+            .select('input_data, output_data, status, error_message')
+            .eq('batch_id', testBatchId)
+            .order('id', { ascending: true })
+            .limit(1)
+
+          if (fetchError || !results || results.length === 0) {
+            throw new Error('Failed to fetch test result from database')
+          }
+
+          const firstResult = results[0]
+          const inputData = typeof firstResult.input_data === 'string'
+            ? JSON.parse(firstResult.input_data)
+            : firstResult.input_data
+
+          let outputValue: string
+          if (firstResult.output_data) {
+            outputValue = typeof firstResult.output_data === 'string'
+              ? firstResult.output_data
+              : JSON.stringify(firstResult.output_data, null, 2)
+          } else {
+            outputValue = ''
+          }
+
+          // Show test result
+          const testResult: Result = {
+            id: 'test-result',
+            input: inputData,
+            output: outputValue,
+            status: firstResult.status === 'success' ? 'completed' : 'failed',
+            error: firstResult.error_message || undefined
+          }
+          setResults([testResult])
+          setIsTesting(false)
+          return
+        } else if (statusData.status === 'failed') {
+          throw new Error('Test batch failed during processing')
+        }
       }
 
-      // Show test result in RHS (same format as batch results)
-      const testResult: Result = {
-        id: 'test-result',
-        input: currentCsvData.rows[0].data,
-        output: outputValue,
-        status: 'completed'
-      }
-      setResults([testResult])
+      // Timeout
+      throw new Error('Test timed out after 30 seconds. The API may be slow or overloaded. Try again in a moment.')
 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
-      setError(`Test failed: ${message}. Check your prompt and try again. If the issue persists, check the API status.`)
+      setError(`Test failed: ${message}`)
     } finally {
       setIsTesting(false)
     }
@@ -1154,14 +1198,66 @@ export default function BulkProcessor() {
               onOpenTemplates={() => setShowTemplateModal(true)}
             />
 
-            {/* OPTIMIZE WITH AI BUTTON */}
+            {/* OUTPUT COLUMNS - Now inline for better visibility */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Table2 className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                <label className="text-xs font-medium text-zinc-300">Output Columns</label>
+                <div className="group relative">
+                  <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
+                  <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-72 p-3 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
+                    <p className="font-medium mb-1.5">What are output columns?</p>
+                    <p className="mb-2">These define what fields the AI generates for each row in your CSV export.</p>
+                    <p className="text-zinc-400">
+                      <span className="font-medium">Example:</span> If you set &quot;bio&quot; and &quot;summary&quot;, your exported CSV will have both columns filled with AI-generated content.
+                    </p>
+                    <p className="mt-2 text-zinc-500 text-[11px]">Default is &quot;bio&quot; - most users keep this.</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-500">
+                Define what columns appear in your exported CSV. The AI will generate content for each field.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {outputFields.map(field => (
+                  <div key={field} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-900 border border-white/5 rounded text-sm text-zinc-300 font-mono">
+                    {field}
+                    <button
+                      onClick={() => removeOutputField(field)}
+                      className="hover:text-red-400 transition-colors"
+                      aria-label={`Remove ${field} output field`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                <div className="inline-flex gap-1">
+                  <input
+                    value={newField}
+                    onChange={(e) => setNewField(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addOutputField()}
+                    placeholder="field..."
+                    className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
+                  />
+                  <button
+                    onClick={addOutputField}
+                    className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                    aria-label="Add output field"
+                  >
+                    <Plus className="h-3 w-3 text-zinc-500" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* OPTIMIZE WITH AI BUTTON - Improved text to clarify it auto-detects columns */}
             {prompt && csvData && !optimizedPrompt && !isOptimizing && (
               <button
                 onClick={triggerOptimization}
                 className="mt-3 w-full px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-md text-sm font-medium text-blue-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Sparkles className="h-4 w-4" />
-                Optimize with AI
+                Optimize with AI (auto-detect columns)
               </button>
             )}
 
@@ -1233,16 +1329,47 @@ export default function BulkProcessor() {
                 </div>
               )}
 
-            {/* ADVANCED SETTINGS (Modal) */}
+            {/* WEBHOOK URL - Moved from Advanced modal */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Webhook className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                <label htmlFor="webhook" className="text-xs font-medium text-zinc-400">
+                  Webhook URL
+                </label>
+                <span className="text-xs text-zinc-600">(optional)</span>
+              </div>
+              <input
+                id="webhook"
+                value={webhookUrl}
+                onChange={(e) => setWebhookUrl(e.target.value)}
+                placeholder="https://hooks.n8n.cloud/..."
+                className={`w-full px-3 py-1.5 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all duration-150 ease-out ${
+                  !webhookValidation.isValid
+                    ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40 focus:shadow-[0_0_4px_rgba(249,115,22,0.4)]'
+                    : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
+                }`}
+              />
+              {!webhookValidation.isValid && webhookValidation.error && (
+                <p className="text-xs text-orange-400 flex items-center gap-1">
+                  <XCircle className="h-3 w-3" />
+                  {webhookValidation.error}
+                </p>
+              )}
+              {webhookValidation.isValid && webhookUrl && (
+                <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
+              )}
+            </div>
+
+            {/* ADVANCED SETTINGS (Modal) - Now only for API access */}
             <div className="flex items-center gap-2">
-              <Settings className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-              <label className="text-xs font-medium text-zinc-400">Advanced</label>
+              <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+              <label className="text-xs font-medium text-zinc-400">API Access</label>
               <span className="text-xs text-zinc-600">(optional)</span>
               <button
                 onClick={() => setShowAdvancedSettingsModal(true)}
                 className="ml-auto text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
               >
-                Configure →
+                Show curl command →
               </button>
             </div>
 
@@ -1562,27 +1689,27 @@ export default function BulkProcessor() {
         </div>
       )}
 
-      {/* ADVANCED SETTINGS MODAL */}
+      {/* API ACCESS MODAL - Simplified (output columns & webhook moved to main UI) */}
       {showAdvancedSettingsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowAdvancedSettingsModal(false)} tabIndex={-1}>
           <div
             ref={advancedSettingsModalRef}
-            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
-            aria-labelledby="advanced-settings-title"
+            aria-labelledby="api-access-title"
             aria-modal="true"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/5 flex-shrink-0">
               <div className="flex items-center gap-3">
-                <Settings className="h-5 w-5 text-zinc-400" />
-                <h2 id="advanced-settings-title" className="text-lg font-medium text-zinc-100">Advanced Settings</h2>
+                <Code className="h-5 w-5 text-zinc-400" />
+                <h2 id="api-access-title" className="text-lg font-medium text-zinc-100">API Access</h2>
               </div>
               <button
                 onClick={() => setShowAdvancedSettingsModal(false)}
                 className="text-zinc-400 hover:text-zinc-200 transition-colors"
-                aria-label="Close advanced settings"
+                aria-label="Close API access"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1590,117 +1717,29 @@ export default function BulkProcessor() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-6">
-                <p className="text-sm text-zinc-500">Optional configuration for advanced use cases</p>
+              <div className="space-y-4">
+                <p className="text-sm text-zinc-500">Use the API to integrate bulk processing with your tools</p>
 
-                {/* OUTPUT COLUMN NAMES */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Table2 className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-                    <label className="text-sm font-medium text-zinc-300">Output Column Names</label>
-                    <div className="group relative">
-                      <HelpCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" aria-label="Help about output fields" />
-                      <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-72 p-3 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
-                        <p className="font-medium mb-1.5">What are output fields?</p>
-                        <p className="mb-2">These are the column names where AI results will appear in your downloaded CSV.</p>
-                        <p className="text-zinc-400">
-                          <span className="font-medium">Example:</span> If you set &quot;summary&quot; as a field, your CSV will have a &quot;summary&quot; column with AI-generated content for each row.
-                        </p>
-                        <p className="mt-2 text-zinc-500 text-[11px]">Default is &quot;bio&quot; - most users don&apos;t need to change this.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-zinc-500">
-                    Name the columns where AI output will appear in your downloaded CSV. The default &quot;bio&quot; works for most use cases.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {outputFields.map(field => (
-                      <div key={field} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border border-white/5 rounded text-sm text-zinc-300 font-mono">
-                        {field}
-                        <button
-                          onClick={() => removeOutputField(field)}
-                          className="hover:text-red-400 transition-colors"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                    <div className="inline-flex gap-1.5">
-                      <input
-                        value={newField}
-                        onChange={(e) => setNewField(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && addOutputField()}
-                        placeholder="Add field..."
-                        className="w-28 px-3 py-1.5 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
-                      />
-                      <button
-                        onClick={addOutputField}
-                        className="p-1.5 hover:bg-zinc-800 rounded transition-colors"
-                      >
-                        <Plus className="h-3.5 w-3.5 text-zinc-500" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* WEBHOOK URL */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Webhook className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-                    <label htmlFor="webhook-modal" className="text-sm font-medium text-zinc-300">
-                      Webhook URL
-                    </label>
-                    <span className="text-xs text-zinc-600">(optional)</span>
-                  </div>
-                  <input
-                    id="webhook-modal"
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://hooks.n8n.cloud/..."
-                    className={`w-full px-3 py-2 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all ${
-                      !webhookValidation.isValid
-                        ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40'
-                        : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
-                    }`}
-                  />
-                  {!webhookValidation.isValid && webhookValidation.error && (
-                    <p className="text-xs text-orange-400 flex items-center gap-1.5">
-                      <XCircle className="h-3.5 w-3.5" />
-                      {webhookValidation.error}
-                    </p>
-                  )}
-                  {webhookValidation.isValid && webhookUrl && (
-                    <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
-                  )}
-                </div>
-
-                {/* API ACCESS */}
-                <div className="space-y-3 pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-2">
-                    <Code className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-                    <label className="text-sm font-medium text-zinc-300">API Access</label>
-                  </div>
-                  {!showApiAccess ? (
-                    <button
-                      onClick={handleFetchToken}
-                      disabled={isFetchingToken}
-                      className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isFetchingToken && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                      <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
-                    </button>
-                  ) : (
-                    <div className="space-y-2">
-                      <pre className="p-4 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
+                {!showApiAccess ? (
+                  <button
+                    onClick={handleFetchToken}
+                    disabled={isFetchingToken}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isFetchingToken && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <span>{isFetchingToken ? 'Loading...' : 'Generate curl command'}</span>
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <pre className="p-4 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
 {`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/process \\
   -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
   -H "Content-Type: application/json" \\
-  -d '{"csvFilename":"data.csv","rows":[...]}'`}
-                      </pre>
-                      <p className="text-xs text-zinc-500">Use in n8n, Zapier, Postman, or any HTTP client</p>
-                    </div>
-                  )}
-                </div>
+  -d '{"csvFilename":"data.csv","rows":[...],"prompt":"..."}'`}
+                    </pre>
+                    <p className="text-xs text-zinc-500">Use in n8n, Zapier, Postman, or any HTTP client to automate batch processing</p>
+                  </div>
+                )}
               </div>
             </div>
 
