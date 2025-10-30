@@ -31,33 +31,33 @@ export function BatchStatusCard({
     : 0
 
   return (
-    <div className="px-6 py-4 border-b border-white/5 bg-gradient-to-br from-zinc-900/50 to-zinc-950/50">
+    <div className="px-6 py-4 border-b border-white/5 bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 animate-slide-in-up">
       {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {/* Success */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-green-500/5 border border-green-500/10 rounded-lg">
+        <div className="flex items-center gap-2 px-3 py-2 bg-green-500/5 border border-green-500/10 rounded-lg transition-all duration-300 hover:bg-green-500/10">
           <CheckCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-zinc-500">Success</p>
-            <p className="text-lg font-semibold text-green-400">{successCount}</p>
+            <p className="text-lg font-semibold text-green-400 tabular-nums transition-all duration-300">{successCount}</p>
           </div>
         </div>
 
         {/* Errors */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-500/5 border border-red-500/10 rounded-lg">
+        <div className="flex items-center gap-2 px-3 py-2 bg-red-500/5 border border-red-500/10 rounded-lg transition-all duration-300 hover:bg-red-500/10">
           <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-zinc-500">Failed</p>
-            <p className="text-lg font-semibold text-red-400">{errorCount}</p>
+            <p className="text-lg font-semibold text-red-400 tabular-nums transition-all duration-300">{errorCount}</p>
           </div>
         </div>
 
         {/* Pending */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/5 border border-blue-500/10 rounded-lg">
+        <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/5 border border-blue-500/10 rounded-lg transition-all duration-300 hover:bg-blue-500/10">
           <Clock className="h-4 w-4 text-blue-400 flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-zinc-500">Pending</p>
-            <p className="text-lg font-semibold text-blue-400">{pendingCount}</p>
+            <p className="text-lg font-semibold text-blue-400 tabular-nums transition-all duration-300">{pendingCount}</p>
           </div>
         </div>
       </div>
