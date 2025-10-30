@@ -6,6 +6,7 @@
 'use client'
 
 import { CheckCircle, XCircle, Loader2, Download } from 'lucide-react'
+import { BatchStatusCard } from './BatchStatusCard'
 
 interface Result {
   id: string
@@ -35,8 +36,8 @@ export function ResultsTable({
   processingStartTime,
   onExport
 }: ResultsTableProps) {
-  const completedCount = results.filter(r => r.status === 'completed').length
-  const totalCount = results.length
+  const successCount = results.filter(r => r.status === 'completed').length
+  const errorCount = results.filter(r => r.status === 'failed').length
 
   // Calculate estimated time remaining
   const estimatedSeconds = progress && processingStartTime && progress.completed < progress.total
@@ -50,6 +51,16 @@ export function ResultsTable({
 
   return (
     <>
+      {/* Batch Status Card - Show when actively processing */}
+      {progress && progress.total > 0 && (
+        <BatchStatusCard
+          progress={progress}
+          successCount={successCount}
+          errorCount={errorCount}
+          estimatedSeconds={estimatedSeconds}
+        />
+      )}
+
       {/* Header */}
       <div className="border-b border-white/5">
         <div className="flex items-center justify-between px-6 py-3">
@@ -57,15 +68,10 @@ export function ResultsTable({
             <span className="text-xs font-medium text-zinc-400">Results</span>
             <span className="text-xs text-zinc-600">
               {progress
-                ? `${progress.completed}/${progress.total} completed`
-                : `${completedCount}/${totalCount} completed`
+                ? `${progress.completed}/${progress.total} rows`
+                : `${results.length} rows`
               }
             </span>
-            {estimatedSeconds && (
-              <span className="text-xs text-zinc-600">
-                • ~{estimatedSeconds}s remaining
-              </span>
-            )}
           </div>
           <button
             onClick={onExport}
@@ -75,18 +81,6 @@ export function ResultsTable({
             <span>Export</span>
           </button>
         </div>
-
-        {/* Progress Bar */}
-        {progress && progress.total > 0 && (
-          <div className="px-6 pb-3">
-            <div className="w-full h-1.5 bg-zinc-900/50 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-blue-500 transition-all duration-300 ease-out"
-                style={{ width: `${(progress.completed / progress.total) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Table */}
