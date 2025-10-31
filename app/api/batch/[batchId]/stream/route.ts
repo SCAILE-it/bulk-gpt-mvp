@@ -82,10 +82,15 @@ export async function GET(
             lastResultCount = currentResultCount
           }
 
+          // Calculate completed count (only rows that finished processing)
+          const completedCount = results?.filter(r =>
+            r.status === 'success' || r.status === 'error'
+          ).length || 0
+
           // Send progress update
           sendEvent('progress', {
             total: batch.total_rows || 0,
-            completed: currentResultCount,
+            completed: completedCount,
             status: batch.status,
           })
 
