@@ -25,7 +25,8 @@ export function BatchStatusCard({
   errorCount,
   estimatedSeconds
 }: BatchStatusCardProps) {
-  const pendingCount = progress.total - progress.completed
+  // Calculate pending as remaining rows (total minus success minus errors)
+  const pendingCount = progress.total - successCount - errorCount
   const progressPercentage = progress.total > 0
     ? (progress.completed / progress.total) * 100
     : 0
