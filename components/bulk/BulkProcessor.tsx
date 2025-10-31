@@ -979,10 +979,10 @@ export default function BulkProcessor() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 h-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 h-screen overflow-hidden">
         {/* LEFT PANEL - Configuration */}
         <div className="h-full border-r border-white/5 bg-zinc-900 flex flex-col">
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          <div className="flex-1 overflow-y-auto p-2 space-y-2 max-h-[calc(100vh-12rem)]">
             {/* Error - Use V2 error if available */}
             {(currentError || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
