@@ -142,8 +142,20 @@ export function ResultsTable({
                     )}
                     {result.status === 'pending' && (
                       <>
-                        <div className="h-4 w-4 rounded-full border border-zinc-700 flex-shrink-0" />
-                        <span className="text-xs text-zinc-600">Waiting in queue...</span>
+                        <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="text-xs text-blue-400">
+                            {processingStartTime && Date.now() - processingStartTime > 60000
+                              ? 'Processing...'
+                              : 'Starting AI processor...'}
+                          </span>
+                          {processingStartTime && Date.now() - processingStartTime < 120000 && (
+                            <span className="text-xs text-zinc-600">
+                              {Math.floor((Date.now() - processingStartTime) / 1000)}s elapsed
+                              {Date.now() - processingStartTime < 60000 && ' (may take 60-90s)'}
+                            </span>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
