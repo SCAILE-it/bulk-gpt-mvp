@@ -222,11 +222,11 @@ async function invokeModalAsync(
         'X-Batch-ID': batchId,
       },
       body: bodyString,
-      timeoutMs: 30000, // 30 seconds timeout
+      timeoutMs: 120000, // 2 minutes timeout (Modal cold start can take 60-90s)
       retryOptions: {
-        maxRetries: 3,
-        initialDelay: 1000, // 1 second
-        maxDelay: 10000, // 10 seconds (faster for API endpoint)
+        maxRetries: 2, // Reduce retries since timeout is higher
+        initialDelay: 2000, // 2 seconds
+        maxDelay: 10000, // 10 seconds
       },
     })
 
