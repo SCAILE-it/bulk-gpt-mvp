@@ -53,7 +53,7 @@ export class APIClient {
 
   constructor(config: APIClientConfig = {}) {
     this.baseURL = config.baseURL || ''
-    this.timeout = config.timeout || 30000 // 30s default
+    this.timeout = config.timeout || 150000 // 150s default (V2 Modal cold start can take 60-90s)
     this.maxRetries = config.maxRetries || 3
   }
 
