@@ -61,8 +61,8 @@ export function DebugLogger({ maxLogs = 100 }: DebugLoggerProps) {
       })
     }
 
-    window.addEventListener('debug-log' as any, handleLog)
-    return () => window.removeEventListener('debug-log' as any, handleLog)
+    window.addEventListener('debug-log', handleLog as EventListener)
+    return () => window.removeEventListener('debug-log', handleLog as EventListener)
   }, [maxLogs])
 
   const filteredLogs = filterLevel === 'all'
