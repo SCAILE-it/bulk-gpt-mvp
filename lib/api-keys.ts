@@ -187,17 +187,17 @@ export async function checkUsageLimits(userId: string, rowCount: number): Promis
   allowed: boolean
   reason?: string
 }> {
+  // Note: check_usage_limits is a RETURNS TABLE function, so it returns an array
   const { data, error } = await supabaseAdmin
-    .rpc('check_usage_limits', { p_user_id: userId })
-    .single() as {
-      data: {
+    .rpc('check_usage_limits', { p_user_id: userId }) as {
+      data: Array<{
         can_process: boolean
         reason: string
         batches_today: number
         rows_today: number
         daily_batch_limit: number
         daily_row_limit: number
-      } | null
+      }> | null
       error: unknown
     }
 
@@ -210,19 +210,22 @@ export async function checkUsageLimits(userId: string, rowCount: number): Promis
     return { allowed: true }
   }
 
-  if (!data || !data.can_process) {
+  // Extract first row from table result
+  const result = data?.[0]
+
+  if (!result || !result.can_process) {
     return {
       allowed: false,
-      reason: data?.reason || 'Unable to verify usage limits'
+      reason: result?.reason || 'Unable to verify usage limits'
     }
   }
 
   // Also check if this specific batch would exceed daily row limit
-  const wouldExceedRows = (data.rows_today + rowCount) > data.daily_row_limit
+  const wouldExceedRows = (result.rows_today + rowCount) > result.daily_row_limit
   if (wouldExceedRows) {
     return {
       allowed: false,
-      reason: `This batch would exceed your daily row limit. You have ${data.rows_today}/${data.daily_row_limit} rows processed today, and this batch has ${rowCount} rows.`
+      reason: `This batch would exceed your daily row limit. You have ${result.rows_today}/${result.daily_row_limit} rows processed today, and this batch has ${rowCount} rows.`
     }
   }
 
