@@ -81,7 +81,7 @@ export function Nav() {
         {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2">
+            <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu-button">
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
                 <User className="h-4 w-4 text-primary" />
               </div>
