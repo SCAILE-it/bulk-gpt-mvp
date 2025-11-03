@@ -143,9 +143,16 @@ export async function POST(request: NextRequest): Promise<Response> {
     // Invoke V2 Modal processor asynchronously (fire and forget)
     const modalUrl = process.env.MODAL_API_URL || 'https://scaile--g-mcp-tools-v2-api.modal.run/bulk/generic'
 
+    // DEBUG: Log Modal URL being used
+    console.log('[DEBUG] Modal URL:', modalUrl)
+    console.log('[DEBUG] Batch ID:', batchId)
+    console.log('[DEBUG] Rows count:', rows.length)
+    console.log('[DEBUG] Starting async Modal invocation...')
+
     // V2 doesn't need delay - no race condition since it manages its own batch tracking
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns, webhookUrl).catch((error) => {
+      console.error('[DEBUG] Modal invocation failed:', error)
       logError(error instanceof Error ? error : new Error('Modal invocation failed'), {
         source: 'api/process/POST/invokeModalAsync',
         batchId
@@ -204,6 +211,10 @@ async function invokeModalAsync(
 ): Promise<void> {
   // Use retry logic for Modal API calls (transient failures, rate limits, etc.)
   try {
+    console.log('[DEBUG] invokeModalAsync called')
+    console.log('[DEBUG] modalUrl:', modalUrl)
+    console.log('[DEBUG] batchId:', batchId)
+
     // V2 payload format - request-level parameters, no batch_id
     const payload = {
       rows,
@@ -215,7 +226,18 @@ async function invokeModalAsync(
       webhook_url: webhookUrl || undefined,
     }
 
+    console.log('[DEBUG] Payload prepared:', {
+      rowsCount: rows.length,
+      promptLength: prompt.length,
+      outputSchemaLength: outputColumns.length,
+      hasContext: !!context,
+      hasWebhook: !!webhookUrl
+    })
+
     const bodyString = JSON.stringify(payload)
+
+    console.log('[DEBUG] Calling fetchWithRetry to Modal...')
+    const startTime = Date.now()
 
     const response = await fetchWithRetry(modalUrl, {
       method: 'POST',
@@ -232,21 +254,35 @@ async function invokeModalAsync(
       },
     })
 
+    const duration = Date.now() - startTime
+    console.log(`[DEBUG] Modal responded with status ${response.status} in ${duration}ms`)
+
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('[DEBUG] Modal error response:', errorText)
       throw new Error(`Modal returned ${response.status}: ${errorText}`)
     }
 
     // V2 returns synchronously for < 1000 rows
     const v2Response = await response.json()
+    console.log('[DEBUG] Modal response parsed:', {
+      success: v2Response.success,
+      hasResults: !!v2Response.results,
+      resultsCount: v2Response.results?.length || 0
+    })
 
     // Transform V2 response format to our batch_results format
     if (v2Response.success && v2Response.results) {
+      console.log('[DEBUG] Transforming and storing batch results...')
       await transformAndStoreBatchResults(batchId, rows, v2Response.results)
+      console.log('[DEBUG] Batch results stored successfully')
+    } else {
+      console.warn('[DEBUG] No results to store:', v2Response)
     }
 
     devLog.log(`Modal V2 request successful for batch ${batchId}, status: ${response.status}`)
   } catch (error) {
+    console.error('[DEBUG] invokeModalAsync FAILED:', error)
     logError(error instanceof Error ? error : new Error('Modal request failed'), {
       source: 'api/process/invokeModalAsync',
       batchId,

@@ -29,6 +29,8 @@ import { ResultsTable } from './ResultsTable'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
+import { useDebugLogger } from '@/lib/hooks/useDebugLogger'
+import { DebugLogger } from '@/components/debug/DebugLogger'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const RECENT_FILES_KEY = 'bulk-gpt-recent-files'
@@ -106,6 +108,9 @@ export default function BulkProcessor() {
   const currentFile = useV2FileUpload ? v2FileUpload.file : file
   const currentCsvData = useV2CSVParser ? v2CSVParser.csvData : csvData
   const currentError = useV2FileUpload ? v2FileUpload.error : (useV2CSVParser ? v2CSVParser.error : (useV2BatchProcessor ? v2BatchProcessor.error : null))
+
+  // === DEBUG LOGGING ===
+  const debugLog = useDebugLogger()
 
   // === CONFIG STATE ===
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
@@ -485,6 +490,15 @@ export default function BulkProcessor() {
     setError(null)
 
     try {
+      // Log test mode API call
+      debugLog.info('Starting test mode - sending single row to /api/process', {
+        filename: currentCsvData.filename,
+        rowCount: 1,
+        promptLength: prompt.length,
+        outputFieldsCount: outputFields.length,
+        hasWebhook: !!webhookUrl
+      })
+
       // Step 1: Create batch (async)
       const response = await fetch('/api/process', {
         method: 'POST',
@@ -499,8 +513,14 @@ export default function BulkProcessor() {
         }),
       })
 
+      debugLog.info('Test mode API response received', {
+        status: response.status,
+        ok: response.ok
+      })
+
       if (!response.ok) {
         const errorData = await response.json()
+        debugLog.error('Test mode API call failed', { status: response.status, error: errorData })
         throw new Error(errorData.error || 'Test failed')
       }
 
@@ -620,6 +640,15 @@ export default function BulkProcessor() {
     setProgress(null)
     setProcessingStartTime(Date.now())
 
+    // Log full batch processing start
+    debugLog.info('Starting full batch processing - sending all rows to /api/process', {
+      filename: currentCsvData.filename,
+      totalRows: currentCsvData.rows.length,
+      promptLength: prompt.length,
+      outputFieldsCount: outputFields.length,
+      hasWebhook: !!webhookUrl
+    })
+
     try {
       const response = await fetch('/api/process', {
         method: 'POST',
@@ -634,8 +663,14 @@ export default function BulkProcessor() {
         }),
       })
 
+      debugLog.info('Full batch processing API response received', {
+        status: response.status,
+        ok: response.ok
+      })
+
       if (!response.ok) {
         const errorData = await response.json()
+        debugLog.error('Full batch processing API call failed', { status: response.status, error: errorData })
         throw new Error(errorData.error || 'Processing failed')
       }
 
@@ -1911,6 +1946,9 @@ export default function BulkProcessor() {
           </div>
         </div>
       )}
+
+      {/* Debug Logger - Fixed position bottom-right panel */}
+      <DebugLogger />
     </div>
   )
 }
