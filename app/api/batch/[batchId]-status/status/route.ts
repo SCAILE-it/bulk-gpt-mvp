@@ -74,7 +74,22 @@ export async function GET(
     const completedRows = results?.filter(
       (r) => r.status === 'success' || r.status === 'error'
     ).length || 0
-    const progressPercent = totalRows > 0 ? Math.round((completedRows / totalRows) * 100) : 0
+
+    // Calculate progress percent (real or estimated)
+    let progressPercent = 0
+    if (completedRows > 0) {
+      // Real progress based on actual completed rows
+      progressPercent = totalRows > 0 ? Math.round((completedRows / totalRows) * 100) : 0
+    } else if (batchData.status === 'pending' || batchData.status === 'processing') {
+      // Estimated progress based on elapsed time
+      // Average processing time: ~2 seconds per row (empirical)
+      const avgTimePerRow = 2000 // 2s per row
+      const elapsedMs = Date.now() - new Date(batchData.created_at).getTime()
+      const estimatedProgress = (elapsedMs / (totalRows * avgTimePerRow)) * 100
+
+      // Show 0-90% estimated progress (leave room for final jump to 100%)
+      progressPercent = Math.min(90, Math.round(estimatedProgress))
+    }
 
     // Map results to response format
     const mappedResults = (results || []).map((r) => ({

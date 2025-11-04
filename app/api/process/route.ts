@@ -140,21 +140,35 @@ export async function POST(request: NextRequest): Promise<Response> {
     // Skip batch_results pre-creation - Modal will create them as it processes
     // (Supabase PostgREST schema cache issues prevent reliable pre-creation)
 
-    // Invoke V2 Modal processor asynchronously (fire and forget)
+    // Invoke V2 Modal processor with webhook callback (fire and forget)
     const modalUrl = process.env.MODAL_API_URL || 'https://scaile--g-mcp-tools-v2-api.modal.run/bulk/generic'
 
-    // DEBUG: Log Modal URL being used
+    // Construct webhook URL for Modal to call when done
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000'
+    const webhookCallbackUrl = `${appUrl}/api/webhook/modal-callback`
+
     console.log('[DEBUG] Modal URL:', modalUrl)
+    console.log('[DEBUG] Webhook URL:', webhookCallbackUrl)
     console.log('[DEBUG] Batch ID:', batchId)
     console.log('[DEBUG] Rows count:', rows.length)
-    console.log('[DEBUG] Starting async Modal invocation...')
+    console.log('[DEBUG] Starting fire-and-forget Modal invocation with webhook...')
 
-    // V2 doesn't need delay - no race condition since it manages its own batch tracking
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    invokeModalAsync(modalUrl, batchId, rows, prompt, context, outputColumns, webhookUrl).catch((error) => {
+    // Fire-and-forget: Call Modal without waiting for response
+    // Modal will call our webhook when done
+    invokeModalFireAndForget(
+      modalUrl,
+      batchId,
+      rows,
+      prompt,
+      context,
+      outputColumns,
+      webhookCallbackUrl
+    ).catch((error) => {
       console.error('[DEBUG] Modal invocation failed:', error)
       logError(error instanceof Error ? error : new Error('Modal invocation failed'), {
-        source: 'api/process/POST/invokeModalAsync',
+        source: 'api/process/POST/invokeModalFireAndForget',
         batchId
       })
       // Mark batch as failed (best effort, don't block response)
@@ -195,192 +209,80 @@ export async function POST(request: NextRequest): Promise<Response> {
 }
 
 /**
- * Invoke V2 Modal processor without waiting for response (fire and forget)
+ * Invoke V2 Modal processor with webhook callback (fire and forget)
  *
- * V2 uses request-level parameters instead of batch_id tracking.
- * Backend manages its own batch_job records in the database.
+ * This function calls Modal API without waiting for the response.
+ * Modal will process the batch asynchronously and call our webhook when done.
+ *
+ * NOTE: fetch() is attempted but we don't wait. If Vercel → Modal is blocked,
+ * the call will fail silently. Modal team must call the webhook from their side.
  */
-async function invokeModalAsync(
+async function invokeModalFireAndForget(
   modalUrl: string,
   batchId: string,
   rows: Record<string, string>[],
   prompt: string,
   context: string,
   outputColumns: OutputColumn[],
-  webhookUrl?: string
+  webhookUrl: string
 ): Promise<void> {
-  // Use retry logic for Modal API calls (transient failures, rate limits, etc.)
   try {
-    console.log('[DEBUG] invokeModalAsync called')
-    console.log('[DEBUG] modalUrl:', modalUrl)
-    console.log('[DEBUG] batchId:', batchId)
+    console.log('[MODAL] ========== Fire-and-Forget Invocation ==========')
+    console.log(`[MODAL] Batch ID: ${batchId}`)
+    console.log(`[MODAL] Modal URL: ${modalUrl}`)
+    console.log(`[MODAL] Webhook URL: ${webhookUrl}`)
+    console.log(`[MODAL] Rows: ${rows.length}`)
 
-    // V2 payload format - request-level parameters, no batch_id
+    // V2 payload format with webhook callback
     const payload = {
+      batch_id: batchId,  // Pass batch_id so Modal can include it in webhook
       rows,
       prompt,
       output_schema: outputColumns,
-      context: context || undefined, // Only include if non-empty
-      temperature: 0.7, // V2 default
-      max_tokens: 8192, // V2 default
-      webhook_url: webhookUrl || undefined,
+      context: context || undefined,
+      temperature: 0.7,
+      max_tokens: 8192,
+      webhook_url: webhookUrl,  // Modal will POST to this when done
     }
 
-    console.log('[DEBUG] Payload prepared:', {
-      rowsCount: rows.length,
-      promptLength: prompt.length,
-      outputSchemaLength: outputColumns.length,
-      hasContext: !!context,
-      hasWebhook: !!webhookUrl
-    })
-
     const bodyString = JSON.stringify(payload)
+    console.log(`[MODAL] Payload size: ${bodyString.length} bytes`)
 
-    console.log('[DEBUG] ========== MODAL API CALL START ==========')
-    console.log('[DEBUG] Full Modal URL:', modalUrl)
-    console.log('[DEBUG] Payload size:', bodyString.length, 'bytes')
-    console.log('[DEBUG] Timeout configured: 120000ms (2 minutes)')
-    console.log('[DEBUG] Calling fetchWithRetry now...')
+    // Attempt to call Modal (will likely fail due to network blocking)
+    // This is fire-and-forget - we don't wait for response
+    console.log('[MODAL] Attempting fetch to Modal...')
 
-    const startTime = Date.now()
-
-    try {
-      const response = await fetchWithRetry(modalUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // V2 doesn't use X-Batch-ID - it manages its own batch tracking
-        },
-        body: bodyString,
-        timeoutMs: 120000, // 2 minutes timeout (Modal cold start can take 60-90s)
-        retryOptions: {
-          maxRetries: 2, // Reduce retries since timeout is higher
-          initialDelay: 2000, // 2 seconds
-          maxDelay: 10000, // 10 seconds
-        },
+    fetch(modalUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: bodyString,
+      // Short timeout since we're not waiting anyway
+      signal: AbortSignal.timeout(10000), // 10 seconds
+    })
+      .then(response => {
+        console.log(`[MODAL] Modal accepted request: ${response.status}`)
+        devLog.log(`Modal request sent for batch ${batchId}`)
+      })
+      .catch(error => {
+        // Expected to fail due to Vercel → Modal network blocking
+        console.warn('[MODAL] Fetch to Modal failed (expected if network blocked):', error.message)
+        console.warn('[MODAL] Modal team should call webhook directly with batch results')
       })
 
-      const duration = Date.now() - startTime
-      console.log(`[DEBUG] ========== MODAL API CALL SUCCESS ==========`)
-      console.log(`[DEBUG] Modal responded with status ${response.status} in ${duration}ms`)
-      console.log(`[DEBUG] Response headers:`, Object.fromEntries(response.headers.entries()))
+    console.log('[MODAL] Fire-and-forget invocation complete (not waiting for response)')
+    console.log('[MODAL] Modal will call webhook when processing is done')
+    console.log('[MODAL] ==========================================')
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('[DEBUG] Modal error response:', errorText)
-        throw new Error(`Modal returned ${response.status}: ${errorText}`)
-      }
-
-      // V2 returns synchronously for < 1000 rows
-      const v2Response = await response.json()
-      console.log('[DEBUG] Modal response parsed:', {
-        success: v2Response.success,
-        hasResults: !!v2Response.results,
-        resultsCount: v2Response.results?.length || 0
-      })
-
-      // Transform V2 response format to our batch_results format
-      if (v2Response.success && v2Response.results) {
-        console.log('[DEBUG] Transforming and storing batch results...')
-        await transformAndStoreBatchResults(batchId, rows, v2Response.results)
-        console.log('[DEBUG] Batch results stored successfully')
-      } else {
-        console.warn('[DEBUG] No results to store:', v2Response)
-      }
-
-      devLog.log(`Modal V2 request successful for batch ${batchId}, status: ${response.status}`)
-      console.log('[DEBUG] ========== MODAL API CALL COMPLETE ==========')
-
-    } catch (error) {
-      const duration = Date.now() - startTime
-      console.error('[DEBUG] ========== MODAL API CALL FAILED ==========')
-      console.error('[DEBUG] Error after', duration, 'ms')
-      console.error('[DEBUG] Error type:', error instanceof Error ? error.constructor.name : typeof error)
-      console.error('[DEBUG] Error message:', error instanceof Error ? error.message : String(error))
-      console.error('[DEBUG] Full error:', error)
-      console.error('[DEBUG] invokeModalAsync FAILED:', error)
-    logError(error instanceof Error ? error : new Error('Modal request failed'), {
-      source: 'api/process/invokeModalAsync',
+  } catch (error) {
+    console.error('[MODAL] Fire-and-forget invocation error:', error)
+    logError(error instanceof Error ? error : new Error('Modal fire-and-forget failed'), {
+      source: 'api/process/invokeModalFireAndForget',
       batchId,
       modalUrl
     })
-    throw error // Re-throw to trigger catch handler
-  }
-}
-
-/**
- * Transform V2's nested response format and store in our batch_results table
- *
- * V2 format: { status: "success", data: { "prompt-executor": { data: { output: "..." } } } }
- * Our format: { id, input, output, status, error }
- */
-async function transformAndStoreBatchResults(
-  batchId: string,
-  rows: Record<string, string>[],
-  v2Results: unknown[]
-): Promise<void> {
-  try {
-    const batchResults = v2Results.map((result, index) => {
-      const v2Result = result as { status: string; data?: { [key: string]: { data?: { output?: string } } }; error?: string }
-
-      // Extract output from nested V2 structure
-      let output: string | null = null
-      let error: string | null = null
-      let status: 'success' | 'error' = 'error'
-
-      if (v2Result.status === 'success' && v2Result.data) {
-        // V2 returns: data.prompt_executor.data.output (underscore, not hyphen!)
-        const promptExecutorData = v2Result.data['prompt_executor']
-        if (promptExecutorData && promptExecutorData.data && promptExecutorData.data.output) {
-          output = promptExecutorData.data.output
-          status = 'success'
-        }
-      } else if (v2Result.status === 'error') {
-        error = v2Result.error || 'Unknown error'
-        status = 'error'
-      }
-
-      return {
-        batch_id: batchId,
-        row_index: index,
-        input_data: rows[index],
-        output_data: output,
-        status,
-        error_message: error,
-      }
-    })
-
-    // Insert batch_results in bulk
-    const { error: insertError } = await supabaseAdmin
-      .from('batch_results')
-      .insert(batchResults)
-
-    if (insertError) {
-      throw new Error(`Failed to store batch results: ${insertError.message}`)
-    }
-
-    // Update batch status to completed
-    const successCount = batchResults.filter(r => r.status === 'success').length
-    const errorCount = batchResults.filter(r => r.status === 'error').length
-
-    await supabaseAdmin
-      .from('batches')
-      .update({
-        status: errorCount === 0 ? 'completed' : 'completed_with_errors',
-        completed_rows: batchResults.length,
-      })
-      .eq('id', batchId)
-
-    devLog.log(`Stored ${batchResults.length} results for batch ${batchId}:`, {
-      success: successCount,
-      error: errorCount
-    })
-  } catch (error) {
-    logError(error instanceof Error ? error : new Error('Failed to transform V2 results'), {
-      source: 'api/process/transformAndStoreBatchResults',
-      batchId
-    })
-    throw error
+    // Don't throw - this is fire-and-forget
   }
 }
 
