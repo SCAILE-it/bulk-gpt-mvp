@@ -17,6 +17,19 @@ export async function POST(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
 
   try {
+    // Validate webhook secret for security
+    // Modal should include this header when calling our webhook
+    const webhookSecret = request.headers.get('x-webhook-secret')
+    const expectedSecret = process.env.MODAL_WEBHOOK_SECRET
+
+    if (expectedSecret && webhookSecret !== expectedSecret) {
+      console.error('[WEBHOOK] Unauthorized: Invalid or missing webhook secret')
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     console.log('\n[WEBHOOK] ========== Modal Callback Received ==========')
     console.log(`[WEBHOOK] Timestamp: ${new Date().toISOString()}`)
 
