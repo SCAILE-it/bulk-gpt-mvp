@@ -227,7 +227,6 @@ async function invokeModalFireAndForget(
 
     // V2 payload format with webhook callback
     const payload = {
-      batch_id: batchId,  // Pass batch_id so Modal can include it in webhook
       rows,
       prompt,
       output_schema: outputColumns,
