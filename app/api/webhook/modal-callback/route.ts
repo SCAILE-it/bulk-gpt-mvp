@@ -59,7 +59,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     // Transform and store results
     if (results && Array.isArray(results)) {
       console.log(`[WEBHOOK] Transforming ${results.length} results...`)
-      await transformAndStoreBatchResults(batch_id, results, batch.total_rows)
+      await transformAndStoreBatchResults(batch_id, results)
       console.log('[WEBHOOK] Results stored successfully')
     } else {
       console.warn('[WEBHOOK] No results provided or invalid format')
