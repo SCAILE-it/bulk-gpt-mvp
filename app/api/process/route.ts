@@ -143,9 +143,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     const modalUrl = process.env.MODAL_API_URL || 'https://scaile--g-mcp-tools-v2-api.modal.run/bulk/generic'
 
     // Construct webhook URL for Modal to call when done
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const webhookCallbackUrl = `${appUrl}/api/webhook/modal-callback`
 
     // Fire-and-forget: Call Modal without waiting for response
