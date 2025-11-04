@@ -5,7 +5,6 @@ import type { OutputColumn } from '@/lib/types'
 import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
 import { logError } from '@/lib/errors'
 import { devLog } from '@/lib/dev-logger'
-import { fetchWithRetry } from '@/lib/retry'
 import { authenticateRequest } from '@/lib/auth-middleware'
 import { checkUsageLimits } from '@/lib/api-keys'
 
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    const { csvFilename, rows, prompt, context = '', outputColumns = [], webhookUrl } = body
+    const { csvFilename, rows, prompt, context = '', outputColumns = [] } = body
 
     // Check usage limits (database-backed)
     const usageLimitCheck = await checkUsageLimits(userId, rows.length)
@@ -148,12 +147,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       ? `https://${process.env.VERCEL_URL}`
       : 'http://localhost:3000'
     const webhookCallbackUrl = `${appUrl}/api/webhook/modal-callback`
-
-    console.log('[DEBUG] Modal URL:', modalUrl)
-    console.log('[DEBUG] Webhook URL:', webhookCallbackUrl)
-    console.log('[DEBUG] Batch ID:', batchId)
-    console.log('[DEBUG] Rows count:', rows.length)
-    console.log('[DEBUG] Starting fire-and-forget Modal invocation with webhook...')
 
     // Fire-and-forget: Call Modal without waiting for response
     // Modal will call our webhook when done
