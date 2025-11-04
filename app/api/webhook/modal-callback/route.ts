@@ -134,8 +134,7 @@ export async function POST(request: NextRequest): Promise<Response> {
  */
 async function transformAndStoreBatchResults(
   batchId: string,
-  v2Results: unknown[],
-  totalRows: number
+  v2Results: unknown[]
 ): Promise<void> {
   try {
     console.log(`[WEBHOOK] Transforming ${v2Results.length} results for batch ${batchId}`)
@@ -160,7 +159,7 @@ async function transformAndStoreBatchResults(
       let output: string | null = null
       let error: string | null = null
       let status: 'success' | 'error' = 'error'
-      let inputData: Record<string, unknown> = {}
+      const inputData: Record<string, unknown> = {}
 
       if (v2Result.status === 'success' && v2Result.data) {
         // V2 returns: data.prompt_executor.data.output (underscore, not hyphen!)
