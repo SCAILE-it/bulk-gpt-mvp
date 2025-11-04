@@ -236,53 +236,69 @@ async function invokeModalAsync(
 
     const bodyString = JSON.stringify(payload)
 
-    console.log('[DEBUG] Calling fetchWithRetry to Modal...')
+    console.log('[DEBUG] ========== MODAL API CALL START ==========')
+    console.log('[DEBUG] Full Modal URL:', modalUrl)
+    console.log('[DEBUG] Payload size:', bodyString.length, 'bytes')
+    console.log('[DEBUG] Timeout configured: 120000ms (2 minutes)')
+    console.log('[DEBUG] Calling fetchWithRetry now...')
+
     const startTime = Date.now()
 
-    const response = await fetchWithRetry(modalUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // V2 doesn't use X-Batch-ID - it manages its own batch tracking
-      },
-      body: bodyString,
-      timeoutMs: 120000, // 2 minutes timeout (Modal cold start can take 60-90s)
-      retryOptions: {
-        maxRetries: 2, // Reduce retries since timeout is higher
-        initialDelay: 2000, // 2 seconds
-        maxDelay: 10000, // 10 seconds
-      },
-    })
+    try {
+      const response = await fetchWithRetry(modalUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // V2 doesn't use X-Batch-ID - it manages its own batch tracking
+        },
+        body: bodyString,
+        timeoutMs: 120000, // 2 minutes timeout (Modal cold start can take 60-90s)
+        retryOptions: {
+          maxRetries: 2, // Reduce retries since timeout is higher
+          initialDelay: 2000, // 2 seconds
+          maxDelay: 10000, // 10 seconds
+        },
+      })
 
-    const duration = Date.now() - startTime
-    console.log(`[DEBUG] Modal responded with status ${response.status} in ${duration}ms`)
+      const duration = Date.now() - startTime
+      console.log(`[DEBUG] ========== MODAL API CALL SUCCESS ==========`)
+      console.log(`[DEBUG] Modal responded with status ${response.status} in ${duration}ms`)
+      console.log(`[DEBUG] Response headers:`, Object.fromEntries(response.headers.entries()))
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('[DEBUG] Modal error response:', errorText)
-      throw new Error(`Modal returned ${response.status}: ${errorText}`)
-    }
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[DEBUG] Modal error response:', errorText)
+        throw new Error(`Modal returned ${response.status}: ${errorText}`)
+      }
 
-    // V2 returns synchronously for < 1000 rows
-    const v2Response = await response.json()
-    console.log('[DEBUG] Modal response parsed:', {
-      success: v2Response.success,
-      hasResults: !!v2Response.results,
-      resultsCount: v2Response.results?.length || 0
-    })
+      // V2 returns synchronously for < 1000 rows
+      const v2Response = await response.json()
+      console.log('[DEBUG] Modal response parsed:', {
+        success: v2Response.success,
+        hasResults: !!v2Response.results,
+        resultsCount: v2Response.results?.length || 0
+      })
 
-    // Transform V2 response format to our batch_results format
-    if (v2Response.success && v2Response.results) {
-      console.log('[DEBUG] Transforming and storing batch results...')
-      await transformAndStoreBatchResults(batchId, rows, v2Response.results)
-      console.log('[DEBUG] Batch results stored successfully')
-    } else {
-      console.warn('[DEBUG] No results to store:', v2Response)
-    }
+      // Transform V2 response format to our batch_results format
+      if (v2Response.success && v2Response.results) {
+        console.log('[DEBUG] Transforming and storing batch results...')
+        await transformAndStoreBatchResults(batchId, rows, v2Response.results)
+        console.log('[DEBUG] Batch results stored successfully')
+      } else {
+        console.warn('[DEBUG] No results to store:', v2Response)
+      }
 
-    devLog.log(`Modal V2 request successful for batch ${batchId}, status: ${response.status}`)
-  } catch (error) {
-    console.error('[DEBUG] invokeModalAsync FAILED:', error)
+      devLog.log(`Modal V2 request successful for batch ${batchId}, status: ${response.status}`)
+      console.log('[DEBUG] ========== MODAL API CALL COMPLETE ==========')
+
+    } catch (error) {
+      const duration = Date.now() - startTime
+      console.error('[DEBUG] ========== MODAL API CALL FAILED ==========')
+      console.error('[DEBUG] Error after', duration, 'ms')
+      console.error('[DEBUG] Error type:', error instanceof Error ? error.constructor.name : typeof error)
+      console.error('[DEBUG] Error message:', error instanceof Error ? error.message : String(error))
+      console.error('[DEBUG] Full error:', error)
+      console.error('[DEBUG] invokeModalAsync FAILED:', error)
     logError(error instanceof Error ? error : new Error('Modal request failed'), {
       source: 'api/process/invokeModalAsync',
       batchId,
