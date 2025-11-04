@@ -70,16 +70,23 @@ export async function withRetry<T>(
     onRetry,
   } = options
 
+  console.log('[DEBUG] withRetry started, maxRetries:', maxRetries)
+
   let lastError: Error | undefined
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      console.log(`[DEBUG] withRetry attempt ${attempt + 1}/${maxRetries + 1}`)
+
       // Execute function
       const result = await fn()
 
       // Success after retry - log it
       if (attempt > 0) {
+        console.log(`[DEBUG] ✓ Retry succeeded on attempt ${attempt}/${maxRetries}`)
         devLog.log(`✓ Retry succeeded on attempt ${attempt}/${maxRetries}`)
+      } else {
+        console.log('[DEBUG] First attempt succeeded')
       }
 
       return result
@@ -87,12 +94,18 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
 
+      console.error(`[DEBUG] withRetry attempt ${attempt + 1} failed:`, lastError.message)
+
       // Check if we should retry this error
       const willRetry = attempt < maxRetries && shouldRetry(error, attempt)
 
+      console.log('[DEBUG] willRetry:', willRetry, '(attempt:', attempt, 'maxRetries:', maxRetries, ')')
+
       if (!willRetry) {
         // Final attempt or non-retryable error
+        console.error('[DEBUG] Not retrying - throwing error')
         if (attempt === maxRetries) {
+          console.error('[DEBUG] All retry attempts exhausted')
           logError(lastError, {
             source: 'lib/retry/withRetry',
             attemptsExhausted: maxRetries + 1,
@@ -111,6 +124,8 @@ export async function withRetry<T>(
       // This prevents thundering herd problem
       const totalDelay = Math.floor(Math.random() * exponentialDelay)
 
+      console.warn(`[DEBUG] ⚠ Retrying in ${totalDelay}ms after error:`, lastError.message)
+
       devLog.warn(
         `⚠ Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${totalDelay}ms:`,
         lastError.message
@@ -123,6 +138,7 @@ export async function withRetry<T>(
   }
 
   // Should never reach here, but TypeScript needs it
+  console.error('[DEBUG] withRetry - Should never reach here!')
   throw lastError || new Error('Retry exhausted')
 }
 
@@ -135,25 +151,51 @@ export async function fetchWithTimeout(
   timeoutMs: number = 30000,
   options?: RequestInit
 ): Promise<Response> {
+  console.log('[DEBUG] fetchWithTimeout called')
+  console.log('[DEBUG] URL:', url)
+  console.log('[DEBUG] Timeout:', timeoutMs, 'ms')
+  console.log('[DEBUG] Method:', options?.method || 'GET')
+
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  const timeoutId = setTimeout(() => {
+    console.log('[DEBUG] Timeout triggered! Aborting fetch after', timeoutMs, 'ms')
+    controller.abort()
+  }, timeoutMs)
 
   try {
+    console.log('[DEBUG] Starting fetch call...')
+    const fetchStartTime = Date.now()
+
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
     })
+
+    const fetchDuration = Date.now() - fetchStartTime
+    console.log('[DEBUG] Fetch completed in', fetchDuration, 'ms')
+    console.log('[DEBUG] Response status:', response.status)
+    console.log('[DEBUG] Response ok:', response.ok)
+
     return response
   } catch (error) {
+    const errorDuration = Date.now()
+    console.error('[DEBUG] Fetch threw error after', errorDuration, 'ms')
+    console.error('[DEBUG] Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('[DEBUG] Error name:', error instanceof Error ? error.name : 'N/A')
+    console.error('[DEBUG] Error message:', error instanceof Error ? error.message : String(error))
+
     if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[DEBUG] AbortError detected - request timed out')
       throw new BulkGPTError('TIMEOUT', `Request timeout after ${timeoutMs}ms`, {
         url,
         timeoutMs
       })
     }
+    console.error('[DEBUG] Re-throwing error:', error)
     throw error
   } finally {
     clearTimeout(timeoutId)
+    console.log('[DEBUG] fetchWithTimeout cleanup complete')
   }
 }
 
