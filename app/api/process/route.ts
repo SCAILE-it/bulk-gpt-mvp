@@ -225,15 +225,27 @@ async function invokeModalFireAndForget(
     console.log(`[MODAL] Webhook URL: ${webhookUrl}`)
     console.log(`[MODAL] Rows: ${rows.length}`)
 
-    // V2 payload format with webhook callback
-    const payload = {
+    // Transform outputColumns to Modal's format: [{"name": "column_name"}]
+    const transformedOutputSchema = outputColumns && outputColumns.length > 0
+      ? outputColumns.map(col => ({ name: col.name }))
+      : undefined
+
+    // Build payload - only include fields with valid values
+    const payload: Record<string, any> = {
       rows,
       prompt,
-      output_schema: outputColumns,
-      context: context || undefined,
       temperature: 0.7,
       max_tokens: 8192,
       webhook_url: webhookUrl,  // Modal will POST to this when done
+    }
+
+    // Only add optional fields if they have valid values
+    if (transformedOutputSchema && transformedOutputSchema.length > 0) {
+      payload.output_schema = transformedOutputSchema
+    }
+
+    if (context && context.trim()) {
+      payload.context = context
     }
 
     const bodyString = JSON.stringify(payload)
