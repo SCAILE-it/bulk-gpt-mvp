@@ -231,7 +231,7 @@ async function invokeModalFireAndForget(
       : undefined
 
     // Build payload - only include fields with valid values
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       rows,
       prompt,
       temperature: 0.7,
