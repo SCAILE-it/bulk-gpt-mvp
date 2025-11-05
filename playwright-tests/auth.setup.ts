@@ -9,10 +9,10 @@ import path from 'path'
 
 const authFile = path.join(__dirname, '../playwright/.auth/user.json')
 
-// Test user credentials - matches scripts/create-test-user.ts
+// Test user credentials - using new user to bypass rate limit
 const TEST_USER = {
-  email: 'test@bulkgpt.local',
-  password: 'Test123456!'
+  email: 'e2e-test-1762354355023@bulkgpt.local',
+  password: 'E2ETest123456!'
 }
 
 setup('authenticate', async ({ page }) => {

@@ -71,8 +71,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     // Update batch status
     const updateData: Record<string, unknown> = {
       status: status === 'completed' ? 'completed' : 'completed_with_errors',
-      completed_at: new Date().toISOString(),
-      completed_rows: total_rows || batch.total_rows,
+      processed_rows: total_rows || batch.total_rows,  // Note: 'processed_rows', not 'completed_rows'
     }
 
     console.log('[WEBHOOK] Updating batch status:', updateData.status)
@@ -103,7 +102,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({
       success: true,
       batch_id,
-      message: 'Results processed successfully'
+      message: 'Results processed successfully',
+      rowsProcessed: total_rows,
+      status: status === 'completed' ? 'completed' : 'completed_with_errors'
     })
 
   } catch (error) {
@@ -111,18 +112,28 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     console.error('\n[WEBHOOK] ========== Webhook Processing Failed ==========')
     console.error(`[WEBHOOK] Duration: ${duration}ms`)
+    console.error(`[WEBHOOK] Error type:`, typeof error)
     console.error(`[WEBHOOK] Error:`, error)
+    console.error(`[WEBHOOK] Error string:`, String(error))
+    console.error(`[WEBHOOK] Error JSON:`, JSON.stringify(error, null, 2))
     console.error('')
 
     logError(error instanceof Error ? error : new Error('Webhook processing failed'), {
       source: 'api/webhook/modal-callback',
-      duration
+      duration,
+      errorDetails: error
     })
+
+    const errorMessage = error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error !== null
+      ? JSON.stringify(error)
+      : String(error)
 
     return NextResponse.json(
       {
         error: 'Failed to process webhook',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: errorMessage
       },
       { status: 500 }
     )
@@ -169,7 +180,9 @@ async function transformAndStoreBatchResults(
         const promptExecutorData = v2Result.data['prompt_executor'] || v2Result.data['prompt-executor']
 
         if (promptExecutorData && promptExecutorData.data && promptExecutorData.data.output) {
-          output = promptExecutorData.data.output
+          const rawOutput = promptExecutorData.data.output
+          // Output can be a string or an object (multiple columns)
+          output = typeof rawOutput === 'string' ? rawOutput : JSON.stringify(rawOutput)
           status = 'success'
         }
 
@@ -189,13 +202,16 @@ async function transformAndStoreBatchResults(
 
       const rowIndex = v2Result.row_index !== undefined ? v2Result.row_index : index
 
+      // Generate unique ID for each result
+      const resultId = `${batchId}_row_${rowIndex}`
+
       return {
+        id: resultId,
         batch_id: batchId,
         row_index: rowIndex,
-        input_data: inputData,
-        output_data: output,
+        input_data: JSON.stringify(inputData),
+        output_data: output || '',
         status,
-        error_message: error,
       }
     })
 

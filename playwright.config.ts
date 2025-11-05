@@ -110,7 +110,13 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
       },
-      testMatch: /.*visual-check\.spec\.ts/,
+      // Exclude integration/E2E tests that require authentication or database access
+      testIgnore: [
+        /.*integration.*spec\.ts/,
+        /.*modal.*spec\.ts/,
+        /.*e2e.*spec\.ts/,
+        /.*webhook.*spec\.ts/
+      ],
     },
   ],
 
