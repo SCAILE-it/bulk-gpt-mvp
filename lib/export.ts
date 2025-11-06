@@ -23,7 +23,8 @@ export interface ExportMetadata {
  */
 export function exportToCSV<T extends Record<string, unknown>>(
   data: T[],
-  _metadata?: ExportMetadata
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  metadata?: ExportMetadata
 ): string {
   if (!Array.isArray(data)) {
     throw new TypeError('Data must be an array')
