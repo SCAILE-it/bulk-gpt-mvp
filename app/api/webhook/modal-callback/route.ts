@@ -212,6 +212,7 @@ async function transformAndStoreBatchResults(
         input_data: JSON.stringify(inputData),
         output_data: output || '',
         status,
+        error_message: error || null,
       }
     })
 

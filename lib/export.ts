@@ -23,7 +23,7 @@ export interface ExportMetadata {
  */
 export function exportToCSV<T extends Record<string, unknown>>(
   data: T[],
-  metadata?: ExportMetadata
+  _metadata?: ExportMetadata
 ): string {
   if (!Array.isArray(data)) {
     throw new TypeError('Data must be an array')
