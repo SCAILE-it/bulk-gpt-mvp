@@ -175,8 +175,8 @@ BEGIN
   -- Set limits based on plan
   CASE v_plan_type
     WHEN 'beta' THEN
-      v_daily_batch_limit := 5;
-      v_daily_row_limit := 5000;
+      v_daily_batch_limit := 50;
+      v_daily_row_limit := 50000;
     WHEN 'free' THEN
       v_daily_batch_limit := 5;
       v_daily_row_limit := 5000;
