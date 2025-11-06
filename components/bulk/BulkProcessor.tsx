@@ -816,59 +816,51 @@ export default function BulkProcessor() {
         return
       }
 
-      // Parse first result to get input column names
-      const firstResult = results[0]
-      const inputData = typeof firstResult.input_data === 'string'
-        ? JSON.parse(firstResult.input_data)
-        : firstResult.input_data
-      const inputColumns = Object.keys(inputData)
-
-      // Generate CSV with proper output field mapping
-      const outputFieldNames = outputFields
-      const headers = [...inputColumns, ...outputFieldNames, 'Status', 'Error']
-
-      const csvRows = results.map(row => {
+      // Transform results for export API
+      const exportData = results.map(row => {
         const input = typeof row.input_data === 'string'
           ? JSON.parse(row.input_data)
           : row.input_data
-        const inputValues = inputColumns.map(col => `"${(input[col] || '').replace(/"/g, '""')}"`)
 
-        // Parse output_data to extract individual fields
-        let outputValues: string[] = []
-        if (row.output_data) {
-          try {
-            const outputJson = typeof row.output_data === 'string'
-              ? JSON.parse(row.output_data)
-              : row.output_data
-
-            // Extract each output field by name
-            outputValues = outputFieldNames.map(fieldName => {
-              const value = outputJson[fieldName] || ''
-              return `"${value.toString().replace(/"/g, '""')}"`
-            })
-          } catch {
-            // If parsing fails, use raw output for all fields
-            const rawOutput = `"${row.output_data.toString().replace(/"/g, '""')}"`
-            outputValues = outputFieldNames.map(() => rawOutput)
-          }
-        } else {
-          // Empty output fields if no data
-          outputValues = outputFieldNames.map(() => '""')
+        return {
+          input_data: input,
+          output_data: row.output_data,
+          status: row.status,
+          error_message: row.error_message
         }
-
-        const status = row.status || 'unknown'
-        const error = row.error_message ? `"${row.error_message.replace(/"/g, '""')}"` : '""'
-
-        return [...inputValues, ...outputValues, status, error].join(',')
       })
 
-      const csvContent = [headers.join(','), ...csvRows].join('\n')
-      const blob = new Blob([csvContent], { type: 'text/csv' })
+      // Call server-side export API
+      const response = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          results: exportData,
+          format: 'csv',
+          batchId: currentBatchId,
+          timestamp: new Date().toISOString()
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Export failed' }))
+        throw new Error(errorData.error || `Export failed with status ${response.status}`)
+      }
+
+      // Get filename from Content-Disposition header
+      const disposition = response.headers.get('content-disposition') || ''
+      const filenameMatch = disposition.match(/filename="([^"]+)"/)
+      const filename = filenameMatch?.[1] || `results-${currentBatchId}.csv`
+
+      // Trigger browser download
+      const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `results-${currentBatchId}.csv`
+      a.download = filename
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
       toast.success('Download Complete', {

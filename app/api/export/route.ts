@@ -35,12 +35,38 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const { results, format, batchId, timestamp } = body
 
+    // Flatten batch results structure for export
+    // Each result has: { input_data: {...}, output_data: {...}, status, error_message }
+    const flattenedResults = results.map((result: Record<string, unknown>) => {
+      const flat: Record<string, unknown> = {}
+
+      // Spread input fields (name, company, etc.)
+      if (result.input_data && typeof result.input_data === 'object') {
+        Object.assign(flat, result.input_data)
+      }
+
+      // Add output data (may be string or object)
+      if (result.output_data) {
+        if (typeof result.output_data === 'string') {
+          flat.Output = result.output_data
+        } else if (typeof result.output_data === 'object') {
+          Object.assign(flat, result.output_data)
+        }
+      }
+
+      // Add status and error
+      flat.Status = result.status || 'unknown'
+      flat.Error = result.error_message || ''
+
+      return flat
+    })
+
     // Generate filename
     const date = timestamp ? new Date(timestamp) : new Date()
     const dateStr = date.toISOString().split('T')[0]
     const timeStr = date.toISOString().split('T')[1].split('.')[0].replace(/:/g, '-')
     const filename = batchId
-      ? `bulk-gpt-${batchId}.${format}`
+      ? `results-${batchId}.${format}`
       : `bulk-gpt-export-${dateStr}-${timeStr}.${format}`
 
     // Generate content based on format
@@ -49,7 +75,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     if (format === 'csv') {
       try {
-        content = exportToCSV(results, { batchId, timestamp })
+        content = exportToCSV(flattenedResults, { batchId, timestamp })
         contentType = 'text/csv'
       } catch (err) {
         const error = err instanceof Error ? err : new Error('CSV export failed')
@@ -62,7 +88,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     } else {
       // format === 'json'
       try {
-        content = exportToJSON(results, { batchId, timestamp })
+        content = exportToJSON(flattenedResults, { batchId, timestamp })
         contentType = 'application/json'
       } catch (err) {
         const error = err instanceof Error ? err : new Error('JSON export failed')

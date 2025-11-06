@@ -33,30 +33,12 @@ export function exportToCSV<T extends Record<string, unknown>>(
     return ''
   }
 
-  let csv = Papa.unparse(data, {
+  // Generate CSV without metadata comments
+  // Metadata is included in the filename instead
+  const csv = Papa.unparse(data, {
     header: true,
     skipEmptyLines: true,
   })
-
-  // Prepend metadata as comments if provided
-  if (metadata) {
-    const comments: string[] = []
-    if (metadata.batchId) {
-      comments.push(`# Batch ID: ${metadata.batchId}`)
-    }
-    if (metadata.timestamp) {
-      comments.push(`# Exported at: ${metadata.timestamp}`)
-    }
-    // Add any other metadata fields
-    for (const [key, value] of Object.entries(metadata)) {
-      if (key !== 'batchId' && key !== 'timestamp') {
-        comments.push(`# ${key}: ${value}`)
-      }
-    }
-    if (comments.length > 0) {
-      csv = comments.join('\n') + '\n' + csv
-    }
-  }
 
   return csv
 }
