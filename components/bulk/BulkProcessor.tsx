@@ -1221,7 +1221,7 @@ export default function BulkProcessor() {
             <PromptSection
               prompt={prompt}
               onPromptChange={setPrompt}
-              csvData={csvData}
+              csvData={currentCsvData}
               onOpenTemplates={() => setShowTemplateModal(true)}
             />
 
@@ -1278,7 +1278,7 @@ export default function BulkProcessor() {
             </div>
 
             {/* OPTIMIZE WITH AI BUTTON - Improved text to clarify it auto-detects columns */}
-            {prompt && csvData && !optimizedPrompt && !isOptimizing && (
+            {prompt && currentCsvData && !optimizedPrompt && !isOptimizing && (
               <button
                 onClick={triggerOptimization}
                 className="mt-3 w-full px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-md text-sm font-medium text-blue-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
@@ -1314,7 +1314,7 @@ export default function BulkProcessor() {
               />
             )}
 
-              {csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
+              {currentCsvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
                 <div className="flex items-start gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-green-400">
@@ -1348,7 +1348,7 @@ export default function BulkProcessor() {
               )}
 
               {/* UNUSED VARIABLES INFO (subtle, informational only) */}
-              {csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
+              {currentCsvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
                 <div className="flex items-start gap-2 p-1.5 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
                   <p className="text-xs text-zinc-500">
                     💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
@@ -1521,7 +1521,7 @@ export default function BulkProcessor() {
             <div className="flex flex-col sm:flex-row gap-1.5">
               <button
                 onClick={handleTest}
-                disabled={!csvData || !prompt || isTesting || !variableValidation.isValid || !webhookValidation.isValid}
+                disabled={!currentCsvData || !prompt || isTesting || !variableValidation.isValid || !webhookValidation.isValid}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px] sm:min-h-0"
                 title="Test with first row (⌘T)"
               >
@@ -1530,13 +1530,13 @@ export default function BulkProcessor() {
               </button>
               <button
                 onClick={handleProcess}
-                disabled={!csvData || !prompt || currentIsProcessing || !variableValidation.isValid || !webhookValidation.isValid}
+                disabled={!currentCsvData || !prompt || currentIsProcessing || !variableValidation.isValid || !webhookValidation.isValid}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] sm:min-h-0"
                 title="Run all rows (⌘Enter)"
                 data-testid="run-button"
               >
                 {currentIsProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                <span>Run All {csvData ? `(${csvData.totalRows})` : ''}</span>
+                <span>Run All {currentCsvData ? `(${currentCsvData.totalRows})` : ''}</span>
               </button>
             </div>
           </div>
