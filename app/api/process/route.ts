@@ -143,7 +143,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           prompt: prompt,
           context: context || '',
           output_schema: outputColumns && outputColumns.length > 0
-            ? outputColumns.map(col => ({ name: col.name }))  // No stringify needed
+            ? outputColumns.map(col => ({ name: col }))  // col is already a string
             : null,
         })
         .eq('id', batchId)
