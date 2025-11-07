@@ -125,8 +125,18 @@ def call_gemini_with_retry(model, prompt: str) -> Dict[str, Any]:
     """
     response = model.generate_content(prompt)
 
-    if not response or not response.text:
+    # Check if response is valid and not blocked by safety filters
+    if not response:
         raise ValueError("No response generated from Gemini API")
+
+    # Check if response has valid candidates (not blocked by safety filters)
+    if not response.candidates or len(response.candidates) == 0:
+        raise ValueError("Response blocked by Gemini safety filters (no candidates)")
+
+    # Check if response has valid parts with text
+    if not hasattr(response.candidates[0], 'content') or not response.candidates[0].content.parts:
+        finish_reason = getattr(response.candidates[0], 'finish_reason', 'unknown')
+        raise ValueError(f"Response has no valid text parts (finish_reason: {finish_reason})")
 
     # Extract token usage from response metadata
     input_tokens = 0
@@ -205,8 +215,8 @@ def _process_single_row(
     import google.generativeai as genai
     from supabase import create_client
     
-    # Generate row ID
-    row_id = row.get("id", f"{batch_id}-row-{row_index}")
+    # Generate unique row ID (always use batch_id prefix to avoid collisions)
+    row_id = f"{batch_id}-row-{row_index}"
     
     # Initialize clients (Modal handles connection pooling)
     genai.configure(api_key=gemini_api_key)
@@ -224,15 +234,36 @@ def _process_single_row(
         if context:
             final_prompt = f"Context: {context}\n\n{final_prompt}"
         
-        # Add output schema hint if provided
+        # Build strict JSON schema if output_schema is provided
+        generation_config = {}
         if output_schema:
-            schema_hint = f"\n\nExpected output format: {', '.join(output_schema)}"
-            final_prompt = final_prompt + schema_hint
-        
+            # Extract column names from output_schema (list of dicts with 'name' key)
+            schema_names = [col.get('name', str(col)) if isinstance(col, dict) else str(col) for col in output_schema]
+
+            # Build JSON schema with response_schema for Gemini 2.5
+            # This enforces exact field names in the AI response
+            schema_properties = {
+                name: {"type": "string", "description": f"Generated content for {name}"}
+                for name in schema_names
+            }
+
+            response_schema = {
+                "type": "object",
+                "properties": schema_properties,
+                "required": schema_names
+            }
+
+            # Configure Gemini to output JSON with strict schema
+            generation_config = {
+                "response_mime_type": "application/json",
+                "response_schema": response_schema
+            }
+
         # Call Gemini API with automatic retry
         model = genai.GenerativeModel(
             model_name="gemini-2.5-flash",
             system_instruction=SYSTEM_PROMPT,
+            generation_config=generation_config if generation_config else None,
         )
 
         # Use retry wrapper for resilient API calls
@@ -515,6 +546,94 @@ def fastapi_app():
 def health_check() -> Dict[str, str]:
     """Health check endpoint for Modal."""
     return {"status": "healthy", "service": "bulk-gpt-processor", "version": "1.0.0"}
+
+
+@app.function(
+    image=image,
+    timeout=60,  # 60 seconds per poll (lightweight operation)
+    memory=1024,
+    secrets=[modal.Secret.from_name("bulk-gpt-env")],
+    schedule=modal.Period(seconds=10),  # Check every 10 seconds
+)
+def poll_pending_batches():
+    """
+    Poll database for pending batches and process them.
+
+    This function runs continuously as a scheduled job, checking the database
+    every 10 seconds for batches with status='pending'. When found, it processes
+    them using the existing batch processing logic.
+
+    This works around Vercel → Modal network blocking by having Modal pull from
+    the database instead of waiting for HTTP POST from Vercel.
+    """
+    from supabase import create_client
+    import json
+
+    # Get Supabase credentials
+    supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+    if not all([supabase_url, supabase_key]):
+        print("[POLLER] Missing Supabase credentials")
+        return
+
+    try:
+        supabase = create_client(supabase_url, supabase_key)
+
+        # Query for pending batches (oldest first)
+        response = supabase.table("batches").select(
+            "id, user_id, data, prompt, context, output_schema"
+        ).eq("status", "pending").order("created_at", desc=False).limit(1).execute()
+
+        if not response.data or len(response.data) == 0:
+            # No pending batches
+            return
+
+        batch = response.data[0]
+        batch_id = batch["id"]
+
+        print(f"[POLLER] Found pending batch: {batch_id}")
+
+        # Mark as processing immediately to prevent duplicate processing
+        supabase.table("batches").update({
+            "status": "processing",
+            "updated_at": "now()"
+        }).eq("id", batch_id).execute()
+
+        # Parse batch data
+        rows = json.loads(batch["data"]) if isinstance(batch["data"], str) else batch["data"]
+        prompt = batch.get("prompt", "")
+        context = batch.get("context", "")
+        output_schema_raw = batch.get("output_schema")
+
+        # Parse output_schema if it's a string
+        if isinstance(output_schema_raw, str):
+            try:
+                output_schema = json.loads(output_schema_raw)
+            except:
+                output_schema = []
+        else:
+            output_schema = output_schema_raw or []
+
+        # Process the batch using existing logic
+        print(f"[POLLER] Processing batch {batch_id} with {len(rows)} rows")
+
+        # Call the internal processing function directly
+        result = _process_batch_internal(
+            batch_id=batch_id,
+            rows=rows,
+            prompt=prompt,
+            context=context,
+            output_schema=output_schema,
+            webhook_url=None,  # No webhook needed for polling pattern
+        )
+
+        print(f"[POLLER] Batch {batch_id} completed: {result['status']}")
+
+    except Exception as e:
+        print(f"[POLLER] Error polling batches: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 
 @app.function(

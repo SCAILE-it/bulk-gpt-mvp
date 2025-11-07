@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { exportToCSV, exportToJSON } from '@/lib/export'
 import { logError } from '@/lib/errors'
+import { formatOutputValue } from '@/lib/utils/format-output'
 
 /**
  * POST /api/export
@@ -45,12 +46,20 @@ export async function POST(request: NextRequest): Promise<Response> {
         Object.assign(flat, result.input_data)
       }
 
-      // Add output data (may be string or object)
+      // Add output data (may be string or object) - apply formatting to strip markdown blocks
       if (result.output_data) {
         if (typeof result.output_data === 'string') {
-          flat.Output = result.output_data
+          // Apply formatting to remove markdown code blocks and format JSON
+          flat.Output = formatOutputValue(result.output_data)
         } else if (typeof result.output_data === 'object') {
-          Object.assign(flat, result.output_data)
+          // For object outputs, format each value
+          const formattedOutput: Record<string, string> = {}
+          Object.entries(result.output_data as Record<string, unknown>).forEach(([key, value]) => {
+            formattedOutput[key] = typeof value === 'string'
+              ? formatOutputValue(value)
+              : formatOutputValue(JSON.stringify(value))
+          })
+          Object.assign(flat, formattedOutput)
         }
       }
 

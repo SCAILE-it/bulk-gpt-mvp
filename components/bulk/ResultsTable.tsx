@@ -7,6 +7,7 @@
 
 import { CheckCircle, XCircle, Loader2, Download } from 'lucide-react'
 import { BatchStatusCard } from './BatchStatusCard'
+import { formatOutputValue } from '@/lib/utils/format-output'
 
 interface Result {
   id: string
@@ -28,55 +29,6 @@ interface ResultsTableProps {
   progress?: Progress
   processingStartTime?: number
   onExport: () => void
-}
-
-/**
- * Format AI output for display - intelligently handles JSON responses
- */
-function formatOutputValue(output: string | object): string {
-  if (typeof output === 'string') {
-    // Strip markdown code blocks (```json ... ``` or ``` ... ```)
-    let cleanOutput = output.trim()
-    const codeBlockMatch = cleanOutput.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/m)
-    if (codeBlockMatch) {
-      cleanOutput = codeBlockMatch[1].trim()
-    }
-
-    // Try to parse as JSON
-    try {
-      const parsed = JSON.parse(cleanOutput)
-      if (typeof parsed === 'object' && parsed !== null) {
-        const keys = Object.keys(parsed)
-
-        // Single key object - show just the value
-        if (keys.length === 1) {
-          const value = parsed[keys[0]]
-          return typeof value === 'object'
-            ? JSON.stringify(value, null, 2)
-            : String(value)
-        }
-
-        // Multiple keys - show formatted key-value pairs
-        return keys
-          .map(k => {
-            const value = parsed[k]
-            return typeof value === 'object'
-              ? `${k}: ${JSON.stringify(value)}`
-              : `${k}: ${value}`
-          })
-          .join('\n')
-      }
-      return String(parsed)
-    } catch {
-      // Not JSON - return as-is
-      return output
-    }
-  }
-
-  // Already an object
-  return typeof output === 'object'
-    ? JSON.stringify(output, null, 2)
-    : String(output)
 }
 
 export function ResultsTable({
@@ -239,12 +191,28 @@ export function ResultsTable({
                         ? JSON.parse(result.output)
                         : result.output
 
-                      const value = outputData[col]
+                      // Try exact match first
+                      let value = outputData[col]
 
-                      // Handle different value types
+                      // Fallback: If exact match fails, try case-insensitive match
                       if (value === null || value === undefined) {
+                        const keys = Object.keys(outputData)
+                        const matchedKey = keys.find(k => k.toLowerCase() === col.toLowerCase())
+                        if (matchedKey) {
+                          value = outputData[matchedKey]
+                          console.warn(`[ResultsTable] Column "${col}" not found, using "${matchedKey}" instead`)
+                        }
+                      }
+
+                      // If still no match, show helpful error with available keys
+                      if (value === null || value === undefined) {
+                        const availableKeys = Object.keys(outputData).join(', ')
                         return (
-                          <td key={col} className="px-4 py-3">
+                          <td
+                            key={col}
+                            className="px-4 py-3"
+                            title={`Expected field "${col}" but AI returned: ${availableKeys}`}
+                          >
                             <span className="text-zinc-600">—</span>
                           </td>
                         )
