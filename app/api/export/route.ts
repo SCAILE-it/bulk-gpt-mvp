@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { exportToCSV, exportToJSON } from '@/lib/export'
 import { logError } from '@/lib/errors'
-import { formatOutputValue } from '@/lib/utils/format-output'
 
 /**
  * POST /api/export
@@ -46,20 +45,30 @@ export async function POST(request: NextRequest): Promise<Response> {
         Object.assign(flat, result.input_data)
       }
 
-      // Add output data (may be string or object) - apply formatting to strip markdown blocks
+      // Add output data (may be string or object) - parse and spread as separate columns
       if (result.output_data) {
         if (typeof result.output_data === 'string') {
-          // Apply formatting to remove markdown code blocks and format JSON
-          flat.Output = formatOutputValue(result.output_data)
+          // Try to parse as JSON and spread fields
+          try {
+            const parsed = JSON.parse(result.output_data)
+            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+              // Spread parsed object fields as separate columns (matching UI display)
+              Object.entries(parsed).forEach(([key, value]) => {
+                flat[key] = typeof value === 'string' ? value : JSON.stringify(value)
+              })
+            } else {
+              // Not an object, use as single Output column
+              flat.Output = String(parsed)
+            }
+          } catch {
+            // Not JSON, use string as-is
+            flat.Output = result.output_data
+          }
         } else if (typeof result.output_data === 'object') {
-          // For object outputs, format each value
-          const formattedOutput: Record<string, string> = {}
+          // Already an object, spread fields directly
           Object.entries(result.output_data as Record<string, unknown>).forEach(([key, value]) => {
-            formattedOutput[key] = typeof value === 'string'
-              ? formatOutputValue(value)
-              : formatOutputValue(JSON.stringify(value))
+            flat[key] = typeof value === 'string' ? value : JSON.stringify(value)
           })
-          Object.assign(flat, formattedOutput)
         }
       }
 
