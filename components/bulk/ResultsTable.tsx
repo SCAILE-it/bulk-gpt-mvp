@@ -30,6 +30,48 @@ interface ResultsTableProps {
   onExport: () => void
 }
 
+/**
+ * Format AI output for display - intelligently handles JSON responses
+ */
+function formatOutputValue(output: string | object): string {
+  if (typeof output === 'string') {
+    // Try to parse as JSON
+    try {
+      const parsed = JSON.parse(output)
+      if (typeof parsed === 'object' && parsed !== null) {
+        const keys = Object.keys(parsed)
+
+        // Single key object - show just the value
+        if (keys.length === 1) {
+          const value = parsed[keys[0]]
+          return typeof value === 'object'
+            ? JSON.stringify(value, null, 2)
+            : String(value)
+        }
+
+        // Multiple keys - show formatted key-value pairs
+        return keys
+          .map(k => {
+            const value = parsed[k]
+            return typeof value === 'object'
+              ? `${k}: ${JSON.stringify(value)}`
+              : `${k}: ${value}`
+          })
+          .join('\n')
+      }
+      return String(parsed)
+    } catch {
+      // Not JSON - return as-is
+      return output
+    }
+  }
+
+  // Already an object
+  return typeof output === 'object'
+    ? JSON.stringify(output, null, 2)
+    : String(output)
+}
+
 export function ResultsTable({
   results,
   columns,
@@ -237,7 +279,7 @@ export function ResultsTable({
                     {result.error ? (
                       <span className="text-red-400 text-xs">{result.error}</span>
                     ) : result.output ? (
-                      <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">{String(result.output)}</span>
+                      <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">{formatOutputValue(result.output)}</span>
                     ) : (
                       <span className="text-zinc-600">—</span>
                     )}
