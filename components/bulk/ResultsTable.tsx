@@ -250,9 +250,9 @@ export function ResultsTable({
                         )
                       }
 
-                      // If value is an array or object, stringify it
+                      // If value is an array or object, format it intelligently
                       const displayValue = typeof value === 'object'
-                        ? JSON.stringify(value, null, 2)
+                        ? formatOutputValue(value)
                         : String(value)
 
                       return (
@@ -263,12 +263,12 @@ export function ResultsTable({
                         </td>
                       )
                     } catch (error) {
-                      // If JSON parsing fails, show the raw output in the first column only
+                      // If JSON parsing fails, show the formatted output in the first column only
                       if (col === outputColumns[0]) {
                         return (
                           <td key={col} className="px-4 py-3 text-zinc-300">
                             <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">
-                              {String(result.output)}
+                              {formatOutputValue(result.output)}
                             </span>
                           </td>
                         )
