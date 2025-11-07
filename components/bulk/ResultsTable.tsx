@@ -35,9 +35,16 @@ interface ResultsTableProps {
  */
 function formatOutputValue(output: string | object): string {
   if (typeof output === 'string') {
+    // Strip markdown code blocks (```json ... ``` or ``` ... ```)
+    let cleanOutput = output.trim()
+    const codeBlockMatch = cleanOutput.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/m)
+    if (codeBlockMatch) {
+      cleanOutput = codeBlockMatch[1].trim()
+    }
+
     // Try to parse as JSON
     try {
-      const parsed = JSON.parse(output)
+      const parsed = JSON.parse(cleanOutput)
       if (typeof parsed === 'object' && parsed !== null) {
         const keys = Object.keys(parsed)
 
