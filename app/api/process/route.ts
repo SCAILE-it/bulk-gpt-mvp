@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { validatePrompt } from '@/lib/validation'
-import type { OutputColumn } from '@/lib/types'
 import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
 import { logError } from '@/lib/errors'
-import { devLog } from '@/lib/dev-logger'
 import { authenticateRequest } from '@/lib/auth-middleware'
 import { checkUsageLimits } from '@/lib/api-keys'
 
@@ -136,38 +134,32 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    // Skip batch_results pre-creation - Modal will create them as it processes
-    // (Supabase PostgREST schema cache issues prevent reliable pre-creation)
+    // Store batch data and configuration for Modal polling
+    try {
+      const { error: updateError} = await supabaseAdmin
+        .from('batches')
+        .update({
+          data: rows,  // Supabase automatically handles JSON for jsonb columns
+          prompt: prompt,
+          context: context || '',
+          output_schema: outputColumns && outputColumns.length > 0
+            ? outputColumns.map(col => ({ name: col.name }))  // No stringify needed
+            : null,
+        })
+        .eq('id', batchId)
 
-    // Invoke V2 Modal processor with webhook callback (fire and forget)
-    const modalUrl = process.env.MODAL_API_URL || 'https://scaile--g-mcp-tools-v2-api.modal.run/bulk/generic'
+      if (updateError) {
+        console.warn('[POLLING] Failed to update batch with processing data:', updateError)
+        // Continue anyway - batch is created, Modal can still try to process
+      }
+    } catch (updateErr) {
+      console.warn('[POLLING] Error updating batch data:', updateErr)
+    }
 
-    // Construct webhook URL for Modal to call when done
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-    const webhookCallbackUrl = `${appUrl}/api/webhook/modal-callback`
-
-    // Fire-and-forget: Call Modal without waiting for response
-    // Modal will call our webhook when done
-    invokeModalFireAndForget(
-      modalUrl,
-      batchId,
-      rows,
-      prompt,
-      context,
-      outputColumns,
-      webhookCallbackUrl
-    ).catch((error) => {
-      console.error('[DEBUG] Modal invocation failed:', error)
-      logError(error instanceof Error ? error : new Error('Modal invocation failed'), {
-        source: 'api/process/POST/invokeModalFireAndForget',
-        batchId
-      })
-      // Mark batch as failed (best effort, don't block response)
-      markBatchFailed(batchId)
-      // Release rate limit on failure
-      releaseBatch(userId)
-    })
+    // No HTTP call to Modal - Modal will poll database for pending batches
+    console.log('[POLLING] Batch created and marked as pending')
+    console.log('[POLLING] Modal poller will pick up batch within 10 seconds')
+    console.log(`[POLLING] Batch ID: ${batchId}, Rows: ${rows.length}`)
 
     // Return immediately with batch ID
     return NextResponse.json(
@@ -197,110 +189,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       },
       { status: 500 }
     )
-  }
-}
-
-/**
- * Invoke V2 Modal processor with webhook callback (fire and forget)
- *
- * This function calls Modal API without waiting for the response.
- * Modal will process the batch asynchronously and call our webhook when done.
- *
- * NOTE: fetch() is attempted but we don't wait. If Vercel → Modal is blocked,
- * the call will fail silently. Modal team must call the webhook from their side.
- */
-async function invokeModalFireAndForget(
-  modalUrl: string,
-  batchId: string,
-  rows: Record<string, string>[],
-  prompt: string,
-  context: string,
-  outputColumns: OutputColumn[],
-  webhookUrl: string
-): Promise<void> {
-  try {
-    console.log('[MODAL] ========== Fire-and-Forget Invocation ==========')
-    console.log(`[MODAL] Batch ID: ${batchId}`)
-    console.log(`[MODAL] Modal URL: ${modalUrl}`)
-    console.log(`[MODAL] Webhook URL: ${webhookUrl}`)
-    console.log(`[MODAL] Rows: ${rows.length}`)
-
-    // Transform outputColumns to Modal's format: [{"name": "column_name"}]
-    const transformedOutputSchema = outputColumns && outputColumns.length > 0
-      ? outputColumns.map(col => ({ name: col.name }))
-      : undefined
-
-    // Build payload - only include fields with valid values
-    const payload: Record<string, unknown> = {
-      rows,
-      prompt,
-      temperature: 0.7,
-      max_tokens: 8192,
-      webhook_url: webhookUrl,  // Modal will POST to this when done
-    }
-
-    // Only add optional fields if they have valid values
-    if (transformedOutputSchema && transformedOutputSchema.length > 0) {
-      payload.output_schema = transformedOutputSchema
-    }
-
-    if (context && context.trim()) {
-      payload.context = context
-    }
-
-    const bodyString = JSON.stringify(payload)
-    console.log(`[MODAL] Payload size: ${bodyString.length} bytes`)
-
-    // Attempt to call Modal (will likely fail due to network blocking)
-    // This is fire-and-forget - we don't wait for response
-    console.log('[MODAL] Attempting fetch to Modal...')
-
-    fetch(modalUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: bodyString,
-      // Short timeout since we're not waiting anyway
-      signal: AbortSignal.timeout(10000), // 10 seconds
-    })
-      .then(response => {
-        console.log(`[MODAL] Modal accepted request: ${response.status}`)
-        devLog.log(`Modal request sent for batch ${batchId}`)
-      })
-      .catch(error => {
-        // Expected to fail due to Vercel → Modal network blocking
-        console.warn('[MODAL] Fetch to Modal failed (expected if network blocked):', error.message)
-        console.warn('[MODAL] Modal team should call webhook directly with batch results')
-      })
-
-    console.log('[MODAL] Fire-and-forget invocation complete (not waiting for response)')
-    console.log('[MODAL] Modal will call webhook when processing is done')
-    console.log('[MODAL] ==========================================')
-
-  } catch (error) {
-    console.error('[MODAL] Fire-and-forget invocation error:', error)
-    logError(error instanceof Error ? error : new Error('Modal fire-and-forget failed'), {
-      source: 'api/process/invokeModalFireAndForget',
-      batchId,
-      modalUrl
-    })
-    // Don't throw - this is fire-and-forget
-  }
-}
-
-/**
- * Mark batch as failed in database (best effort)
- */
-async function markBatchFailed(batchId: string): Promise<void> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    supabaseAdmin
-      .from('batches')
-      .update({ status: 'failed' })
-      .eq('id', batchId)
-  } catch {
-    // Silently fail, this is best effort
   }
 }
 
