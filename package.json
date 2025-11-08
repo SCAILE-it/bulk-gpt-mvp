@@ -27,6 +27,7 @@
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-toggle-group": "^1.1.11",
+    "@sentry/nextjs": "^10.23.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.38.0",
     "@types/papaparse": "^5.3.5",
