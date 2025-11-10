@@ -45,15 +45,19 @@ test.describe('Bulk Processor - /bulk Route', () => {
     })
 
     test('should show file upload dropzone', async ({ page }) => {
-      // Ensure Data Input section is expanded (collapsible sections use localStorage)
+      // Wait for Data Input section to be present and visible
       const dataInputSection = page.locator('button:has-text("📁 Data Input")')
+      await dataInputSection.waitFor({ state: 'visible' })
+
+      // Ensure section is expanded
       const isExpanded = await dataInputSection.getAttribute('data-state')
       if (isExpanded === 'closed') {
         await dataInputSection.click()
+        await page.waitForTimeout(300) // Wait for expansion animation
       }
 
       // File input is intentionally hidden, check for visible dropzone elements
-      const browseButton = page.getByRole('button', { name: /browse files/i })
+      const browseButton = page.locator('button', { hasText: 'Browse Files' })
       await expect(browseButton).toBeVisible()
     })
 
@@ -395,15 +399,19 @@ test.describe('Bulk Processor - /bulk Route', () => {
       await page.setViewportSize({ width: 375, height: 667 })
       await page.reload()
 
-      // Ensure Data Input section is expanded (collapsible sections use localStorage)
+      // Wait for Data Input section to be present and visible
       const dataInputSection = page.locator('button:has-text("📁 Data Input")')
+      await dataInputSection.waitFor({ state: 'visible' })
+
+      // Ensure section is expanded
       const isExpanded = await dataInputSection.getAttribute('data-state')
       if (isExpanded === 'closed') {
         await dataInputSection.click()
+        await page.waitForTimeout(300) // Wait for expansion animation
       }
 
       // Check key elements are still accessible (file input is hidden by design)
-      const browseButton = page.getByRole('button', { name: /browse files/i })
+      const browseButton = page.locator('button', { hasText: 'Browse Files' })
       await expect(browseButton).toBeVisible()
     })
 
@@ -411,15 +419,19 @@ test.describe('Bulk Processor - /bulk Route', () => {
       await page.setViewportSize({ width: 768, height: 1024 })
       await page.reload()
 
-      // Ensure Data Input section is expanded (collapsible sections use localStorage)
+      // Wait for Data Input section to be present and visible
       const dataInputSection = page.locator('button:has-text("📁 Data Input")')
+      await dataInputSection.waitFor({ state: 'visible' })
+
+      // Ensure section is expanded
       const isExpanded = await dataInputSection.getAttribute('data-state')
       if (isExpanded === 'closed') {
         await dataInputSection.click()
+        await page.waitForTimeout(300) // Wait for expansion animation
       }
 
       // Check key elements are still accessible (file input is hidden by design)
-      const browseButton = page.getByRole('button', { name: /browse files/i })
+      const browseButton = page.locator('button', { hasText: 'Browse Files' })
       await expect(browseButton).toBeVisible()
     })
   })
