@@ -34,8 +34,9 @@ export default defineConfig({
     /*
      * Base URL: Port 3334 isolates tests from dev server (port 3333)
      * Automatically started by: npm run test:server (bash scripts/start-test-server.sh)
+     * Can be overridden with PLAYWRIGHT_BASE_URL for production testing
      */
-    baseURL: 'http://localhost:3334',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3334',
 
     /* Collect trace when retrying failed tests for debugging */
     trace: 'on-first-retry',
@@ -104,18 +105,32 @@ export default defineConfig({
      * - Visual regression tests on public pages
      * - Deployment verification (check if site is up)
      * - Testing auth flows themselves (login, signup, etc.)
+     *
+     * testIgnore rationale:
+     * - Tests accessing /bulk, /dashboard, /profile require authentication
+     * - Integration/E2E tests require database access
+     * - Modal/webhook/export tests require backend functionality
      */
     {
       name: 'no-auth',
       use: {
         ...devices['Desktop Chrome'],
       },
-      // Exclude integration/E2E tests that require authentication or database access
+      // Exclude tests that require authentication or database access
       testIgnore: [
+        // Integration and E2E tests
         /.*integration.*spec\.ts/,
         /.*modal.*spec\.ts/,
         /.*e2e.*spec\.ts/,
-        /.*webhook.*spec\.ts/
+        /.*webhook.*spec\.ts/,
+        /.*export.*spec\.ts/,
+        // Tests accessing protected routes (require authentication)
+        /.*bulk.*spec\.ts/,
+        /.*dashboard.*spec\.ts/,
+        /.*profile.*spec\.ts/,
+        // Full-flow tests (require auth + backend)
+        /.*flow.*spec\.ts/,
+        /.*comprehensive.*spec\.ts/,
       ],
     },
   ],
