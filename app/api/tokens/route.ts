@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
 
+// Force dynamic rendering for routes that use cookies
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/tokens
  * Get current user's session token for API access

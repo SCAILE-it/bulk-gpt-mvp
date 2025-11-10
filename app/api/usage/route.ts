@@ -8,6 +8,9 @@ import { getUserUsage } from '@/lib/api-keys'
 import { authenticateRequest } from '@/lib/auth-middleware'
 import { logError } from '@/lib/errors'
 
+// Force dynamic rendering for routes that use request.headers
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/usage - Get usage statistics for the authenticated user
  */
