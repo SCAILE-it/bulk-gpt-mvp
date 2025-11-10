@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
 
-// Force dynamic rendering for routes that use cookies
 export const dynamic = 'force-dynamic'
 
 /**
