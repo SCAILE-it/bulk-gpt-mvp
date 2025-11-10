@@ -6,75 +6,41 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { useDropzone } from 'react-dropzone'
 import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle, XCircle,
   Loader2, Plus, X, ChevronDown, HelpCircle,
-  Table2, Webhook, Code, Search, Filter, Sparkles, Database, FileEdit, AlertTriangle
+  Table2, Webhook, Code, Search, Filter, AlertTriangle
 } from 'lucide-react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
-import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { useManualJobOptimizer } from '@/hooks/useManualJobOptimizer'
+import { useVariableValidation } from '@/hooks/useVariableValidation'
+import { useWebhookValidation } from '@/hooks/useWebhookValidation'
+import { useBetaBanner } from '@/hooks/useBetaBanner'
+import { useTemplateFilter } from '@/hooks/useTemplateFilter'
+import { useCollapsibleState } from '@/hooks/useCollapsibleState'
 import { PromptSection } from './PromptSection'
 import { JobPreview } from './JobPreview'
 import { CSVPreviewTable } from './CSVPreviewTable'
 import { ResultsTable } from './ResultsTable'
+import { FileUploadSection } from './FileUploadSection'
+import { OutputFieldsSection } from './OutputFieldsSection'
+import { ToolSelectionSection } from './ToolSelectionSection'
+import { WorkflowSteps } from './WorkflowSteps'
+import { AIAssistantSection } from './AIAssistantSection'
+import { Modal } from '@/components/ui/modal'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
 import { useDebugLogger } from '@/lib/hooks/useDebugLogger'
 import { DebugLogger } from '@/components/debug/DebugLogger'
+import { TEMPLATE_CATEGORIES, type PromptTemplate } from '@/lib/constants/promptTemplates'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-
-// PROMPT TEMPLATES
-interface PromptTemplate {
-  id: string
-  name: string
-  description: string
-  prompt: string
-  exampleVariables: string[]
-  category: 'content' | 'data' | 'analysis'
-}
-
-const PROMPT_TEMPLATES: PromptTemplate[] = [
-  {
-    id: 'write-bio',
-    name: 'Professional Bio',
-    description: 'Generate professional bios for team members, speakers, or clients',
-    prompt: 'Write a professional bio (2-3 sentences) for {{name}} who works as {{title}} at {{company}}. {{name}} specializes in {{expertise}}. Keep it engaging and suitable for a conference website.',
-    exampleVariables: ['name', 'title', 'company', 'expertise'],
-    category: 'content'
-  },
-  {
-    id: 'summarize-content',
-    name: 'Content Summarizer',
-    description: 'Summarize long text into concise bullet points',
-    prompt: 'Summarize the following text into 3-5 key bullet points. Focus on the main ideas and actionable insights:\n\n{{text}}',
-    exampleVariables: ['text'],
-    category: 'analysis'
-  },
-  {
-    id: 'extract-data',
-    name: 'Data Extractor',
-    description: 'Extract structured information from unstructured text',
-    prompt: 'Extract the following information from this text and return as JSON:\n- Company name\n- Industry\n- Location\n- Key products/services\n\nText: {{description}}',
-    exampleVariables: ['description'],
-    category: 'data'
-  }
-]
-
-// Category filter configuration
-const TEMPLATE_CATEGORIES = [
-  { id: 'all' as const, label: 'All', icon: null },
-  { id: 'content' as const, label: 'Content', icon: FileEdit },
-  { id: 'data' as const, label: 'Data', icon: Database },
-  { id: 'analysis' as const, label: 'Analysis', icon: Sparkles },
-]
 
 interface Result {
   id: string
@@ -98,8 +64,10 @@ export default function BulkProcessor() {
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
   const [outputFields, setOutputFields] = useState<string[]>(['bio'])
   const [newField, setNewField] = useState('')
+  const [selectedTools, setSelectedTools] = useState<string[]>([]) // GTM tools to enable
   const [webhookUrl, setWebhookUrl] = useState('')
   const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
+  const [useJsonMode, setUseJsonMode] = useState(true) // JSON schema toggle
 
   // === API ACCESS ===
   const [apiToken, setApiToken] = useState<string | null>(null)
@@ -107,33 +75,7 @@ export default function BulkProcessor() {
   const [isFetchingToken, setIsFetchingToken] = useState(false)
 
   // === BETA BANNER ===
-  const [showBetaBanner, setShowBetaBanner] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('bulk-beta-banner-dismissed') !== 'true'
-  })
-
-  // Usage stats for beta banner
-  const [usage, setUsage] = useState<{ batchesToday: number; dailyBatchLimit: number } | null>(null)
-
-  // Fetch usage stats for beta banner
-  useEffect(() => {
-    async function fetchUsage() {
-      try {
-        const response = await fetch('/api/usage')
-        if (response.ok) {
-          const data = await response.json()
-          setUsage({
-            batchesToday: data.batchesToday,
-            dailyBatchLimit: data.dailyBatchLimit
-          })
-        }
-      } catch (error) {
-        // Silently fail - usage counter is nice-to-have
-        debugLog.warn('Failed to fetch usage stats for banner')
-      }
-    }
-    fetchUsage()
-  }, [])
+  const { showBanner: showBetaBanner, usage, dismissBanner: dismissBetaBanner } = useBetaBanner()
 
   // === TEMPLATE GALLERY ===
   const [showTemplateModal, setShowTemplateModal] = useState(false)
@@ -146,18 +88,30 @@ export default function BulkProcessor() {
   // === DELETE CONFIRMATION ===
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null)
 
-  // === FOCUS MANAGEMENT ===
-  // Focus trap refs for modals - ensures keyboard navigation stays within modal
-  const templateModalRef = useFocusTrap<HTMLDivElement>(showTemplateModal)
-  const advancedSettingsModalRef = useFocusTrap<HTMLDivElement>(showAdvancedSettingsModal)
-  const keyboardHelpModalRef = useFocusTrap<HTMLDivElement>(showKeyboardHelp)
-  const deleteConfirmationModalRef = useFocusTrap<HTMLDivElement>(fieldToDelete !== null)
+  // === COLLAPSIBLE SECTIONS STATE ===
+  const dataInputSection = useCollapsibleState({
+    storageKey: 'bulk-processor-data-input',
+    defaultOpen: true
+  })
+  const promptSection = useCollapsibleState({
+    storageKey: 'bulk-processor-prompt',
+    defaultOpen: true
+  })
+  const outputSettingsSection = useCollapsibleState({
+    storageKey: 'bulk-processor-output-settings',
+    defaultOpen: true
+  })
+  const advancedSection = useCollapsibleState({
+    storageKey: 'bulk-processor-advanced',
+    defaultOpen: false
+  })
 
   // === PROCESSING STATE ===
   const [isTesting, setIsTesting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Result[]>([])
+  const [isGeneratingColumns, setIsGeneratingColumns] = useState(false)
 
   // Memoize CSV columns to prevent infinite render loop (array created on every render)
   const csvColumns = useMemo(() => {
@@ -201,73 +155,13 @@ export default function BulkProcessor() {
   // Recent files feature removed - users can re-upload files if needed
 
   // === VARIABLE VALIDATION ===
-  const variableValidation = useMemo(() => {
-    if (!csvParser.csvData || !prompt) {
-      return { missing: [], unused: [], isValid: true }
-    }
-
-    // Extract variables from prompt ({{variable}} syntax)
-    const variablePattern = /\{\{([^}]+)\}\}/g
-    const matches = Array.from(prompt.matchAll(variablePattern))
-    const promptVars = new Set<string>()
-    for (const match of matches) {
-      promptVars.add(match[1].trim())
-    }
-
-    // Compare with CSV columns
-    const csvCols = new Set(csvParser.csvData.columns)
-    const missing = Array.from(promptVars).filter(v => !csvCols.has(v))
-    const unused = Array.from(csvCols).filter(c => !promptVars.has(c))
-
-    return {
-      missing,
-      unused,
-      isValid: promptVars.size > 0 && missing.length === 0 // Require at least one variable AND all variables must exist in CSV
-    }
-  }, [csvParser.csvData, prompt])
+  const variableValidation = useVariableValidation(prompt, csvParser.csvData)
 
   // === WEBHOOK URL VALIDATION ===
-  const webhookValidation = useMemo(() => {
-    if (!webhookUrl || webhookUrl.trim() === '') {
-      return { isValid: true, error: null } // Empty is valid (optional field)
-    }
-
-    try {
-      const url = new URL(webhookUrl)
-
-      // Must use HTTPS for security
-      if (url.protocol !== 'https:') {
-        return { isValid: false, error: 'Webhook URL must use HTTPS (not HTTP) for security' }
-      }
-
-      // Valid HTTPS URL
-      return { isValid: true, error: null }
-    } catch {
-      return { isValid: false, error: 'Invalid URL format (must start with https://)' }
-    }
-  }, [webhookUrl])
+  const webhookValidation = useWebhookValidation(webhookUrl)
 
   // === FILTERED TEMPLATES ===
-  const filteredTemplates = useMemo(() => {
-    let filtered = PROMPT_TEMPLATES
-
-    // Filter by category
-    if (templateCategoryFilter !== 'all') {
-      filtered = filtered.filter(t => t.category === templateCategoryFilter)
-    }
-
-    // Filter by search query
-    if (templateSearchQuery.trim()) {
-      const query = templateSearchQuery.toLowerCase()
-      filtered = filtered.filter(t =>
-        t.name.toLowerCase().includes(query) ||
-        t.description.toLowerCase().includes(query) ||
-        t.category.toLowerCase().includes(query)
-      )
-    }
-
-    return filtered
-  }, [templateSearchQuery, templateCategoryFilter])
+  const filteredTemplates = useTemplateFilter(templateSearchQuery, templateCategoryFilter)
 
   // === FILE UPLOAD ===
   const handleFileUpload = useCallback(async (uploadedFile: File) => {
@@ -294,44 +188,24 @@ export default function BulkProcessor() {
 
     // Upload and parse CSV using hooks
     try {
+      // Upload file (validates and tracks)
       await fileUpload.uploadFile(uploadedFile)
 
-      // If successful, parse CSV
-      if (!fileUpload.error && fileUpload.file) {
-        await csvParser.parseFile(uploadedFile)
+      // Parse CSV immediately (don't check state - it hasn't updated yet!)
+      const parsed = await csvParser.parseFile(uploadedFile)
 
-        // Add to recent if parse succeeded
-        if (!csvParser.error && csvParser.csvData) {
-          fileUpload.addToRecent(uploadedFile, csvParser.csvData.totalRows)
-        }
+      // Add to recent if parse succeeded
+      if (parsed) {
+        fileUpload.addToRecent(uploadedFile, parsed.totalRows)
       }
+    } catch (err) {
+      // Errors are already handled by the hooks
+      // Just log for debugging
+      console.error('Upload/parse error:', err)
     } finally {
       setIsUploading(false)
     }
-  }, [])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: (acceptedFiles) => {
-      if (acceptedFiles[0]) handleFileUpload(acceptedFiles[0])
-    },
-    onDropRejected: (fileRejections) => {
-      if (!fileRejections[0]) return
-      const { file, errors } = fileRejections[0]
-
-      if (errors.find(e => e.code === 'file-invalid-type')) {
-        const ext = file.name.split('.').pop() || 'unknown'
-        setError(`File type not supported. Please upload a CSV file (found: ${ext}). Export your spreadsheet as CSV from Excel or Google Sheets.`)
-      } else if (errors.find(e => e.code === 'file-too-large')) {
-        setError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB. Try reducing the number of rows or removing unnecessary columns.`)
-      } else {
-        setError(`File rejected: ${errors[0]?.message || 'Unknown error'}`)
-      }
-    },
-    multiple: false,
-    accept: { 'text/csv': ['.csv'] },
-    noClick: false,
-    noKeyboard: false,
-  })
+  }, [csvParser, fileUpload])
 
   // === KEYBOARD SHORTCUTS ===
   useHotkeys('mod+o', (e) => {
@@ -361,12 +235,54 @@ export default function BulkProcessor() {
     setFieldToDelete(field)
   }, [])
 
+  // === TOOL SELECTION ===
+  const toggleTool = useCallback((toolName: string) => {
+    setSelectedTools(prev =>
+      prev.includes(toolName)
+        ? prev.filter(t => t !== toolName)
+        : [...prev, toolName]
+    )
+  }, [])
+
   const confirmDeleteOutputField = useCallback(() => {
     if (fieldToDelete) {
       setOutputFields(outputFields.filter(f => f !== fieldToDelete))
       setFieldToDelete(null)
     }
   }, [fieldToDelete, outputFields])
+
+  // === GENERATE COLUMNS ===
+  const handleGenerateColumns = useCallback(async () => {
+    if (!prompt || isGeneratingColumns) return
+
+    setIsGeneratingColumns(true)
+    setError(null)
+
+    try {
+      const response = await fetch('https://scaile--bulk-gpt-processor-mvp-fastapi-app.modal.run/generate-columns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      })
+
+      if (!response.ok) throw new Error('Column generation failed')
+
+      const data = await response.json()
+
+      if (data.status === 'success' && data.columns?.length > 0) {
+        const columnNames = data.columns.map((col: { name: string }) => col.name)
+        setOutputFields(columnNames)
+        toast.success(`Generated ${columnNames.length} column${columnNames.length > 1 ? 's' : ''}: ${columnNames.join(', ')}`)
+      } else {
+        throw new Error(data.error || 'No columns generated')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Column generation failed'
+      setError(`Failed to generate columns: ${message}`)
+    } finally {
+      setIsGeneratingColumns(false)
+    }
+  }, [prompt, isGeneratingColumns])
 
   // === TEST (1 ROW) - Now polls for async results ===
   const handleTest = useCallback(async () => {
@@ -406,8 +322,9 @@ export default function BulkProcessor() {
           rows: [csvParser.csvData.rows[0].data], // Only first row
           prompt,
           context: '',
-          outputColumns: outputFields,
+          outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
           webhookUrl: webhookUrl || undefined,
+          tools: selectedTools.length > 0 ? selectedTools : undefined,
         }),
       })
 
@@ -501,7 +418,7 @@ export default function BulkProcessor() {
     } finally {
       setIsTesting(false)
     }
-  }, [csvParser.csvData, prompt, outputFields, webhookUrl, variableValidation, webhookValidation])
+  }, [csvParser.csvData, prompt, outputFields, webhookUrl, variableValidation, webhookValidation, debugLog, useJsonMode, selectedTools])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
@@ -527,10 +444,11 @@ export default function BulkProcessor() {
       csvData: csvParser.csvData,
       prompt,
       context: '',
-      outputColumns: outputFields,
+      outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
       webhookUrl: webhookUrl || undefined,
+      tools: selectedTools.length > 0 ? selectedTools : undefined,
     })
-  }, [csvParser.csvData, prompt, outputFields, webhookUrl, batchProcessor, variableValidation, webhookValidation])
+  }, [csvParser.csvData, prompt, outputFields, webhookUrl, batchProcessor, variableValidation, webhookValidation, useJsonMode, selectedTools])
 
   // === EXPORT ===
   const handleExport = useCallback(async () => {
@@ -641,7 +559,7 @@ export default function BulkProcessor() {
         id: `export-${batchProcessor.batchId}`
       })
     }
-  }, [batchProcessor.batchId, outputFields])
+  }, [batchProcessor.batchId])
 
   // === FETCH API TOKEN ===
   const handleFetchToken = useCallback(async () => {
@@ -659,11 +577,6 @@ export default function BulkProcessor() {
     } finally {
       setIsFetchingToken(false)
     }
-  }, [])
-
-  const dismissBetaBanner = useCallback(() => {
-    localStorage.setItem('bulk-beta-banner-dismissed', 'true')
-    setShowBetaBanner(false)
   }, [])
 
   const applyTemplate = useCallback((template: PromptTemplate) => {
@@ -779,7 +692,7 @@ export default function BulkProcessor() {
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 h-screen overflow-hidden">
         {/* LEFT PANEL - Configuration */}
         <div className="h-full border-r border-white/5 bg-zinc-900 flex flex-col">
-          <div className="flex-1 overflow-y-auto p-2 space-y-2 max-h-[calc(100vh-12rem)]">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-12rem)]">
             {/* Error - Use V2 error if available */}
             {(fileUpload.error || csvParser.error || batchProcessor.error || error || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -807,250 +720,161 @@ export default function BulkProcessor() {
               </div>
             )}
 
+            {/* VALIDATION MESSAGES - Consolidated at top */}
+            {csvParser.csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
+              <div className="flex items-start gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
+                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-green-400">
+                  <span className="font-medium">Variables detected: </span>
+                  <span className="font-mono">
+                    {Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).join(', ')}
+                  </span>
+                </p>
+              </div>
+            )}
+
+            {!variableValidation.isValid && variableValidation.missing.length > 0 && (
+              <div className="flex items-start gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-md">
+                <XCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium text-orange-400">
+                    Missing variables in your CSV
+                  </p>
+                  <p className="text-xs text-orange-300/80">
+                    These variables are used in your prompt but don&apos;t exist in your CSV:{' '}
+                    <span className="font-mono font-semibold">
+                      {variableValidation.missing.map(v => `{{${v}}}`).join(', ')}
+                    </span>
+                  </p>
+                  <p className="text-xs text-orange-300/60">
+                    Please check your column names or remove these variables from your prompt.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {csvParser.csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
+              <div className="flex items-start gap-2 p-1.5 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
+                <p className="text-xs text-zinc-500">
+                  💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
+                </p>
+              </div>
+            )}
+
             {/* WORKFLOW STEPS */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center gap-2 ${csvParser.csvData ? 'text-green-400' : 'text-blue-400'}`}>
-                  {csvParser.csvData ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <div className="h-4 w-4 rounded-full border-2 border-current" />
-                  )}
-                  <span className="text-xs font-medium">1. Upload CSV</span>
-                </div>
-                <div className="flex-1 h-px bg-zinc-800" />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center gap-2 ${csvParser.csvData && prompt ? 'text-green-400' : csvParser.csvData ? 'text-blue-400' : 'text-zinc-600'}`}>
-                  {csvParser.csvData && prompt ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : csvParser.csvData ? (
-                    <div className="h-4 w-4 rounded-full border-2 border-current flex items-center justify-center">
-                      <div className="h-1.5 w-1.5 rounded-full bg-current" />
-                    </div>
-                  ) : (
-                    <div className="h-4 w-4 rounded-full border-2 border-current" />
-                  )}
-                  <span className="text-xs font-medium">2. Configure Prompt</span>
-                </div>
-                <div className="flex-1 h-px bg-zinc-800" />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center gap-2 ${batchProcessor.isProcessing ? 'text-blue-400' : displayResults.length > 0 ? 'text-green-400' : 'text-zinc-600'}`}>
-                  {batchProcessor.isProcessing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : displayResults.length > 0 ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <div className="h-4 w-4 rounded-full border-2 border-current" />
-                  )}
-                  <span className="text-xs font-medium">3. Process Data</span>
-                </div>
-                <div className="flex-1 h-px bg-zinc-800" />
-              </div>
-            </div>
-
-            <div className="h-px bg-zinc-800/50" />
-
-            {/* FILE UPLOAD / DATA PREVIEW (Combined) */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-zinc-300">Dataset</label>
-                {csvParser.csvData && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded text-xs text-zinc-300 transition-all flex items-center gap-1.5 active:scale-95"
-                    title="Upload a different CSV file (⌘O)"
-                    aria-label="Upload a different CSV file"
-                  >
-                    <Upload className="h-3 w-3" aria-hidden="true" />
-                    Change file
-                  </button>
-                )}
-              </div>
-
-              {csvParser.csvData && !isUploading ? (
-                // Show CSV Preview when file is loaded
-                <>
-                  <div className="border border-white/5 rounded-lg overflow-hidden bg-zinc-900/40">
-                    <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between bg-zinc-900/60">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                        <span className="text-xs text-zinc-300 font-medium">{fileUpload.file?.name || 'data.csv'}</span>
-                      </div>
-                      <span className="text-xs text-zinc-500" data-testid="row-count-display">
-                        {csvParser.csvData.totalRows} rows • {csvParser.csvData.columns.length} columns
-                      </span>
-                    </div>
-                    <div className="overflow-x-auto max-h-[120px] overflow-y-auto">
-                      <table className="w-full text-xs">
-                        <thead className="sticky top-0 bg-zinc-900/95 border-b border-white/5">
-                          <tr>
-                            {csvParser.csvData.columns.map(col => (
-                              <th key={col} className="px-2 py-1 text-left font-medium text-zinc-400 whitespace-nowrap">
-                                {col}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {csvParser.csvData.rows.slice(0, 5).map((row, i) => (
-                            <tr
-                              key={i}
-                              className={`border-b border-white/5 last:border-0 ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}`}
-                            >
-                              {csvParser.csvData.columns.map(col => (
-                                <td key={col} className="px-2 py-1 text-zinc-300 font-mono text-xs whitespace-nowrap">
-                                  {row.data[col] || '—'}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {csvParser.csvData.totalRows > 5 && (
-                      <div className="px-3 py-1.5 bg-zinc-900/60 border-t border-white/5 text-xs text-zinc-500">
-                        Showing first 5 of {csvParser.csvData.totalRows} rows
-                      </div>
-                    )}
-                  </div>
-                  <input {...getInputProps()} ref={fileInputRef} className="hidden" data-testid="file-input" />
-                </>
-              ) : (
-                // Show Upload Dropzone when no file or uploading
-                <div
-                  {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-3 min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
-                    isDragActive
-                      ? 'border-white/20 bg-white/5 scale-[1.02]'
-                      : 'border-white/10 hover:border-white/15 bg-zinc-900/30 hover:bg-zinc-900/50 active:scale-[0.98]'
-                  }`}
-                 
-                >
-                  <input {...getInputProps()} ref={fileInputRef} className="hidden" data-testid="file-input" />
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-8 w-8 mx-auto mb-2 text-zinc-400 animate-spin" />
-                      <p className="text-sm text-zinc-300 font-medium">Uploading and parsing...</p>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
-                      <p className="text-sm text-zinc-200 font-medium mb-1">
-                        {isDragActive ? 'Drop here' : 'Drop your CSV file here'}
-                      </p>
-                      <p className="text-xs text-zinc-300 mb-2">or</p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          fileInputRef.current?.click()
-                        }}
-                        className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-md text-sm font-medium text-zinc-200 transition-all active:scale-95"
-                        aria-label="Browse for CSV file to upload"
-                      >
-                        Browse Files
-                      </button>
-                      <p className="text-xs text-zinc-500 mt-3">
-                        Max 10MB • CSV format • Up to 1,000 rows
-                      </p>
-                      <a
-                        href="/sample.csv"
-                        download
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-xs text-zinc-400 hover:text-zinc-300 mt-2 inline-flex items-center gap-1 hover:underline"
-                        aria-label="Download sample CSV template"
-                      >
-                        Download sample template →
-                      </a>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Upload feedback */}
-              {fileUpload.error || csvParser.error || batchProcessor.error || error && (
-                <div className="flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
-                  <XCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-400">{fileUpload.error || csvParser.error || batchProcessor.error || error}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="h-px bg-zinc-800/50" />
-
-            {/* PROMPT */}
-            <PromptSection
-              prompt={prompt}
-              onPromptChange={setPrompt}
-              csvData={csvParser.csvData}
-              onOpenTemplates={() => setShowTemplateModal(true)}
+            <WorkflowSteps
+              hasCSV={!!csvParser.csvData}
+              hasPrompt={!!prompt}
+              isProcessing={batchProcessor.isProcessing}
+              hasResults={displayResults.length > 0}
             />
 
-            {/* OUTPUT COLUMNS - Now inline for better visibility */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Table2 className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                <label className="text-xs font-medium text-zinc-300">Output Columns</label>
-                <div className="group relative">
-                  <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
-                  <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-72 p-3 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
-                    <p className="font-medium mb-1.5">What are output columns?</p>
-                    <p className="mb-2">These define what fields the AI generates for each row in your CSV export.</p>
-                    <p className="text-zinc-400">
-                      <span className="font-medium">Example:</span> If you set &quot;bio&quot; and &quot;summary&quot;, your exported CSV will have both columns filled with AI-generated content.
-                    </p>
-                    <p className="mt-2 text-zinc-500 text-[11px]">Default is &quot;bio&quot; - most users keep this.</p>
+            {/* DATA INPUT SECTION */}
+            <CollapsibleSection
+              title="📁 Data Input"
+              open={dataInputSection.isOpen}
+              onOpenChange={dataInputSection.setIsOpen}
+              className="bg-zinc-900/30 border border-white/5 rounded-lg"
+              triggerClassName="hover:bg-zinc-800/50"
+              contentClassName="px-0 pb-0"
+            >
+              <FileUploadSection
+                ref={fileInputRef}
+                csvData={csvParser.csvData}
+                fileName={fileUpload.file?.name}
+                errors={[fileUpload.error, csvParser.error, batchProcessor.error, error]}
+                isUploading={isUploading}
+                onFileUpload={handleFileUpload}
+              />
+            </CollapsibleSection>
+
+            {/* PROMPT CONFIGURATION SECTION */}
+            <CollapsibleSection
+              title="✏️ Prompt Configuration"
+              open={promptSection.isOpen}
+              onOpenChange={promptSection.setIsOpen}
+              className="bg-zinc-900/30 border border-white/5 rounded-lg"
+              triggerClassName="hover:bg-zinc-800/50"
+              contentClassName="px-0 pb-0"
+            >
+              <PromptSection
+                prompt={prompt}
+                onPromptChange={setPrompt}
+                csvData={csvParser.csvData}
+                onOpenTemplates={() => setShowTemplateModal(true)}
+              />
+            </CollapsibleSection>
+
+            {/* OUTPUT SETTINGS SECTION - Grouped */}
+            <CollapsibleSection
+              title="⚙️ Output Settings"
+              open={outputSettingsSection.isOpen}
+              onOpenChange={outputSettingsSection.setIsOpen}
+              className="bg-zinc-900/30 border border-white/5 rounded-lg"
+              triggerClassName="hover:bg-zinc-800/50"
+              contentClassName="space-y-4"
+            >
+              {/* JSON MODE TOGGLE */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                    <label className="text-xs font-medium text-zinc-400">Output Format</label>
                   </div>
-                </div>
-              </div>
-              <p className="text-xs text-zinc-500">
-                Define what columns appear in your exported CSV. The AI will generate content for each field.
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {outputFields.map(field => (
-                  <div key={field} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-900 border border-white/5 rounded text-sm text-zinc-300 font-mono">
-                    {field}
-                    <button
-                      onClick={() => removeOutputField(field)}
-                      className="hover:text-red-400 transition-colors"
-                      aria-label={`Remove ${field} output field`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-                <div className="inline-flex gap-1">
-                  <input
-                    value={newField}
-                    onChange={(e) => setNewField(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addOutputField()}
-                    placeholder="field..."
-                    className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
-                    aria-label="New output field name"
-                  />
                   <button
-                    onClick={addOutputField}
-                    className="p-1 hover:bg-zinc-800 rounded transition-colors"
-                    aria-label="Add new output field"
+                    onClick={() => setUseJsonMode(!useJsonMode)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      useJsonMode ? 'bg-blue-600' : 'bg-zinc-700'
+                    }`}
+                    aria-label={useJsonMode ? 'Switch to free-form text mode' : 'Switch to JSON mode'}
+                    title={useJsonMode ? 'JSON mode (structured output)' : 'Free-form mode (unstructured text)'}
                   >
-                    <Plus className="h-3 w-3 text-zinc-500" aria-hidden="true" />
+                    <span
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                        useJsonMode ? 'translate-x-5' : 'translate-x-1'
+                      }`}
+                    />
                   </button>
                 </div>
+                <p className="text-xs text-zinc-500">
+                  {useJsonMode ? (
+                    <span>JSON mode: AI returns structured data matching your output columns</span>
+                  ) : (
+                    <span>Free-form mode: AI returns unstructured text (ignores output columns)</span>
+                  )}
+                </p>
               </div>
-            </div>
 
-            {/* OPTIMIZE WITH AI BUTTON - Improved text to clarify it auto-detects columns */}
-            {prompt && csvParser.csvData && !optimizedPrompt && !isOptimizing && (
-              <button
-                onClick={triggerOptimization}
-                className="mt-3 w-full px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-md text-sm font-medium text-blue-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                aria-label="Optimize prompt with AI and auto-detect output columns"
-              >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Optimize with AI (auto-detect columns)
-              </button>
-            )}
+              {/* OUTPUT COLUMNS - Disabled when JSON mode is OFF */}
+              {useJsonMode && (
+                <>
+                  <OutputFieldsSection
+                    outputFields={outputFields}
+                    newField={newField}
+                    onNewFieldChange={setNewField}
+                    onAddField={addOutputField}
+                    onRemoveField={removeOutputField}
+                  />
+
+                  {/* TOOL SELECTION */}
+                  <ToolSelectionSection
+                    selectedTools={selectedTools}
+                    onToggleTool={toggleTool}
+                  />
+                </>
+              )}
+
+              {/* AI ASSISTANT - Consolidated */}
+              <AIAssistantSection
+                hasPrompt={!!prompt}
+                hasCSVData={!!csvParser.csvData}
+                isGeneratingColumns={isGeneratingColumns}
+                isOptimizing={isOptimizing}
+                hasOptimizedPrompt={!!optimizedPrompt}
+                onGenerateColumns={handleGenerateColumns}
+                onOptimizePrompt={triggerOptimization}
+              />
+            </CollapsibleSection>
 
             {/* AI-OPTIMIZED JOB PREVIEW */}
             {optimizedPrompt && (
@@ -1078,93 +902,59 @@ export default function BulkProcessor() {
               />
             )}
 
-              {csvParser.csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
-                <div className="flex items-start gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
-                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-green-400">
-                    <span className="font-medium">Variables detected: </span>
-                    <span className="font-mono">
-                      {Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).join(', ')}
-                    </span>
+            {/* ADVANCED OPTIONS SECTION */}
+            <CollapsibleSection
+              title="🔧 Advanced Options"
+              open={advancedSection.isOpen}
+              onOpenChange={advancedSection.setIsOpen}
+              className="bg-zinc-900/30 border border-white/5 rounded-lg"
+              triggerClassName="hover:bg-zinc-800/50"
+              contentClassName="space-y-4"
+            >
+              {/* WEBHOOK URL */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Webhook className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                  <label htmlFor="webhook" className="text-xs font-medium text-zinc-400">
+                    Webhook URL
+                  </label>
+                </div>
+                <input
+                  id="webhook"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://hooks.n8n.cloud/..."
+                  className={`w-full px-3 py-1.5 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all duration-150 ease-out ${
+                    !webhookValidation.isValid
+                      ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40 focus:shadow-[0_0_4px_rgba(249,115,22,0.4)]'
+                      : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
+                  }`}
+                  aria-label="Webhook URL for batch completion notifications"
+                  aria-describedby={!webhookValidation.isValid && webhookValidation.error ? "webhook-error" : undefined}
+                />
+                {!webhookValidation.isValid && webhookValidation.error && (
+                  <p className="text-xs text-orange-400 flex items-center gap-1">
+                    <XCircle className="h-3 w-3" />
+                    {webhookValidation.error}
                   </p>
-                </div>
-              )}
-
-              {/* VARIABLE VALIDATION WARNING */}
-              {!variableValidation.isValid && variableValidation.missing.length > 0 && (
-                <div className="flex items-start gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-md">
-                  <XCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-orange-400">
-                      Missing variables in your CSV
-                    </p>
-                    <p className="text-xs text-orange-300/80">
-                      These variables are used in your prompt but don&apos;t exist in your CSV:{' '}
-                      <span className="font-mono font-semibold">
-                        {variableValidation.missing.map(v => `{{${v}}}`).join(', ')}
-                      </span>
-                    </p>
-                    <p className="text-xs text-orange-300/60">
-                      Please check your column names or remove these variables from your prompt.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* UNUSED VARIABLES INFO (subtle, informational only) */}
-              {csvParser.csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
-                <div className="flex items-start gap-2 p-1.5 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
-                  <p className="text-xs text-zinc-500">
-                    💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
-                  </p>
-                </div>
-              )}
-
-            {/* WEBHOOK URL - Moved from Advanced modal */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Webhook className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                <label htmlFor="webhook" className="text-xs font-medium text-zinc-400">
-                  Webhook URL
-                </label>
-                <span className="text-xs text-zinc-600">(optional)</span>
+                )}
+                {webhookValidation.isValid && webhookUrl && (
+                  <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
+                )}
               </div>
-              <input
-                id="webhook"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://hooks.n8n.cloud/..."
-                className={`w-full px-3 py-1.5 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all duration-150 ease-out ${
-                  !webhookValidation.isValid
-                    ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40 focus:shadow-[0_0_4px_rgba(249,115,22,0.4)]'
-                    : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
-                }`}
-                aria-label="Webhook URL for batch completion notifications"
-                aria-describedby={!webhookValidation.isValid && webhookValidation.error ? "webhook-error" : undefined}
-              />
-              {!webhookValidation.isValid && webhookValidation.error && (
-                <p className="text-xs text-orange-400 flex items-center gap-1">
-                  <XCircle className="h-3 w-3" />
-                  {webhookValidation.error}
-                </p>
-              )}
-              {webhookValidation.isValid && webhookUrl && (
-                <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
-              )}
-            </div>
 
-            {/* ADVANCED SETTINGS (Modal) - Now only for API access */}
-            <div className="flex items-center gap-2">
-              <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-              <label className="text-xs font-medium text-zinc-400">API Access</label>
-              <span className="text-xs text-zinc-600">(optional)</span>
-              <button
-                onClick={() => setShowAdvancedSettingsModal(true)}
-                className="ml-auto text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
-              >
-                Show curl command →
-              </button>
-            </div>
+              {/* API ACCESS */}
+              <div className="flex items-center gap-2">
+                <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                <label className="text-xs font-medium text-zinc-400">API Access</label>
+                <button
+                  onClick={() => setShowAdvancedSettingsModal(true)}
+                  className="ml-auto text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
+                >
+                  Show curl command →
+                </button>
+              </div>
+            </CollapsibleSection>
 
             {/* Hidden - Advanced Settings content (now in modal) */}
             {false && (
@@ -1360,356 +1150,270 @@ export default function BulkProcessor() {
 
 
       {/* TEMPLATE GALLERY MODAL */}
-      {showTemplateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowTemplateModal(false)} tabIndex={-1}>
-          <div
-            ref={templateModalRef}
-            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-labelledby="template-gallery-title"
-            aria-modal="true"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-zinc-400" />
-                <h2 id="template-gallery-title" className="text-lg font-medium text-zinc-100">Template Gallery</h2>
-              </div>
-              <button
-                onClick={() => setShowTemplateModal(false)}
-                className="text-zinc-400 hover:text-zinc-200 transition-colors"
-                aria-label="Close template gallery"
-              >
-                <X className="h-5 w-5" aria-hidden="true" />
-              </button>
+      <Modal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        title="Template Gallery"
+        titleIcon={FileText}
+        size="lg"
+        ariaLabelledBy="template-gallery-title"
+      >
+        <div className="space-y-4">
+          {/* Search and Filter */}
+          <div className="space-y-3">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <input
+                type="text"
+                value={templateSearchQuery}
+                onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                placeholder="Search templates..."
+                className="w-full pl-10 pr-3 py-2.5 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
+                aria-label="Search templates by name or category"
+              />
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
-                {/* Search and Filter */}
-                <div className="space-y-3">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                    <input
-                      type="text"
-                      value={templateSearchQuery}
-                      onChange={(e) => setTemplateSearchQuery(e.target.value)}
-                      placeholder="Search templates..."
-                      className="w-full pl-10 pr-3 py-2.5 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
-                      aria-label="Search templates by name or category"
-                    />
-                  </div>
-
-                  {/* Category Filter */}
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-                    <div className="flex gap-2 flex-wrap">
-                      {TEMPLATE_CATEGORIES.map((category) => {
-                        const Icon = category.icon
-                        const isActive = templateCategoryFilter === category.id
-                        return (
-                          <button
-                            key={category.id}
-                            onClick={() => setTemplateCategoryFilter(category.id)}
-                            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                              Icon ? 'flex items-center gap-1.5' : ''
-                            } ${
-                              isActive
-                                ? 'bg-zinc-700 text-zinc-200 border border-white/10'
-                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
-                            }`}
-                            aria-label={`Filter templates by ${category.label}`}
-                            aria-pressed={isActive}
-                          >
-                            {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
-                            {category.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Templates List */}
-                <div className="grid grid-cols-1 gap-3">
-                  {filteredTemplates.length > 0 ? (
-                    filteredTemplates.map((template) => (
-                      <button
-                        key={template.id}
-                        onClick={() => applyTemplate(template)}
-                        className="text-left p-4 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-white/10 rounded-md transition-all group"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
-                                {template.name}
-                              </h4>
-                              <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded text-xs font-mono">
-                                {template.category}
-                              </span>
-                            </div>
-                            <p className="text-xs text-zinc-500 mb-2 leading-relaxed">
-                              {template.description}
-                            </p>
-                            <div className="flex items-center gap-1.5 text-xs text-zinc-600">
-                              <span>Uses:</span>
-                              <span className="font-mono">
-                                {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
-                              </span>
-                            </div>
-                          </div>
-                          <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 rotate-[-90deg] transition-colors flex-shrink-0 mt-1" />
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="p-12 text-center">
-                      <Search className="h-10 w-10 mx-auto mb-3 text-zinc-700" />
-                      <p className="text-sm text-zinc-500 mb-1">No templates match your search</p>
-                      <p className="text-xs text-zinc-600 mb-4">Try a different search term or category</p>
-                      <button
-                        onClick={() => {
-                          setTemplateSearchQuery('')
-                          setTemplateCategoryFilter('all')
-                        }}
-                        className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors underline"
-                      >
-                        Clear filters
-                      </button>
-                    </div>
-                  )}
-                </div>
+            {/* Category Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+              <div className="flex gap-2 flex-wrap">
+                {TEMPLATE_CATEGORIES.map((category) => {
+                  const Icon = category.icon
+                  const isActive = templateCategoryFilter === category.id
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setTemplateCategoryFilter(category.id)}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        Icon ? 'flex items-center gap-1.5' : ''
+                      } ${
+                        isActive
+                          ? 'bg-zinc-700 text-zinc-200 border border-white/10'
+                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                      }`}
+                      aria-label={`Filter templates by ${category.label}`}
+                      aria-pressed={isActive}
+                    >
+                      {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
+                      {category.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
+
+          {/* Templates List */}
+          <div className="grid grid-cols-1 gap-3">
+            {filteredTemplates.length > 0 ? (
+              filteredTemplates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => applyTemplate(template)}
+                  className="text-left p-4 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-white/10 rounded-md transition-all group"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
+                          {template.name}
+                        </h4>
+                        <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded text-xs font-mono">
+                          {template.category}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500 mb-2 leading-relaxed">
+                        {template.description}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-xs text-zinc-600">
+                        <span>Uses:</span>
+                        <span className="font-mono">
+                          {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 rotate-[-90deg] transition-colors flex-shrink-0 mt-1" />
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="p-12 text-center">
+                <Search className="h-10 w-10 mx-auto mb-3 text-zinc-700" />
+                <p className="text-sm text-zinc-500 mb-1">No templates match your search</p>
+                <p className="text-xs text-zinc-600 mb-4">Try a different search term or category</p>
+                <button
+                  onClick={() => {
+                    setTemplateSearchQuery('')
+                    setTemplateCategoryFilter('all')
+                  }}
+                  className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors underline"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* API ACCESS MODAL - Simplified (output columns & webhook moved to main UI) */}
-      {showAdvancedSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowAdvancedSettingsModal(false)} tabIndex={-1}>
-          <div
-            ref={advancedSettingsModalRef}
-            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-labelledby="api-access-title"
-            aria-modal="true"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <Code className="h-5 w-5 text-zinc-400" />
-                <h2 id="api-access-title" className="text-lg font-medium text-zinc-100">API Access</h2>
-              </div>
-              <button
-                onClick={() => setShowAdvancedSettingsModal(false)}
-                className="text-zinc-400 hover:text-zinc-200 transition-colors"
-                aria-label="Close API access"
-              >
-                <X className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
+      <Modal
+        isOpen={showAdvancedSettingsModal}
+        onClose={() => setShowAdvancedSettingsModal(false)}
+        title="API Access"
+        titleIcon={Code}
+        size="md"
+        ariaLabelledBy="api-access-title"
+        footer={
+          <button onClick={() => setShowAdvancedSettingsModal(false)} className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium rounded-md transition-colors">
+            Done
+          </button>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-500">Use the API to integrate bulk processing with your tools</p>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
-                <p className="text-sm text-zinc-500">Use the API to integrate bulk processing with your tools</p>
-
-                {!showApiAccess ? (
-                  <button
-                    onClick={handleFetchToken}
-                    disabled={isFetchingToken}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isFetchingToken && <Loader2 className="h-4 w-4 animate-spin" />}
-                    <span>{isFetchingToken ? 'Loading...' : 'Generate curl command'}</span>
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <pre className="p-4 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
+          {!showApiAccess ? (
+            <button
+              onClick={handleFetchToken}
+              disabled={isFetchingToken}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isFetchingToken && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>{isFetchingToken ? 'Loading...' : 'Generate curl command'}</span>
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <pre className="p-4 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
 {`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/process \\
   -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
   -H "Content-Type: application/json" \\
   -d '{"csvFilename":"data.csv","rows":[...],"prompt":"..."}'`}
-                    </pre>
-                    <p className="text-xs text-zinc-500">Use in n8n, Zapier, Postman, or any HTTP client to automate batch processing</p>
-                  </div>
-                )}
-              </div>
+              </pre>
+              <p className="text-xs text-zinc-500">Use in n8n, Zapier, Postman, or any HTTP client to automate batch processing</p>
             </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end p-6 border-t border-white/5 bg-zinc-900/50 flex-shrink-0">
-              <button onClick={() => setShowAdvancedSettingsModal(false)} className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium rounded-md transition-colors">
-                Done
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </Modal>
 
       {/* KEYBOARD SHORTCUTS HELP MODAL */}
-      {showKeyboardHelp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowKeyboardHelp(false)} tabIndex={-1}>
-          <div
-            ref={keyboardHelpModalRef}
-            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-labelledby="keyboard-shortcuts-title"
-            aria-modal="true"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <HelpCircle className="h-5 w-5 text-blue-400" />
-                <h2 id="keyboard-shortcuts-title" className="text-lg font-medium text-zinc-100">Keyboard Shortcuts</h2>
-              </div>
-              <button
-                onClick={() => setShowKeyboardHelp(false)}
-                className="text-zinc-400 hover:text-zinc-200 transition-colors"
-                aria-label="Close keyboard shortcuts help"
-              >
-                <X className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
+      <Modal
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+        title="Keyboard Shortcuts"
+        titleIcon={HelpCircle}
+        titleIconColor="text-blue-400"
+        size="md"
+        ariaLabelledBy="keyboard-shortcuts-title"
+        footer={
+          <button onClick={() => setShowKeyboardHelp(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
+            Got it
+          </button>
+        }
+      >
+        <div className="space-y-6">
+          <p className="text-sm text-zinc-400">Speed up your workflow with these keyboard shortcuts</p>
 
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              <p className="text-sm text-zinc-400">Speed up your workflow with these keyboard shortcuts</p>
-
-              <div className="space-y-4">
-                {/* File Operations */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">File Operations</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
-                      <div className="flex items-center gap-3">
-                        <Upload className="h-4 w-4 text-zinc-500" />
-                        <span className="text-sm text-zinc-300">Open file picker</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
-                        <span className="text-zinc-600">+</span>
-                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">O</kbd>
-                      </div>
-                    </div>
+          <div className="space-y-4">
+            {/* File Operations */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">File Operations</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                  <div className="flex items-center gap-3">
+                    <Upload className="h-4 w-4 text-zinc-500" />
+                    <span className="text-sm text-zinc-300">Open file picker</span>
                   </div>
-                </div>
-
-                {/* Processing */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Processing</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
-                      <div className="flex items-center gap-3">
-                        <Play className="h-4 w-4 text-zinc-500" />
-                        <span className="text-sm text-zinc-300">Test with first row</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
-                        <span className="text-zinc-600">+</span>
-                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">T</kbd>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
-                      <div className="flex items-center gap-3">
-                        <Play className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-zinc-300">Run all rows</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
-                        <span className="text-zinc-600">+</span>
-                        <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">↵</kbd>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tips */}
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-md space-y-2">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-blue-300">Pro Tip</p>
-                      <p className="text-xs text-blue-200/80 leading-relaxed">
-                        Use ⌘T to test your prompt with the first row before running the full batch. This helps you verify the output format and catch any issues early.
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
+                    <span className="text-zinc-600">+</span>
+                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">O</kbd>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end p-6 border-t border-white/5 bg-zinc-900/50">
-              <button onClick={() => setShowKeyboardHelp(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
-                Got it
-              </button>
+            {/* Processing */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Processing</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                  <div className="flex items-center gap-3">
+                    <Play className="h-4 w-4 text-zinc-500" />
+                    <span className="text-sm text-zinc-300">Test with first row</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
+                    <span className="text-zinc-600">+</span>
+                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">T</kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                  <div className="flex items-center gap-3">
+                    <Play className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-zinc-300">Run all rows</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
+                    <span className="text-zinc-600">+</span>
+                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">↵</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tips */}
+            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-md space-y-2">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-blue-300">Pro Tip</p>
+                  <p className="text-xs text-blue-200/80 leading-relaxed">
+                    Use ⌘T to test your prompt with the first row before running the full batch. This helps you verify the output format and catch any issues early.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* DELETE OUTPUT FIELD CONFIRMATION MODAL */}
-      {fieldToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFieldToDelete(null)} tabIndex={-1}>
-          <div
-            ref={deleteConfirmationModalRef}
-            className="bg-zinc-900 border border-white/10 rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-labelledby="delete-field-title"
-            aria-modal="true"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                <h2 id="delete-field-title" className="text-lg font-medium text-zinc-100">Delete Output Field?</h2>
-              </div>
-              <button
-                onClick={() => setFieldToDelete(null)}
-                className="text-zinc-400 hover:text-zinc-200 transition-colors"
-                aria-label="Close dialog"
-              >
-                <X className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-zinc-300">
-                Are you sure you want to delete the output field <span className="font-mono text-blue-400">{fieldToDelete}</span>?
-              </p>
-              <p className="text-xs text-zinc-500">
-                This action cannot be undone. You&apos;ll need to manually add it back if you change your mind.
-              </p>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-white/5 bg-zinc-900/50">
-              <button
-                onClick={() => setFieldToDelete(null)}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDeleteOutputField}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-md transition-colors"
-              >
-                Delete Field
-              </button>
-            </div>
+      <Modal
+        isOpen={fieldToDelete !== null}
+        onClose={() => setFieldToDelete(null)}
+        title="Delete Output Field?"
+        titleIcon={AlertTriangle}
+        titleIconColor="text-yellow-500"
+        size="sm"
+        ariaLabelledBy="delete-field-title"
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={() => setFieldToDelete(null)}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteOutputField}
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-md transition-colors"
+            >
+              Delete Field
+            </button>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-300">
+            Are you sure you want to delete the output field <span className="font-mono text-blue-400">{fieldToDelete}</span>?
+          </p>
+          <p className="text-xs text-zinc-500">
+            This action cannot be undone. You&apos;ll need to manually add it back if you change your mind.
+          </p>
         </div>
-      )}
+      </Modal>
 
       {/* Debug Logger - Fixed position bottom-right panel */}
       <DebugLogger />

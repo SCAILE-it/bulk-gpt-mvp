@@ -20,6 +20,11 @@ const CollapsibleContent = CollapsiblePrimitive.CollapsibleContent
 interface CollapsibleSectionProps {
   title: string
   children: React.ReactNode
+  /** Controlled mode: current open state */
+  open?: boolean
+  /** Controlled mode: callback when open state changes */
+  onOpenChange?: (open: boolean) => void
+  /** Uncontrolled mode: initial open state */
   defaultOpen?: boolean
   className?: string
   triggerClassName?: string
@@ -34,6 +39,8 @@ const CollapsibleSection = React.forwardRef<
     {
       title,
       children,
+      open: controlledOpen,
+      onOpenChange,
       defaultOpen = false,
       className,
       triggerClassName,
@@ -42,7 +49,13 @@ const CollapsibleSection = React.forwardRef<
     },
     ref
   ) => {
-    const [isOpen, setIsOpen] = React.useState(defaultOpen)
+    // Uncontrolled state (only used if open/onOpenChange not provided)
+    const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+
+    // Determine if controlled or uncontrolled
+    const isControlled = controlledOpen !== undefined
+    const isOpen = isControlled ? controlledOpen : uncontrolledOpen
+    const setIsOpen = isControlled ? onOpenChange : setUncontrolledOpen
 
     return (
       <Collapsible
