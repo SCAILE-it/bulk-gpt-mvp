@@ -45,8 +45,9 @@ test.describe('Bulk Processor - /bulk Route', () => {
     })
 
     test('should show file upload dropzone', async ({ page }) => {
-      const dropzone = page.locator('[data-testid="upload-dropzone"], input[type="file"]')
-      await expect(dropzone.first()).toBeVisible()
+      // File input is intentionally hidden, check for visible dropzone elements
+      const browseButton = page.getByRole('button', { name: /browse files/i })
+      await expect(browseButton).toBeVisible()
     })
 
     test('should have empty initial state', async ({ page }) => {
@@ -387,17 +388,18 @@ test.describe('Bulk Processor - /bulk Route', () => {
       await page.setViewportSize({ width: 375, height: 667 })
       await page.reload()
 
-      // Check key elements are still accessible
-      const fileInput = page.locator('input[type="file"]')
-      await expect(fileInput).toBeVisible()
+      // Check key elements are still accessible (file input is hidden by design)
+      const browseButton = page.getByRole('button', { name: /browse files/i })
+      await expect(browseButton).toBeVisible()
     })
 
     test('should be usable on tablet viewport', async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 })
       await page.reload()
 
-      const fileInput = page.locator('input[type="file"]')
-      await expect(fileInput).toBeVisible()
+      // Check key elements are still accessible (file input is hidden by design)
+      const browseButton = page.getByRole('button', { name: /browse files/i })
+      await expect(browseButton).toBeVisible()
     })
   })
 
