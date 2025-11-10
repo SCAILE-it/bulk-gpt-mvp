@@ -5,8 +5,8 @@ test.use({ storageState: 'playwright/.auth/user.json' })
 
 test.describe('YC-Grade Design Review - Authenticated', () => {
   test('capture bulk processor UI with YC design', async ({ page }) => {
-    // Navigate to bulk processor
-    await page.goto('http://localhost:3000/bulk')
+    // Navigate to bulk processor (uses baseURL from playwright.config.ts)
+    await page.goto('/bulk')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1000)
     
