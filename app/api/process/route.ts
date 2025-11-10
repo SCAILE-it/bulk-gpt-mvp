@@ -19,7 +19,8 @@ export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
  *   prompt: string,
  *   context?: string,
  *   outputColumns?: OutputColumn[],
- *   webhookUrl?: string
+ *   webhookUrl?: string,
+ *   tools?: string[]
  * }
  *
  * Returns:

@@ -9,8 +9,8 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle, XCircle,
-  Loader2, Plus, X, ChevronDown, HelpCircle,
-  Table2, Webhook, Code, Search, Filter, AlertTriangle
+  Loader2, X, ChevronDown, HelpCircle,
+  Code, Search, Filter, AlertTriangle
 } from 'lucide-react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
@@ -18,7 +18,6 @@ import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
 import { useManualJobOptimizer } from '@/hooks/useManualJobOptimizer'
 import { useVariableValidation } from '@/hooks/useVariableValidation'
-import { useWebhookValidation } from '@/hooks/useWebhookValidation'
 import { useBetaBanner } from '@/hooks/useBetaBanner'
 import { useTemplateFilter } from '@/hooks/useTemplateFilter'
 import { useCollapsibleState } from '@/hooks/useCollapsibleState'
@@ -28,7 +27,6 @@ import { CSVPreviewTable } from './CSVPreviewTable'
 import { ResultsTable } from './ResultsTable'
 import { FileUploadSection } from './FileUploadSection'
 import { OutputFieldsSection } from './OutputFieldsSection'
-import { ToolSelectionSection } from './ToolSelectionSection'
 import { WorkflowSteps } from './WorkflowSteps'
 import { AIAssistantSection } from './AIAssistantSection'
 import { Modal } from '@/components/ui/modal'
@@ -64,8 +62,6 @@ export default function BulkProcessor() {
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
   const [outputFields, setOutputFields] = useState<string[]>(['bio'])
   const [newField, setNewField] = useState('')
-  const [selectedTools, setSelectedTools] = useState<string[]>([]) // GTM tools to enable
-  const [webhookUrl, setWebhookUrl] = useState('')
   const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
   const [useJsonMode, setUseJsonMode] = useState(true) // JSON schema toggle
 
@@ -111,7 +107,6 @@ export default function BulkProcessor() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Result[]>([])
-  const [isGeneratingColumns, setIsGeneratingColumns] = useState(false)
 
   // Memoize CSV columns to prevent infinite render loop (array created on every render)
   const csvColumns = useMemo(() => {
@@ -156,9 +151,6 @@ export default function BulkProcessor() {
 
   // === VARIABLE VALIDATION ===
   const variableValidation = useVariableValidation(prompt, csvParser.csvData)
-
-  // === WEBHOOK URL VALIDATION ===
-  const webhookValidation = useWebhookValidation(webhookUrl)
 
   // === FILTERED TEMPLATES ===
   const filteredTemplates = useTemplateFilter(templateSearchQuery, templateCategoryFilter)
@@ -235,54 +227,12 @@ export default function BulkProcessor() {
     setFieldToDelete(field)
   }, [])
 
-  // === TOOL SELECTION ===
-  const toggleTool = useCallback((toolName: string) => {
-    setSelectedTools(prev =>
-      prev.includes(toolName)
-        ? prev.filter(t => t !== toolName)
-        : [...prev, toolName]
-    )
-  }, [])
-
   const confirmDeleteOutputField = useCallback(() => {
     if (fieldToDelete) {
       setOutputFields(outputFields.filter(f => f !== fieldToDelete))
       setFieldToDelete(null)
     }
   }, [fieldToDelete, outputFields])
-
-  // === GENERATE COLUMNS ===
-  const handleGenerateColumns = useCallback(async () => {
-    if (!prompt || isGeneratingColumns) return
-
-    setIsGeneratingColumns(true)
-    setError(null)
-
-    try {
-      const response = await fetch('https://scaile--bulk-gpt-processor-mvp-fastapi-app.modal.run/generate-columns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      })
-
-      if (!response.ok) throw new Error('Column generation failed')
-
-      const data = await response.json()
-
-      if (data.status === 'success' && data.columns?.length > 0) {
-        const columnNames = data.columns.map((col: { name: string }) => col.name)
-        setOutputFields(columnNames)
-        toast.success(`Generated ${columnNames.length} column${columnNames.length > 1 ? 's' : ''}: ${columnNames.join(', ')}`)
-      } else {
-        throw new Error(data.error || 'No columns generated')
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Column generation failed'
-      setError(`Failed to generate columns: ${message}`)
-    } finally {
-      setIsGeneratingColumns(false)
-    }
-  }, [prompt, isGeneratingColumns])
 
   // === TEST (1 ROW) - Now polls for async results ===
   const handleTest = useCallback(async () => {
@@ -291,12 +241,6 @@ export default function BulkProcessor() {
     // Variable validation check
     if (!variableValidation.isValid) {
       setError(`Cannot test: Missing variables in CSV: ${variableValidation.missing.join(', ')}`)
-      return
-    }
-
-    // Webhook validation check
-    if (!webhookValidation.isValid) {
-      setError(`Cannot test: ${webhookValidation.error}`)
       return
     }
 
@@ -309,8 +253,7 @@ export default function BulkProcessor() {
         filename: csvParser.csvData.filename,
         rowCount: 1,
         promptLength: prompt.length,
-        outputFieldsCount: outputFields.length,
-        hasWebhook: !!webhookUrl
+        outputFieldsCount: outputFields.length
       })
 
       // Step 1: Create batch (async)
@@ -323,8 +266,6 @@ export default function BulkProcessor() {
           prompt,
           context: '',
           outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
-          webhookUrl: webhookUrl || undefined,
-          tools: selectedTools.length > 0 ? selectedTools : undefined,
         }),
       })
 
@@ -418,7 +359,7 @@ export default function BulkProcessor() {
     } finally {
       setIsTesting(false)
     }
-  }, [csvParser.csvData, prompt, outputFields, webhookUrl, variableValidation, webhookValidation, debugLog, useJsonMode, selectedTools])
+  }, [csvParser.csvData, prompt, outputFields, variableValidation, debugLog, useJsonMode])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
@@ -427,12 +368,6 @@ export default function BulkProcessor() {
     // Variable validation check
     if (!variableValidation.isValid) {
       setError(`Cannot process: Missing variables in CSV: ${variableValidation.missing.join(', ')}`)
-      return
-    }
-
-    // Webhook validation check
-    if (!webhookValidation.isValid) {
-      setError(`Cannot process: ${webhookValidation.error}`)
       return
     }
 
@@ -445,10 +380,8 @@ export default function BulkProcessor() {
       prompt,
       context: '',
       outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
-      webhookUrl: webhookUrl || undefined,
-      tools: selectedTools.length > 0 ? selectedTools : undefined,
     })
-  }, [csvParser.csvData, prompt, outputFields, webhookUrl, batchProcessor, variableValidation, webhookValidation, useJsonMode, selectedTools])
+  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, useJsonMode])
 
   // === EXPORT ===
   const handleExport = useCallback(async () => {
@@ -855,12 +788,6 @@ export default function BulkProcessor() {
                     onAddField={addOutputField}
                     onRemoveField={removeOutputField}
                   />
-
-                  {/* TOOL SELECTION */}
-                  <ToolSelectionSection
-                    selectedTools={selectedTools}
-                    onToggleTool={toggleTool}
-                  />
                 </>
               )}
 
@@ -868,11 +795,9 @@ export default function BulkProcessor() {
               <AIAssistantSection
                 hasPrompt={!!prompt}
                 hasCSVData={!!csvParser.csvData}
-                isGeneratingColumns={isGeneratingColumns}
                 isOptimizing={isOptimizing}
                 hasOptimizedPrompt={!!optimizedPrompt}
-                onGenerateColumns={handleGenerateColumns}
-                onOptimizePrompt={triggerOptimization}
+                onOptimize={triggerOptimization}
               />
             </CollapsibleSection>
 
@@ -911,38 +836,6 @@ export default function BulkProcessor() {
               triggerClassName="hover:bg-zinc-800/50"
               contentClassName="space-y-4"
             >
-              {/* WEBHOOK URL */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Webhook className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                  <label htmlFor="webhook" className="text-xs font-medium text-zinc-400">
-                    Webhook URL
-                  </label>
-                </div>
-                <input
-                  id="webhook"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://hooks.n8n.cloud/..."
-                  className={`w-full px-3 py-1.5 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all duration-150 ease-out ${
-                    !webhookValidation.isValid
-                      ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40 focus:shadow-[0_0_4px_rgba(249,115,22,0.4)]'
-                      : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
-                  }`}
-                  aria-label="Webhook URL for batch completion notifications"
-                  aria-describedby={!webhookValidation.isValid && webhookValidation.error ? "webhook-error" : undefined}
-                />
-                {!webhookValidation.isValid && webhookValidation.error && (
-                  <p className="text-xs text-orange-400 flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
-                    {webhookValidation.error}
-                  </p>
-                )}
-                {webhookValidation.isValid && webhookUrl && (
-                  <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
-                )}
-              </div>
-
               {/* API ACCESS */}
               <div className="flex items-center gap-2">
                 <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
@@ -955,148 +848,33 @@ export default function BulkProcessor() {
                 </button>
               </div>
             </CollapsibleSection>
-
-            {/* Hidden - Advanced Settings content (now in modal) */}
-            {false && (
-              <div className="space-y-2">
-                <div className="space-y-4 px-3 py-2 border-l-2 border-zinc-800">
-                  {/* OUTPUT FIELDS */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Table2 className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                      <label className="text-xs font-medium text-zinc-300">Output Column Names</label>
-                      <div className="group relative">
-                        <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
-                        <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-2 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300">
-                          By default, results go into a column called &quot;bio&quot;. Only change this if you need multiple output columns.
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-zinc-500">
-                      These will be the column headers in your results CSV (default: &quot;bio&quot;)
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {outputFields.map(field => (
-                        <div key={field} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-900 border border-white/5 rounded text-sm text-zinc-300 font-mono">
-                          {field}
-                          <button
-                            onClick={() => removeOutputField(field)}
-                            className="hover:text-red-400 transition-colors"
-                            aria-label={`Remove ${field} output field`}
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                      <div className="inline-flex gap-1">
-                        <input
-                          value={newField}
-                          onChange={(e) => setNewField(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && addOutputField()}
-                          placeholder="field..."
-                          className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
-                        />
-                        <button
-                          onClick={addOutputField}
-                          className="p-1 hover:bg-zinc-800 rounded transition-colors"
-                          aria-label="Add output field"
-                        >
-                          <Plus className="h-3 w-3 text-zinc-500" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* WEBHOOK */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Webhook className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                      <label htmlFor="webhook" className="text-xs font-medium text-zinc-300">
-                        Webhook URL
-                      </label>
-                      <span className="text-xs text-zinc-600">(optional)</span>
-                    </div>
-                    <input
-                      id="webhook"
-                      value={webhookUrl}
-                      onChange={(e) => setWebhookUrl(e.target.value)}
-                      placeholder="https://hooks.n8n.cloud/..."
-                      className={`w-full px-3 py-1.5 bg-zinc-900/70 rounded-md text-sm text-zinc-300 font-mono focus:outline-none transition-all duration-150 ease-out ${
-                        !webhookValidation.isValid
-                          ? 'border border-orange-500/50 focus:ring-1 focus:ring-orange-500/40 focus:shadow-[0_0_4px_rgba(249,115,22,0.4)]'
-                          : 'border border-white/5 focus:ring-1 focus:ring-white/10 focus:border-white/10'
-                      }`}
-                    />
-                    {!webhookValidation.isValid && webhookValidation.error && (
-                      <p className="text-xs text-orange-400 flex items-center gap-1">
-                        <XCircle className="h-3 w-3" />
-                        {webhookValidation.error}
-                      </p>
-                    )}
-                    {webhookValidation.isValid && (
-                      <p className="text-xs text-zinc-500">POST results to this URL when batch completes</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Hidden - API ACCESS moved to Advanced Settings modal */}
-            {false && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                  <label className="text-xs font-medium text-zinc-400">API Access</label>
-                </div>
-                {!showApiAccess ? (
-                  <button
-                    onClick={handleFetchToken}
-                    disabled={isFetchingToken}
-                    className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isFetchingToken && <Loader2 className="h-3 w-3 animate-spin" />}
-                    <span>{isFetchingToken ? 'Loading...' : 'Show curl command →'}</span>
-                  </button>
-                ) : (
-                  <div className="space-y-2">
-                    <pre className="p-3 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
-{`curl -X POST ${window.location.origin}/api/process \\
-  -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
-  -H "Content-Type: application/json" \\
-  -d '{"csvFilename":"data.csv","rows":[...]}'`}
-                    </pre>
-                    <p className="text-xs text-zinc-400">Use in n8n, Zapier, Postman</p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-2 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
-            <div className="flex flex-col sm:flex-row gap-1.5">
+          <div className="flex-shrink-0 p-3 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
+            <div className="flex gap-2">
               <button
                 onClick={handleTest}
-                disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid || !webhookValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px] sm:min-h-0"
+                disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Test with first row (⌘T)"
                 aria-label="Test prompt with first CSV row"
-               
               >
                 {isTesting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
-                <span>Test (1 row)</span>
+                <span className="whitespace-nowrap">Test</span>
               </button>
               <button
                 onClick={handleProcess}
-                disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid || !webhookValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] sm:min-h-0"
+                disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
+                className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Run all rows (⌘Enter)"
                 data-testid="run-button"
-               
                 aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
               >
                 {batchProcessor.isProcessing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
-                <span>Run All {csvParser.csvData ? `(${csvParser.csvData.totalRows})` : ''}</span>
+                <span className="whitespace-nowrap">
+                  Run All {csvParser.csvData && <span className="hidden xs:inline">({csvParser.csvData.totalRows})</span>}
+                </span>
               </button>
             </div>
           </div>

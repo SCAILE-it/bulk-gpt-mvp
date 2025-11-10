@@ -83,21 +83,21 @@ export function BatchStatusCard({
         <div className="relative w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-white/5">
           {/* Success segment */}
           <div
-            className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300 ease-out"
+            className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-500 ease-linear"
             style={{ width: `${(successCount / progress.total) * 100}%` }}
           />
           {/* Error segment */}
           <div
-            className="absolute top-0 h-full bg-red-500 transition-all duration-300 ease-out"
+            className="absolute top-0 h-full bg-red-500 transition-all duration-500 ease-linear"
             style={{
               left: `${(successCount / progress.total) * 100}%`,
               width: `${(errorCount / progress.total) * 100}%`
             }}
           />
-          {/* Processing indicator (blue shimmer) */}
+          {/* Processing indicator (blue, no pulse) */}
           {pendingCount > 0 && (
             <div
-              className="absolute top-0 h-full bg-blue-500/50 transition-all duration-300 ease-out animate-pulse"
+              className="absolute top-0 h-full bg-blue-500/40 transition-all duration-500 ease-linear"
               style={{
                 left: `${((successCount + errorCount) / progress.total) * 100}%`,
                 width: `${(pendingCount / progress.total) * 100}%`
