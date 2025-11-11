@@ -67,11 +67,6 @@ export default function BulkProcessor() {
   const [useJsonMode, setUseJsonMode] = useState(true) // JSON schema toggle
   const [selectedTools, setSelectedTools] = useState<string[]>([]) // GTM tools to enable
 
-  // === API ACCESS ===
-  const [apiToken, setApiToken] = useState<string | null>(null)
-  const [showApiAccess, setShowApiAccess] = useState(false)
-  const [isFetchingToken, setIsFetchingToken] = useState(false)
-
   // === BETA BANNER ===
   const { showBanner: showBetaBanner, usage, dismissBanner: dismissBetaBanner } = useBetaBanner()
 
@@ -99,10 +94,6 @@ export default function BulkProcessor() {
     storageKey: 'bulk-processor-output-settings',
     defaultOpen: true
   })
-  const advancedSection = useCollapsibleState({
-    storageKey: 'bulk-processor-advanced',
-    defaultOpen: false
-  })
 
   // === PROCESSING STATE ===
   const [isTesting, setIsTesting] = useState(false)
@@ -125,6 +116,7 @@ export default function BulkProcessor() {
     optimizedPrompt,
     setOptimizedPrompt,
     outputColumns,
+    suggestedTools,
     reasoning,
     isOptimizing,
     triggerOptimization,
@@ -139,10 +131,14 @@ export default function BulkProcessor() {
       if (outputColumns.length > 0) {
         setOutputFields(outputColumns.map((col) => col.name))
       }
+      // Apply AI-suggested tools
+      if (suggestedTools.length > 0) {
+        setSelectedTools(suggestedTools)
+      }
       clearOptimization()
       toast.success('AI suggestion applied!')
     }
-  }, [optimizedPrompt, outputColumns, clearOptimization])
+  }, [optimizedPrompt, outputColumns, suggestedTools, clearOptimization])
 
   // Handle rejecting AI suggestion
   const handleRejectOptimization = useCallback(() => {
@@ -509,24 +505,6 @@ export default function BulkProcessor() {
     }
   }, [batchProcessor.batchId])
 
-  // === FETCH API TOKEN ===
-  const handleFetchToken = useCallback(async () => {
-    setIsFetchingToken(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/tokens')
-      if (!response.ok) throw new Error('Failed to fetch token')
-      const data = await response.json()
-      setApiToken(data.token)
-      setShowApiAccess(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch API token')
-    } finally {
-      setIsFetchingToken(false)
-    }
-  }, [])
-
   const applyTemplate = useCallback((template: PromptTemplate) => {
     setPrompt(template.prompt)
     setShowTemplateModal(false)
@@ -847,28 +825,6 @@ export default function BulkProcessor() {
                 onReject={() => {}}
               />
             )}
-
-            {/* ADVANCED OPTIONS SECTION */}
-            <CollapsibleSection
-              title="🔧 Advanced Options"
-              open={advancedSection.isOpen}
-              onOpenChange={advancedSection.setIsOpen}
-              className="bg-zinc-900/30 border border-white/5 rounded-lg"
-              triggerClassName="hover:bg-zinc-800/50"
-              contentClassName="space-y-4"
-            >
-              {/* API ACCESS */}
-              <div className="flex items-center gap-2">
-                <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                <label className="text-xs font-medium text-zinc-400">API Access</label>
-                <button
-                  onClick={() => setShowAdvancedSettingsModal(true)}
-                  className="ml-auto text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
-                >
-                  Show curl command →
-                </button>
-              </div>
-            </CollapsibleSection>
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
@@ -1053,46 +1009,6 @@ export default function BulkProcessor() {
               </div>
             )}
           </div>
-        </div>
-      </Modal>
-
-      {/* API ACCESS MODAL - Simplified (output columns & webhook moved to main UI) */}
-      <Modal
-        isOpen={showAdvancedSettingsModal}
-        onClose={() => setShowAdvancedSettingsModal(false)}
-        title="API Access"
-        titleIcon={Code}
-        size="md"
-        ariaLabelledBy="api-access-title"
-        footer={
-          <button onClick={() => setShowAdvancedSettingsModal(false)} className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium rounded-md transition-colors">
-            Done
-          </button>
-        }
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-zinc-500">Use the API to integrate bulk processing with your tools</p>
-
-          {!showApiAccess ? (
-            <button
-              onClick={handleFetchToken}
-              disabled={isFetchingToken}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isFetchingToken && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>{isFetchingToken ? 'Loading...' : 'Generate curl command'}</span>
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <pre className="p-4 bg-zinc-900 border border-white/5 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto">
-{`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/process \\
-  -H "Authorization: Bearer ${apiToken?.slice(0, 20)}..." \\
-  -H "Content-Type: application/json" \\
-  -d '{"csvFilename":"data.csv","rows":[...],"prompt":"..."}'`}
-              </pre>
-              <p className="text-xs text-zinc-500">Use in n8n, Zapier, Postman, or any HTTP client to automate batch processing</p>
-            </div>
-          )}
         </div>
       </Modal>
 

@@ -1,6 +1,7 @@
 /**
  * ABOUTME: Manual AI job optimizer - user triggers optimization with a button
  * ABOUTME: Allows editing optimized prompts and explicit acceptance before use
+ * ABOUTME: Suggests relevant GTM tools based on the prompt
  */
 
 import { useState, useCallback } from 'react'
@@ -19,6 +20,7 @@ export interface OutputColumn {
 export interface OptimizationResult {
   optimizedPrompt: string
   outputColumns: OutputColumn[]
+  suggestedTools?: string[]
   reasoning: string
 }
 
@@ -29,6 +31,7 @@ export interface UseManualJobOptimizerResult {
   optimizedPrompt: string | null
   setOptimizedPrompt: (prompt: string | null) => void
   outputColumns: OutputColumn[]
+  suggestedTools: string[]
   reasoning: string | null
   isOptimizing: boolean
   error: string | null
@@ -49,6 +52,7 @@ export function useManualJobOptimizer(
 ): UseManualJobOptimizerResult {
   const [optimizedPrompt, setOptimizedPrompt] = useState<string | null>(null)
   const [outputColumns, setOutputColumns] = useState<OutputColumn[]>([])
+  const [suggestedTools, setSuggestedTools] = useState<string[]>([])
   const [reasoning, setReasoning] = useState<string | null>(null)
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -99,12 +103,14 @@ export function useManualJobOptimizer(
 
       setOptimizedPrompt(result.optimizedPrompt)
       setOutputColumns(result.outputColumns)
+      setSuggestedTools(result.suggestedTools || [])
       setReasoning(result.reasoning)
     } catch (err) {
       console.error('Optimization error:', err)
       setError(err instanceof Error ? err.message : 'Optimization failed')
       setOptimizedPrompt(null)
       setOutputColumns([])
+      setSuggestedTools([])
       setReasoning(null)
     } finally {
       setIsOptimizing(false)
@@ -114,6 +120,7 @@ export function useManualJobOptimizer(
   const clearOptimization = useCallback(() => {
     setOptimizedPrompt(null)
     setOutputColumns([])
+    setSuggestedTools([])
     setReasoning(null)
     setError(null)
   }, [])
@@ -122,6 +129,7 @@ export function useManualJobOptimizer(
     optimizedPrompt,
     setOptimizedPrompt,
     outputColumns,
+    suggestedTools,
     reasoning,
     isOptimizing,
     error,
