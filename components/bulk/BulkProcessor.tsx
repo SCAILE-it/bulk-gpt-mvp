@@ -27,6 +27,7 @@ import { CSVPreviewTable } from './CSVPreviewTable'
 import { ResultsTable } from './ResultsTable'
 import { FileUploadSection } from './FileUploadSection'
 import { OutputFieldsSection } from './OutputFieldsSection'
+import { ToolSelectionSection } from './ToolSelectionSection'
 import { WorkflowSteps } from './WorkflowSteps'
 import { AIAssistantSection } from './AIAssistantSection'
 import { Modal } from '@/components/ui/modal'
@@ -64,6 +65,7 @@ export default function BulkProcessor() {
   const [newField, setNewField] = useState('')
   const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
   const [useJsonMode, setUseJsonMode] = useState(true) // JSON schema toggle
+  const [selectedTools, setSelectedTools] = useState<string[]>([]) // GTM tools to enable
 
   // === API ACCESS ===
   const [apiToken, setApiToken] = useState<string | null>(null)
@@ -234,6 +236,15 @@ export default function BulkProcessor() {
     }
   }, [fieldToDelete, outputFields])
 
+  // === TOOL SELECTION ===
+  const toggleTool = useCallback((toolName: string) => {
+    setSelectedTools(prev =>
+      prev.includes(toolName)
+        ? prev.filter(t => t !== toolName)
+        : [...prev, toolName]
+    )
+  }, [])
+
   // === TEST (1 ROW) - Now polls for async results ===
   const handleTest = useCallback(async () => {
     if (!csvParser.csvData || !prompt) return
@@ -266,6 +277,7 @@ export default function BulkProcessor() {
           prompt,
           context: '',
           outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
+          tools: selectedTools.length > 0 ? selectedTools : undefined,
         }),
       })
 
@@ -380,8 +392,9 @@ export default function BulkProcessor() {
       prompt,
       context: '',
       outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
+      tools: selectedTools.length > 0 ? selectedTools : undefined,
     })
-  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, useJsonMode])
+  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, useJsonMode, selectedTools])
 
   // === EXPORT ===
   const handleExport = useCallback(async () => {
@@ -789,6 +802,12 @@ export default function BulkProcessor() {
                     onNewFieldChange={setNewField}
                     onAddField={addOutputField}
                     onRemoveField={removeOutputField}
+                  />
+
+                  {/* TOOL SELECTION */}
+                  <ToolSelectionSection
+                    selectedTools={selectedTools}
+                    onToggleTool={toggleTool}
                   />
                 </>
               )}

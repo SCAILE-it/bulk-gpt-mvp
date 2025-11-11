@@ -28,6 +28,7 @@ export interface StartBatchParams {
   prompt: string
   context?: string
   outputColumns: string[]
+  tools?: string[]
   webhookUrl?: string
 }
 
