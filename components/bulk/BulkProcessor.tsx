@@ -371,7 +371,7 @@ export default function BulkProcessor() {
     } finally {
       setIsTesting(false)
     }
-  }, [csvParser.csvData, prompt, outputFields, variableValidation, debugLog, useJsonMode])
+  }, [csvParser.csvData, prompt, outputFields, variableValidation, debugLog, useJsonMode, selectedTools])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {

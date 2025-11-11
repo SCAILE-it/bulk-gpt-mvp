@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { validatePrompt } from '@/lib/validation'
 import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
 import { logError } from '@/lib/errors'
 import { authenticateRequest } from '@/lib/auth-middleware'
 import { checkUsageLimits } from '@/lib/api-keys'
+import { GTMAPIClient } from '@/lib/api/gtm-client'
+import type { EnrichRowResponse } from '@/lib/types/gtm-types'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
 
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    const { csvFilename, rows, prompt, context = '', outputColumns = [] } = body
+    const { csvFilename, rows, prompt, context = '', outputColumns = [], tools = [] } = body
 
     // Check usage limits (database-backed)
     const usageLimitCheck = await checkUsageLimits(userId, rows.length)
@@ -87,16 +89,125 @@ export async function POST(request: NextRequest): Promise<Response> {
     const rateLimitCheck = checkRateLimits(userId, rows.length)
     if (!rateLimitCheck.allowed) {
       return NextResponse.json(
-        { 
+        {
           error: rateLimitCheck.reason,
           limit: rateLimitCheck.limit,
           current: rateLimitCheck.current,
-          beta: true 
+          beta: true
         },
         { status: 429 }
       )
     }
 
+    // ========================================================================
+    // GTM BACKEND ROUTING - Process with enrichment tools if selected
+    // ========================================================================
+    if (tools && tools.length > 0) {
+      console.log(`[GTM] Tools selected (${tools.length}): ${tools.join(', ')}`)
+
+      try {
+        // Get user session token for GTM authentication
+        const supabase = await createServerSupabaseClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        const authToken = session?.access_token || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+        if (!authToken) {
+          console.warn('[GTM] No auth token available, falling back to Modal')
+          // Fall through to Modal processor below
+        } else {
+          console.log('[GTM] Calling GTM backend with auth token')
+
+          // Create GTM client with authentication
+          const gtmClient = new GTMAPIClient({ authToken })
+
+          // Call GTM backend to enrich batch
+          const gtmResponse = await gtmClient.enrichBatch({
+            rows: rows,
+            tools: tools,
+          })
+
+          console.log('[GTM] Batch enrichment successful:', {
+            totalRows: gtmResponse.totalRows,
+            successfulRows: gtmResponse.successfulRows,
+            failedRows: gtmResponse.failedRows,
+          })
+
+          // Create batch record in database
+          const batchId = gtmResponse.batchId
+
+          const { error: batchInsertError } = await supabaseAdmin
+            .from('batches')
+            .insert({
+              id: batchId,
+              user_id: userId,
+              csv_filename: csvFilename,
+              total_rows: rows.length,
+              status: gtmResponse.failedRows === 0 ? 'completed' : 'completed_with_errors',
+              prompt: prompt,
+              tools: tools,
+            })
+
+          if (batchInsertError) {
+            logError(new Error('Failed to create GTM batch record'), {
+              source: 'api/process/GTM',
+              supabaseError: batchInsertError,
+              batchId
+            })
+            // Continue anyway - data is enriched, just can't track in DB
+          }
+
+          // Store individual results in database
+          const resultsToInsert = gtmResponse.results.map((result: EnrichRowResponse, index: number) => ({
+            batch_id: batchId,
+            row_index: index,
+            input_data: result.input,
+            output_data: result.data,
+            status: result.success ? 'success' : 'error',
+            error_message: result.success ? null : 'Enrichment failed',
+            input_tokens: 0, // GTM doesn't provide token counts
+            output_tokens: 0,
+          }))
+
+          const { error: resultsInsertError } = await supabaseAdmin
+            .from('batch_results')
+            .insert(resultsToInsert)
+
+          if (resultsInsertError) {
+            logError(new Error('Failed to store GTM results'), {
+              source: 'api/process/GTM',
+              supabaseError: resultsInsertError,
+              batchId
+            })
+          }
+
+          // Return success response (batch complete immediately - no Modal polling needed)
+          return NextResponse.json(
+            {
+              success: true,
+              batchId,
+              status: gtmResponse.failedRows === 0 ? 'completed' : 'completed_with_errors',
+              totalRows: gtmResponse.totalRows,
+              message: `GTM enrichment complete. ${gtmResponse.successfulRows}/${gtmResponse.totalRows} rows processed successfully.`,
+            },
+            { status: 200 }
+          )
+        }
+      } catch (gtmError) {
+        // Log GTM error but don't fail - fall back to Modal processor
+        logError(gtmError instanceof Error ? gtmError : new Error('GTM enrichment failed'), {
+          source: 'api/process/GTM_FALLBACK',
+          tools,
+          rowCount: rows.length
+        })
+        console.warn('[GTM] Enrichment failed, falling back to Modal:', gtmError instanceof Error ? gtmError.message : 'Unknown error')
+        // Fall through to Modal processor below
+      }
+    }
+
+    // ========================================================================
+    // MODAL PROCESSOR - Default flow (no tools) or fallback if GTM fails
+    // ========================================================================
     // Create batch record in Supabase
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
@@ -110,6 +221,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           total_rows: rows.length,
           status: 'pending',
           prompt: prompt,
+          tools: tools.length > 0 ? tools : null,
         })
         .select()
 

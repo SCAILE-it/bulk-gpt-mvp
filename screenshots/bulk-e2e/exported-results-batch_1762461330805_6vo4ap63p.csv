@@ -1,0 +1,101 @@
+name,company,role,prompt_template,temperature,max_tokens,Output,Status,Error
+Alice Johnson,TechCorp,Data Analyst,Write a professional bio for {{name}} who works as a {{role}} at {{company}},0.7,8192,"Here are a few options for a professional bio for Alice Johnson, a Data Analyst at TechCorp, ranging in length and focus. Choose the one that best fits the specific context (e.g., LinkedIn, company website, conference speaker intro).
+
+---
+
+### Option 1: Concise & Impact-Oriented (Great for LinkedIn Headline/Summary, Short Introductions)
+
+**Alice Johnson is a Data Analyst at TechCorp, specializing in transforming complex datasets into clear, actionable insights. She empowers teams to make data-driven decisions that fuel strategic growth and optimize operational efficiency.**
+
+---
+
+### Option 2: Standard & Detailed (Good for LinkedIn ""About"" Section, Company Internal Profiles)
+
+**Alice Johnson is a skilled Data Analyst at TechCorp, where she excels at translating raw data into compelling narratives and actionable strategies. With a strong command of SQL, Python, and advanced visualization tools like Tableau, Alice is adept at uncovering critical trends, identifying opportunities, and solving complex business challenges.**
+
+**Her expertise lies in designing and implementing robust data models, performing in-depth statistical analysis, and creating intuitive dashboards that empower stakeholders to make informed decisions. Alice is passionate about leveraging data to drive efficiency, innovation, and measurable results across TechCorp's diverse projects.**
+
+---
+
+### Option 3: Slightly More Technical/Process-Focused (Good for Technical Audiences, Project Bios)
+
+**Alice Johnson serves as a Data Analyst at TechCorp, where she is instrumental in bridging the gap between raw data and strategic business intelligence. Her responsibilities span the entire data lifecycle – from rigorous data extraction and cleaning to advanced statistical modeling and the development of interactive data visualizations.**
+
+**Proficient in SQL, Python (with libraries like Pandas and Scikit-learn), and data visualization platforms such as Power BI and Looker, Alice's work directly supports TechCorp's product development, marketing optimization, and operational improvements. She is dedicated to fostering a data-first culture by providing clear, evidence-based recommendations that drive tangible business outcomes.**
+
+---
+
+### Key Elements to Consider When Choosing/Adapting:
+
+*   **Audience:** Who will be reading this bio? (Recruiters, colleagues, potential clients, etc.)
+*   **Purpose:** Where will this bio be used? (LinkedIn, company website, conference program, internal announcement?)
+*   **Key Achievements:** If you have specific, quantifiable achievements (e.g., ""identified a trend that saved the company X% in costs""), definitely incorporate them!
+*   **Specific Tools/Technologies:** Mentioning specific tools (SQL, Python, R, Tableau, Power BI, Excel, etc.) can be very effective, especially for technical roles.
+*   **Soft Skills:** (e.g., ""excellent communicator,"" ""problem-solver,"" ""collaborative"") can add depth.
+*   **Passion/Vision:** What excites Alice about her work? This can make the bio more engaging.
+
+Choose the option that best highlights Alice's strengths and aligns with the specific context. Remember to keep it updated with new skills and achievements!",success,
+Bob Smith,DataCo,Senior Engineer,Write a professional bio for {{name}} who works as a {{role}} at {{company}},0.7,8192,"Here are a few options for Bob Smith's professional bio, ranging in length and focus. Choose the one that best fits the specific context (LinkedIn, company website, conference speaker intro, etc.).
+
+---
+
+**Option 1: Concise & Impactful (Great for LinkedIn Headline/Summary or Speaker Intro)**
+
+> Bob Smith is a seasoned Senior Engineer at DataCo, specializing in designing and implementing robust, scalable data solutions. He plays a key role in building the critical infrastructure that drives DataCo's analytical capabilities and product innovation.
+
+---
+
+**Option 2: Standard Professional (Good for LinkedIn ""About"" Section or Company Website)**
+
+> Bob Smith is a Senior Engineer at DataCo with a strong track record in developing and optimizing complex data systems. He brings deep expertise in big data technologies, cloud platforms, and distributed architectures to his role. At DataCo, Bob is instrumental in leading projects that enhance data processing pipelines, improve system performance, and ensure the reliability of data-driven applications, directly contributing to the company's strategic goals and product excellence.
+
+---
+
+**Option 3: Detailed & Forward-Looking (Good for Personal Website or More Extensive Profiles)**
+
+> Bob Smith is a highly accomplished Senior Engineer at DataCo, where he leverages his extensive experience to architect and deliver cutting-edge data solutions. With a passion for transforming raw data into actionable insights, Bob is a key contributor to DataCo's core engineering initiatives, focusing on areas such as scalable data ingestion, real-time analytics, and machine learning infrastructure. He is adept at navigating intricate technical challenges, fostering best practices in software development, and mentoring junior engineers. Bob is committed to building resilient, high-performance systems that empower data scientists and product teams to innovate and drive measurable business value for DataCo and its customers.
+
+---
+
+**Key things these bios achieve:**
+
+*   **Identifies Role & Company:** Clearly states ""Senior Engineer at DataCo.""
+*   **Highlights Expertise:** Mentions ""scalable data solutions,"" ""big data technologies,"" ""cloud platforms,"" ""distributed architectures,"" ""data processing pipelines,"" ""machine learning infrastructure.""
+*   **Shows Impact:** Uses phrases like ""drives analytical capabilities,"" ""instrumental in leading projects,"" ""directly contributing to strategic goals,"" ""empower data scientists and product teams.""
+*   **Professional Tone:** Uses strong verbs and professional language.
+*   **Varies by Length:** Provides options for different platforms.
+
+**Remember to choose the one that best suits the platform and purpose!**",success,
+Carol White,AILabs,Product Manager,Write a professional bio for {{name}} who works as a {{role}} at {{company}},0.7,8192,"Here are a few options for a professional bio for Carol White, tailored for different lengths and contexts. Choose the one that best fits where it will be used (e.g., LinkedIn, company website, conference speaker intro).
+
+---
+
+### Option 1: Short & Punchy (Great for LinkedIn Headline/Quick Intro)
+
+**Carol White** is a Product Manager at AILabs, driving the development and launch of innovative AI solutions that solve complex user challenges.
+
+---
+
+### Option 2: Medium Length (Ideal for LinkedIn ""About"" Section or Company Bio)
+
+**Carol White** is a results-oriented Product Manager at AILabs, specializing in bringing cutting-edge artificial intelligence products from concept to market. She excels at defining product strategy, prioritizing features, and guiding cross-functional teams to deliver impactful solutions that meet both user needs and business objectives. Carol is driven by a passion for innovation and a commitment to leveraging AI to create meaningful value and enhance user experiences.
+
+---
+
+### Option 3: Detailed & Comprehensive (Suitable for Conference Speaker Bio or Detailed Company Profile)
+
+**Carol White** is a visionary Product Manager at AILabs, renowned for her ability to navigate the complex landscape of artificial intelligence and deliver market-leading products. With a deep understanding of both technological capabilities and user pain points, Carol excels at defining compelling product visions, crafting data-driven roadmaps, and orchestrating the successful launch of sophisticated AI solutions.
+
+She is a collaborative leader who empowers cross-functional teams – from engineering and design to marketing and sales – to achieve ambitious goals. At AILabs, Carol is instrumental in identifying emerging opportunities, translating complex algorithms into intuitive user experiences, and ensuring products not only meet but exceed business objectives, ultimately driving innovation and market leadership in the AI space. Her passion lies in harnessing the transformative power of AI to create tangible value and solve pressing challenges for users globally.
+
+---
+
+### Key things these bios include:
+
+*   **Role and Company:** Clearly states ""Product Manager at AILabs.""
+*   **Core Function:** What a PM does (strategy, development, launch, user needs, business objectives).
+*   **Specialization:** Highlights ""AI solutions,"" ""artificial intelligence products,"" ""cutting-edge AI.""
+*   **Impact/Value:** Focuses on results like ""solving complex challenges,"" ""meaningful value,"" ""enhancing user experiences,"" ""driving innovation,"" ""market leadership.""
+*   **Skills/Qualities:** Words like ""results-oriented,"" ""visionary,"" ""collaborative leader,"" ""data-driven.""
+
+Choose the one that best reflects Carol's specific focus and the context!",su

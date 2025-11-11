@@ -1,0 +1,230 @@
+name,company,role,description,prompt_template,temperature,max_tokens,Output,Status,Error
+Alice Johnson,TechCorp,Data Analyst,"Loves working with data, analytics, and visualization",Bio for {{name}},0.7,8192,"To write a compelling bio for Alice Johnson, I need a little more context! Alice Johnson is a common name, so the bio will depend heavily on her profession, achievements, personality, and the purpose of the bio (e.g., LinkedIn, company website, book jacket, social media, dating profile, etc.).
+
+However, I can provide several *examples* based on different common scenarios. Please choose the one that best fits, or mix and match elements, or provide more details for a custom bio!
+
+---
+
+**To help me write the best bio, please consider these questions:**
+
+*   **What is Alice's profession or primary role?** (e.g., Marketing Manager, Artist, CEO, Teacher, Nurse, Student, Stay-at-Home Parent, Activist)
+*   **What are her key achievements or areas of expertise?**
+*   **What is her passion or what drives her?**
+*   **What is the purpose of this bio?** (e.g., professional networking, personal branding, job application, event speaker, artistic portfolio)
+*   **What tone should it have?** (e.g., formal, friendly, authoritative, creative, humble)
+*   **How long should it be?** (e.g., short & punchy, medium, detailed)
+*   **Is there a specific company or organization she's associated with?**
+*   **Any unique personal details she'd like to include?**
+
+---
+
+### Example Bios for Alice Johnson (Choose and Adapt!)
+
+---
+
+#### 1. Short & Punchy (for Social Media / Quick Intro)
+
+**Option A (Professional):**
+> Alice Johnson is a seasoned Marketing Strategist passionate about driving digital growth and impactful brand narratives. Currently leading initiatives at [Company Name]. #MarketingPro #DigitalStrategy
+
+**Option B (Creative/Personal):**
+> Alice Johnson: Storyteller, wanderer, and advocate for sustainable living. You can usually find me with a book in hand or exploring new trails. Sharing tales & inspiration.
+
+---
+
+#### 2. Medium Length Professional (for LinkedIn / Company Website)
+
+**Option A (Tech/Business Focus):**
+> Alice Johnson is a dynamic and results-driven Product Manager with over 8 years of experience in the SaaS industry. Known for her ability to translate complex user needs into intuitive and scalable product solutions, Alice has a proven track record of launching successful products that drive user engagement and revenue growth. At [Current Company], she leads the development of their flagship [Product Area] platform, fostering cross-functional collaboration and championing a data-driven approach. She holds a B.S. in Computer Science from [University Name].
+
+**Option B (Healthcare/Community Focus):**
+> Alice Johnson is a compassionate and dedicated Registered Nurse with a specialization in Pediatric Care, bringing 12 years of experience to her role at [Hospital/Clinic Name]. Alice is celebrated for her patient-centered approach, exceptional communication skills, and commitment to fostering a supportive environment for both children and their families. Beyond her clinical duties, she actively volunteers with [Non-Profit Organization], advocating for accessible healthcare in underserved communities. Alice is passionate about continuous learning and contributing to positive patient outcomes.
+
+---
+
+#### 3. Detailed Professional (for Speaker Bio / Extensive Profile)
+
+> Alice Johnson is a recognized leader in the field of [Specific Industry/Area], celebrated for her innovative approach to [Key Contribution]. With over 15 years of experience, Alice has spearheaded transformative projects at [Previous Company] and currently serves as the [Title] at [Current Company]. Her expertise spans [List 2-3 key areas, e.g., strategic planning, market analysis, team leadership, sustainable development, educational reform].
+>
+> A firm believer in [Alice's Philosophy/Value], she has consistently championed [Specific Cause/Methodology]. Under her guidance, [Current Company] has achieved [Quantifiable Achievement, e.g., a 30% increase in market share, successfully implemented a new ethical sourcing policy, educated over 10,000 students].
+>
+> Alice holds a [Degree] from [University Name] and is a frequent speaker at industry conferences, sharing insights on [Topic 1] and [Topic 2]. Outside of her professional endeavors, Alice is an avid [Hobby/Interest] and dedicates her time to [Volunteer Work/Personal Cause]. She is committed to [Long-term Vision/Impact].
+
+---
+
+#### 4. Creative / Artistic (for Author / Artist Profile)
+
+> Alice Johnson is a captivating storyteller whose work often explores themes of [Themes, e.g., resilience, identity, the natural world]. Her debut novel, ""[Novel Title],"" garnered critical acclaim for its [Key Quality, e.g., lyrical prose, intricate plot, authentic characters]. With a background in [Related Field, e.g., anthropology, journalism, fine arts], Alice brings a unique perspective to her narratives, weaving rich historical detail with profound emotional depth.
+>
+> When not immersed in her writing, Alice can be found [Activity, e.g., hiking the local mountains, tending her garden, researching forgotten histories]. She believes in the power of stories to foster empathy and ignite change. Alice currently resides in [Location] with her two mischievous cats.
+
+---
+
+### Tips for Customizing:
+
+*   **Start with a strong hook:** A compelling opening sentence that immediately tells the reader who Alice is and what she does.
+*   **Quantify achievements:** Use numbers and metrics whenever possible (e.g., ""grew revenue by 20%,"" ""managed a team of 15"").
+*   **Show, don't just tell:** Instead of saying ""Alice is innovative,"" describe an innovative project she led.
+*   **Match the tone:** Ensure the language fits the platform and purpose.
+*   **Include a personal touch (if appropriate):** A hobby or interest can make the bio more relatable.
+*   **Keep it current:** Update the bio regularly with new achievements or roles.
+
+Please let me know more about Alice, and I can craft a more specific bio for her!",success,
+Bob Smith,DataCo,Senior Engineer,"Builds scalable systems, enjoys coding in Python, Java",Bio for {{name}},0.7,8192,"""Bob Smith"" is a classic placeholder name, so I'll provide a few options for bios depending on the *context* and *purpose*.
+
+To give you the best bio, please tell me:
+1.  **What is Bob Smith's profession/role?** (e.g., Software Engineer, Marketing Manager, Artist, Student, Retired, Entrepreneur)
+2.  **What is the purpose of the bio?** (e.g., LinkedIn, company website, conference speaker intro, personal social media, grant application, casual introduction)
+3.  **What is the desired tone?** (e.g., formal, professional, casual, friendly, academic, creative)
+4.  **What are 1-2 key achievements, skills, or passions you want to highlight?**
+5.  **What is his current company/organization (if applicable)?**
+
+---
+
+In the meantime, here are several templates you can adapt for a ""Bob Smith,"" ranging from professional to casual:
+
+---
+
+### Option 1: Professional Bio (General / LinkedIn / Company Website)
+
+**Short Version (1-2 paragraphs):**
+
+> Bob Smith is a highly accomplished [Your Role/Profession, e.g., Senior Marketing Manager] with over [Number] years of experience driving [Key Skill 1, e.g., digital strategy] and [Key Skill 2, e.g., brand growth] for leading organizations. Currently, as [His Title] at [Company Name], he is responsible for [1-2 key responsibilities or achievements, e.g., developing innovative campaigns that have consistently exceeded ROI targets by an average of 25%]. Bob is passionate about [His Passion related to work, e.g., leveraging data analytics to create impactful customer experiences] and is known for his [Positive Trait, e.g., collaborative leadership style] and ability to [Another Positive Trait/Impact, e.g., mentor high-performing teams].
+>
+> Outside of his professional life, Bob enjoys [1-2 hobbies or personal interests, e.g., hiking with his family and exploring new culinary experiences].
+
+**Longer Version (3-4 paragraphs, suitable for a detailed ""About Us"" page):**
+
+> Bob Smith brings a wealth of expertise in [Industry/Field, e.g., B2B SaaS marketing] with a career spanning over [Number] years dedicated to [Overall focus, e.g., building strong brands and driving measurable growth]. As the [His Title] at [Company Name], Bob leads a dynamic team focused on [Specific department focus, e.g., global digital marketing initiatives], overseeing everything from [Specific responsibility 1, e.g., content strategy and SEO] to [Specific responsibility 2, e.g., demand generation and performance marketing]. His strategic vision has been instrumental in [Quantifiable achievement, e.g., increasing market share by 15% and boosting lead conversion rates by 30% in the last fiscal year].
+>
+> Prior to joining [Company Name], Bob held significant roles at [Previous Company 1] and [Previous Company 2], where he honed his skills in [Key Skill 1] and [Key Skill 2]. He is particularly adept at [Specific skill/area of expertise, e.g., leveraging cutting-edge marketing technologies to optimize campaign performance and deliver exceptional customer journeys]. Bob holds a [Degree, e.g., MBA in Marketing] from [University Name] and is a certified [Relevant Certification, if any].
+>
+> A firm believer in [Value or Philosophy, e.g., continuous learning and community engagement], Bob often shares his insights at industry conferences and contributes to professional publications. When he's not immersed in the world of [His Profession], Bob can be found [Hobby 1, e.g., perfecting his sourdough recipe], [Hobby 2, e.g., volunteering at his local animal shelter], or [Hobby 3, e.g., exploring national parks with his camera].
+
+---
+
+### Option 2: Short & Punchy Bio (Twitter / Conference Intro / Email Signature)
+
+> Bob Smith is a [Your Role, e.g., innovative Software Engineer] at [Company Name] passionate about [Key Interest, e.g., building scalable web applications]. He loves [Hobby/Fun Fact, e.g., trail running and good coffee].
+>
+> **OR**
+>
+> [Your Role/Title, e.g., Marketing Director] at [Company Name], Bob Smith drives [Key Impact, e.g., digital transformation & brand growth]. Speaker on [Topic]. [Twitter handle/LinkedIn link].
+
+---
+
+### Option 3: Casual / Personal Bio (Social Media / Dating Profile / Informal)
+
+> Hey, I'm Bob! By day, I'm a [His Profession, e.g., data analyst] who loves digging into numbers, but when I'm not doing that, you'll find me [Hobby 1, e.g., attempting to master new guitar riffs], [Hobby 2, e.g., exploring local hiking trails], or [Hobby 3, e.g., trying out new recipes in the kitchen]. I'm a big believer in [Value, e.g., good conversations and positive vibes].
+
+---
+
+### Option 4: Academic / Research Bio
+
+> Dr. Bob Smith is a [His Title, e.g., Research Fellow / Professor of X] in the Department of [Department Name] at [University/Institution Name]. His research focuses on [Primary Research Area, e.g., the socio-economic impacts of climate change in developing nations], with a particular emphasis on [Specific focus 1, e.g., sustainable agricultural practices] and [Specific focus 2, e.g., community resilience strategies]. Dr. Smith's work has been published in leading journals such as [Journal Name 1] and [Journal Name 2], and he is currently leading a [Type of Project, e.g., multi-year grant-funded project] exploring [Current Project Topic]. He holds a [Degree, e.g., Ph.D. in Environmental Science] from [University Name].
+
+---
+
+### How to Use These:
+
+1.  **Choose the best fit** for your needs.
+2.  **Replace all bracketed `[ ]` information** with Bob's actual details.
+3.  **Be specific!** Instead of ""driving growth,"" say ""driving 20% year-over-year revenue growth.""
+4.  **Quantify achievements** whenever possible (e.g., ""managed a team of 10,"" ""increased sales by 15%,"" ""secured $500K in funding"").
+5.  **Tailor the tone** to the platform and audience.
+6.  **Proofread carefully.**
+
+Once you give me more details, I can craft a more specific and impactful bio for Bob Smith!",success,
+Carol White,AILabs,Product Manager,"Strategic thinker, passionate about AI ethics",Bio for {{name}},0.7,8192,"To write a compelling bio for Carol White, I need a little more information! Bios are highly dependent on the context, her profession, achievements, and the intended audience.
+
+However, I can provide several *templates* and examples for different scenarios. Choose the one that best fits, and then fill in the specific details.
+
+---
+
+**Before you choose, consider:**
+
+*   **What is the bio for?** (LinkedIn, company website, conference program, book jacket, personal website, award ceremony, internal memo?)
+*   **What is Carol's profession/role?** (e.g., Marketing Director, Artist, Teacher, CEO, Consultant, Author, Volunteer, Scientist)
+*   **What are her key achievements or areas of expertise?**
+*   **What is the desired tone?** (Professional, friendly, academic, inspiring, humble?)
+*   **How long should it be?** (Short & sweet, medium, detailed?)
+*   **Who is the audience?**
+
+---
+
+**Here are several options – pick one and customize!**
+
+---
+
+### **Option 1: Short & Sweet (General Professional)**
+
+*Ideal for LinkedIn summaries, quick introductions, or small blurbs.*
+
+> **Carol White** is a [Your Title/Profession] with [X years] of experience known for her expertise in [Key Skill 1] and [Key Skill 2]. She is passionate about [Industry/Cause] and committed to [Goal/Impact]. Currently, she serves as [Current Role] at [Company/Organization].
+
+**Example:**
+> **Carol White** is a dynamic Marketing Director with 15 years of experience known for her expertise in brand strategy and digital growth. She is passionate about consumer psychology and committed to building impactful campaigns. Currently, she serves as the Head of Marketing at InnovateTech Solutions.
+
+---
+
+### **Option 2: Medium-Length Professional (More Detail)**
+
+*Great for company websites, conference speaker bios, or professional networking profiles.*
+
+> **Carol White** is a highly accomplished [Your Title/Profession] with a proven track record of success in [Key Area 1] and [Key Area 2]. With over [X years] in the [Industry] sector, Carol excels at [Specific Skill/Contribution, e.g., ""leading cross-functional teams,"" ""driving revenue growth,"" ""developing innovative solutions""].
+>
+> Throughout her career, she has [Mention 1-2 significant achievements or contributions, e.g., ""spearheaded a major product launch,"" ""increased market share by X%,"" ""published influential research""]. Carol holds a [Degree] from [University] and is deeply committed to [Passion/Value, e.g., ""mentoring emerging talent,"" ""sustainable business practices,"" ""community engagement""].
+
+**Example:**
+> **Carol White** is a highly accomplished Senior Project Manager with a proven track record of success in large-scale software development and agile methodologies. With over 12 years in the tech sector, Carol excels at leading cross-functional teams to deliver complex projects on time and within budget.
+>
+> Throughout her career, she has successfully overseen the development and launch of three flagship products, consistently improving efficiency and user satisfaction. Carol holds an MBA from Stanford University and is deeply committed to fostering collaborative environments and mentoring emerging talent in the tech space.
+
+---
+
+### **Option 3: Creative/Artistic Bio**
+
+*Suitable for artists, writers, designers, or performers.*
+
+> **Carol White** is an acclaimed [Medium, e.g., painter, author, photographer] whose work explores [Themes/Inspiration, e.g., ""the interplay of light and shadow,"" ""human connection in the digital age""]. Her [Style, e.g., vibrant, introspective, minimalist] pieces are characterized by [Key Artistic Element, e.g., ""bold brushstrokes,"" ""evocative storytelling,"" ""innovative use of mixed media""].
+>
+> Carol's work has been exhibited in [Galleries/Publications/Venues, e.g., ""galleries across the Pacific Northwest,"" ""national literary journals,"" ""major film festivals""]. She holds a [Degree] in [Field] from [University] and continues to push boundaries in [Specific Area/Genre].
+
+**Example:**
+> **Carol White** is an acclaimed contemporary artist whose mixed-media work explores themes of memory, resilience, and the natural world. Her evocative pieces are characterized by intricate layering, rich textures, and a profound sense of narrative.
+>
+> Carol's art has been exhibited in galleries across North America and Europe, and her pieces are held in numerous private and corporate collections. She holds an MFA from the Rhode Island School of Design and continues to push boundaries in her exploration of environmental consciousness through art.
+
+---
+
+### **Option 4: Academic/Research Bio**
+
+*For professors, researchers, or scientists.*
+
+> **Dr. Carol White** is a distinguished [Title, e.g., Professor of Neuroscience, Senior Research Fellow] at [Institution/University], specializing in [Specific Research Area]. Her groundbreaking work focuses on [Key Research Question/Problem].
+>
+> With numerous publications in peer-reviewed journals such as [Journal 1] and [Journal 2], Dr. White is a recognized expert in [Field]. She leads the [Lab/Center Name] where she mentors doctoral students and secures competitive grants for her innovative studies. Her contributions have significantly advanced our understanding of [Impact of Research].
+
+**Example:**
+> **Dr. Carol White** is a distinguished Professor of Environmental Science at the University of California, Berkeley, specializing in climate change adaptation and sustainable resource management. Her groundbreaking work focuses on the socio-ecological impacts of extreme weather events in coastal communities.
+>
+> With numerous publications in peer-reviewed journals such as *Nature Climate Change* and *Environmental Science & Technology*, Dr. White is a recognized expert in interdisciplinary climate solutions. She leads the Resilience & Adaptation Lab, where she mentors doctoral students and secures competitive grants for her innovative studies. Her contributions have significantly advanced our understanding of community-led adaptation strategies.
+
+---
+
+### **Option 5: Entrepreneur/Founder Bio**
+
+*For startup founders, business owners, or innovators.*
+
+> **Carol White** is the visionary Founder and CEO of [Company Name], a groundbreaking [Industry] startup dedicated to [Company Mission/Problem Solved]. With a background in [Relevant Experience/Field], Carol identified a critical need for [Solution/Innovation] and launched [Company Name] in [Year].
+>
+> Under her leadership, [Company Name] has [Mention 1-2 key achievements, e.g., ""secured over $X million in funding,"" ""grown its user base by X%,"" ""disrupted the traditional market""]. Carol is passionate about [Passion/Vision] and committed to [Impact/Goal].
+
+**Example:**
+> **Carol White** is the visionary Founder and CEO of AuraTech, a groundbreaking AI startup dedicated to personalizing mental wellness support. With a background in cognitive psychology and software engineering, Carol identified a critical need for accessible, data-driven mental health tools and launched AuraTech in 2020.
+>
+> Under her leadership, AuraTech has secured over $10 million in seed funding and grown its user base to over 500,000, disrupting the traditional therapy landscape. Carol is passionate about leveraging technology for social good and committed to making mental health care more equitable and effective worldwide.
+
+---
+
+**Remember to replace the bracketed information `[ ]` with Carol White's specific details!**",succes

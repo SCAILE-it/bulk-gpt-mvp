@@ -54,8 +54,8 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
   const eventSourceRef = useRef<EventSource | null>(null)
 
   const startBatch = useCallback(async (params: StartBatchParams): Promise<void> => {
-    const { csvData, prompt, context = '', outputColumns, webhookUrl } = params
-    
+    const { csvData, prompt, context = '', outputColumns, webhookUrl, tools } = params
+
     setIsProcessing(true)
     setError(null)
     setResults([])
@@ -71,6 +71,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
           prompt,
           context,
           outputColumns,
+          tools: tools || undefined,
           webhookUrl: webhookUrl || undefined,
         }),
       })
