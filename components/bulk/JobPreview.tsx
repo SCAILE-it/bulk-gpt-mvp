@@ -31,7 +31,7 @@ export function JobPreview({
       <div data-testid="job-preview" className="mt-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/20">
         <div className="flex items-center gap-2 text-xs text-blue-300">
           <Sparkles className="h-3 w-3 animate-pulse" />
-          <span>AI is optimizing your prompt...</span>
+          <span>AI is analyzing your prompt and generating output columns...</span>
         </div>
       </div>
     )

@@ -69,7 +69,7 @@ export function BatchStatusCard({
           <div className="flex items-center gap-2">
             <TrendingUp className="h-3.5 w-3.5 text-zinc-500" />
             <span className="text-zinc-400 font-medium">
-              {progress.completed} / {progress.total} completed
+              {successCount + errorCount} / {progress.total} processed
             </span>
           </div>
           {estimatedSeconds && estimatedSeconds > 0 && (

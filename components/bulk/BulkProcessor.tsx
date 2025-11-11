@@ -406,7 +406,7 @@ export default function BulkProcessor() {
       // Fetch completed results from database
       const { data: results, error } = await supabase
         .from('batch_results')
-        .select('input_data, output_data, status, error_message')
+        .select('input_data, output_data, status, error_message, input_tokens, output_tokens')
         .eq('batch_id', batchProcessor.batchId)
         .order('id', { ascending: true })
 
@@ -441,7 +441,9 @@ export default function BulkProcessor() {
           input_data: input,
           output_data: row.output_data,
           status: row.status,
-          error_message: row.error_message
+          error_message: row.error_message,
+          input_tokens: row.input_tokens || 0,
+          output_tokens: row.output_tokens || 0
         }
       })
 
