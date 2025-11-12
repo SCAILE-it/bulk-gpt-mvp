@@ -125,10 +125,9 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
           ) : (
             <>
               <Upload className="h-8 w-8 mx-auto mb-2 text-zinc-400" />
-              <p className="text-sm text-zinc-200 font-medium mb-1">
-                {isDragActive ? 'Drop here' : 'Drop your CSV file here'}
+              <p className="text-sm text-zinc-200 font-medium mb-2">
+                {isDragActive ? 'Drop here' : 'Drop CSV file or click to browse'}
               </p>
-              <p className="text-xs text-zinc-300 mb-2">or</p>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -139,18 +138,6 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
               >
                 Browse Files
               </button>
-              <p className="text-xs text-zinc-500 mt-3">
-                Max 10MB • CSV format • Up to 1,000 rows
-              </p>
-              <a
-                href="/sample.csv"
-                download
-                onClick={(e) => e.stopPropagation()}
-                className="text-xs text-zinc-400 hover:text-zinc-300 mt-2 inline-flex items-center gap-1 hover:underline"
-                aria-label="Download sample CSV template"
-              >
-                Download sample template →
-              </a>
             </>
           )}
         </div>

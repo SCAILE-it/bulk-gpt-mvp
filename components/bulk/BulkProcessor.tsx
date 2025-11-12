@@ -576,23 +576,17 @@ export default function BulkProcessor() {
         />
       )}
 
-      {/* Beta Banner */}
+      {/* Beta Banner - Minimal */}
       {showBetaBanner && (
-        <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-2">
+        <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-1.5">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs font-medium rounded flex-shrink-0">BETA</span>
-              <p className="text-xs text-blue-300 truncate sm:whitespace-normal">
-                <span className="hidden sm:inline">
-                  {usage ? `${usage.batchesToday}/${usage.dailyBatchLimit} batches today • ` : ''}
-                  1,000 rows per batch •
-                </span>
-                <span className="sm:hidden">
-                  {usage ? `${usage.batchesToday}/${usage.dailyBatchLimit} today • ` : ''}
-                  1k rows/batch •
-                </span>
-                <a href="#" className="ml-1 underline hover:text-blue-200 whitespace-nowrap">Request full access →</a>
-              </p>
+              {usage && (
+                <p className="text-xs text-blue-300 truncate">
+                  {usage.batchesToday}/{usage.dailyBatchLimit} batches today
+                </p>
+              )}
             </div>
             <button
               className="text-blue-400 hover:text-blue-300 flex-shrink-0"

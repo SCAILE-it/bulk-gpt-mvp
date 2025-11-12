@@ -95,12 +95,6 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
             <p className="text-zinc-400 max-w-md mx-auto">
               {currentStep.description}
             </p>
-            <div className="mt-4 p-3 bg-zinc-900/50 border border-white/5 rounded-lg">
-              <p className="text-sm text-zinc-500 mb-1">Example:</p>
-              <p className="text-sm text-zinc-300 font-mono">
-                {currentStep.example}
-              </p>
-            </div>
           </div>
 
           {/* Navigation */}
