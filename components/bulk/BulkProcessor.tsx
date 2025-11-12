@@ -102,8 +102,11 @@ export default function BulkProcessor() {
   // Check if user needs onboarding on mount
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('bulk-gpt-onboarding-seen')
-    if (!hasSeenOnboarding && !csvParser.csvData && !prompt) {
-      // Show onboarding for new users
+    const defaultPrompt = 'Write a bio for {{name}} at {{company}}'
+    const isDefaultPrompt = prompt === defaultPrompt || !prompt.trim()
+    
+    if (!hasSeenOnboarding && !csvParser.csvData && isDefaultPrompt) {
+      // Show onboarding for new users (no CSV uploaded and prompt is default/empty)
       setShowOnboarding(true)
     }
   }, [csvParser.csvData, prompt])
