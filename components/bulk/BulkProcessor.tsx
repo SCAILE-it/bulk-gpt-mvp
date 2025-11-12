@@ -625,50 +625,27 @@ export default function BulkProcessor() {
         />
       )}
 
-      {/* Beta Banner - Minimal */}
+      {/* Beta Banner - Subtle, integrated */}
       {showBetaBanner && (
-        <div className="bg-primary/10 border-b border-primary/20 px-4 sm:px-6 py-1.5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="flex-shrink-0 border-b border-border/50 bg-muted/30 px-4 sm:px-6 py-1.5">
+          <div className="flex items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs font-medium rounded flex-shrink-0">BETA</span>
               {usage && (
-                <p className="text-xs text-primary/80 truncate">
+                <span className="text-muted-foreground">
                   {usage.batchesToday}/{usage.dailyBatchLimit} batches today
-                </p>
+                </span>
               )}
             </div>
             <button
-              className="text-primary hover:text-primary/80 flex-shrink-0"
+              className="text-muted-foreground hover:text-foreground transition-colors"
               onClick={dismissBetaBanner}
-              aria-label="Dismiss beta banner"
+              aria-label="Dismiss"
             >
-              <X className="h-4 w-4" aria-hidden="true" />
+              <X className="h-3 w-3" aria-hidden="true" />
             </button>
           </div>
         </div>
       )}
-
-      {/* Header - Minimal, clean */}
-      <header className="flex-shrink-0 sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between px-6 py-3">
-          <h1 className="text-sm font-medium tracking-tight">Bulk Processor</h1>
-          <div className="flex items-center gap-3">
-            {csvParser.csvData && (
-              <div className="text-xs text-muted-foreground">
-                {csvParser.csvData.totalRows} rows
-              </div>
-            )}
-            <button
-              onClick={() => setShowKeyboardHelp(true)}
-              className="flex items-center justify-center w-7 h-7 rounded-md bg-secondary hover:bg-accent border border-border text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="View keyboard shortcuts"
-              title="Keyboard shortcuts"
-            >
-              <HelpCircle className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden min-h-0">
@@ -732,8 +709,8 @@ export default function BulkProcessor() {
               title="Data Input"
               open={dataInputSection.isOpen}
               onOpenChange={dataInputSection.setIsOpen}
-              className="bg-secondary/30 border border-border rounded-lg"
-              triggerClassName="hover:bg-accent/50"
+              className="border border-border/50 rounded-lg bg-background/50"
+              triggerClassName="hover:bg-accent/30"
               contentClassName="px-0 pb-0"
             >
               <FileUploadSection
@@ -748,11 +725,11 @@ export default function BulkProcessor() {
 
             {/* PROMPT CONFIGURATION SECTION */}
             <CollapsibleSection
-              title="Prompt Configuration"
+              title="Prompt"
               open={promptSection.isOpen}
               onOpenChange={promptSection.setIsOpen}
-              className="bg-secondary/30 border border-border rounded-lg"
-              triggerClassName="hover:bg-accent/50"
+              className="border border-border/50 rounded-lg bg-background/50"
+              triggerClassName="hover:bg-accent/30"
               contentClassName="px-0 pb-0"
             >
               <PromptSection
@@ -765,35 +742,30 @@ export default function BulkProcessor() {
 
             {/* OUTPUT SETTINGS SECTION - Grouped */}
             <CollapsibleSection
-              title="Output Settings"
+              title="Output"
               open={outputSettingsSection.isOpen}
               onOpenChange={outputSettingsSection.setIsOpen}
-              className="bg-secondary/30 border border-border rounded-lg"
-              triggerClassName="hover:bg-accent/50"
+              className="border border-border/50 rounded-lg bg-background/50"
+              triggerClassName="hover:bg-accent/30"
               contentClassName="space-y-4"
             >
               {/* JSON MODE TOGGLE */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Code className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    <label className="text-xs font-medium text-muted-foreground">Output Format</label>
-                  </div>
-                  <button
-                    onClick={() => setUseJsonMode(!useJsonMode)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      useJsonMode ? 'bg-primary' : 'bg-accent'
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">JSON Mode</span>
+                <button
+                  onClick={() => setUseJsonMode(!useJsonMode)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    useJsonMode ? 'bg-primary' : 'bg-accent'
+                  }`}
+                  aria-label={useJsonMode ? 'Switch to free-form text mode' : 'Switch to JSON mode'}
+                  title={useJsonMode ? 'JSON mode (structured output)' : 'Free-form mode (unstructured text)'}
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                      useJsonMode ? 'translate-x-5' : 'translate-x-1'
                     }`}
-                    aria-label={useJsonMode ? 'Switch to free-form text mode' : 'Switch to JSON mode'}
-                    title={useJsonMode ? 'JSON mode (structured output)' : 'Free-form mode (unstructured text)'}
-                  >
-                    <span
-                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                        useJsonMode ? 'translate-x-5' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
+                  />
+                </button>
               </div>
 
               {/* OUTPUT COLUMNS - Disabled when JSON mode is OFF */}

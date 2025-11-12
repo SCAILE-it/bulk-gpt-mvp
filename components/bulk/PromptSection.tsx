@@ -13,27 +13,22 @@ interface PromptSectionProps {
 
 export function PromptSection({ prompt, onPromptChange, csvData, onOpenTemplates }: PromptSectionProps) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <label htmlFor="prompt" className="text-xs font-medium text-foreground">
-            Prompt
-          </label>
-          <div className="group relative">
-            <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
-            <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-3 bg-accent border border-border rounded-md text-xs text-foreground shadow-xl">
-              <p>Use <span className="font-mono text-primary">{'{{column_name}}'}</span> to reference CSV columns.</p>
-            </div>
+        <div className="group relative">
+          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+          <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-3 bg-accent border border-border rounded-md text-xs text-foreground shadow-xl">
+            <p>Use <span className="font-mono text-primary">{'{{column_name}}'}</span> to reference CSV columns.</p>
           </div>
         </div>
         <button
           type="button"
           onClick={onOpenTemplates}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
           title="Browse pre-made prompt templates"
           aria-label="Browse pre-made prompt templates"
         >
-          <FileText className="h-3 w-3" aria-hidden="true" />
+          <FileText className="h-3.5 w-3.5" aria-hidden="true" />
           Browse Templates
         </button>
       </div>

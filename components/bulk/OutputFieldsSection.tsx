@@ -3,7 +3,7 @@
  * ABOUTME: Handles adding/removing output column names with validation and help tooltip
  */
 
-import { Table2, HelpCircle, X, Plus } from 'lucide-react'
+import { HelpCircle, X, Plus } from 'lucide-react'
 
 interface OutputFieldsSectionProps {
   outputFields: string[]
@@ -21,13 +21,11 @@ export function OutputFieldsSection({
   onRemoveField
 }: OutputFieldsSectionProps) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Table2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-        <label className="text-xs font-medium text-foreground">Output Columns</label>
+    <div className="space-y-3">
+      <div className="flex items-center justify-end">
         <div className="group relative">
-          <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
-          <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-56 p-2 bg-accent border border-border rounded-md text-xs text-foreground shadow-xl">
+          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+          <div className="hidden group-hover:block absolute right-0 top-5 z-50 w-56 p-2 bg-accent border border-border rounded-md text-xs text-foreground shadow-xl">
             <p>Columns in exported CSV.</p>
           </div>
         </div>

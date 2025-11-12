@@ -41,21 +41,20 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
   const errorMessage = errors.find(e => e) || null
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-foreground">Dataset</label>
-        {csvData && (
+    <div className="space-y-3">
+      {csvData && (
+        <div className="flex items-center justify-end">
           <button
             onClick={() => localRef.current?.click()}
-            className="px-2 py-1 bg-accent hover:bg-accent border border-border rounded text-xs text-foreground transition-all flex items-center gap-1.5 active:scale-95"
+            className="px-2.5 py-1.5 bg-accent hover:bg-accent border border-border rounded-md text-xs text-foreground transition-all flex items-center gap-1.5 active:scale-95"
             title="Upload a different CSV file (⌘O)"
             aria-label="Upload a different CSV file"
           >
-            <Upload className="h-3 w-3" aria-hidden="true" />
+            <Upload className="h-3.5 w-3.5" aria-hidden="true" />
             Change file
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {csvData && !isUploading ? (
         // Show CSV Preview when file is loaded
