@@ -115,11 +115,19 @@ export default function BulkProcessor() {
 
   // Initialize selected input columns when CSV is loaded
   useEffect(() => {
-    if (csvParser.csvData && selectedInputColumns.length === 0) {
-      // Default: all columns selected
-      setSelectedInputColumns(csvParser.csvData.columns)
+    if (csvParser.csvData) {
+      // If no columns selected or CSV columns changed, reset to all columns
+      const selectedSet = new Set(selectedInputColumns)
+      const columnsMatch = csvParser.csvData.columns.length === selectedInputColumns.length &&
+        csvParser.csvData.columns.every(col => selectedSet.has(col))
+      
+      if (selectedInputColumns.length === 0 || !columnsMatch) {
+        // Default: all columns selected
+        setSelectedInputColumns([...csvParser.csvData.columns])
+      }
     }
-  }, [csvParser.csvData, selectedInputColumns.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [csvParser.csvData?.columns.join(',')]) // Only depend on column names, not the whole object
 
   useEffect(() => {
     // Step 1: Expand Input when CSV is first uploaded (one by one)
@@ -271,8 +279,10 @@ export default function BulkProcessor() {
       }
     } catch (err) {
       // Errors are already handled by the hooks
-      // Just log for debugging
-      console.error('Upload/parse error:', err)
+      // Log error for debugging
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        context: 'fileUpload',
+      })
     } finally {
       setIsUploading(false)
     }
