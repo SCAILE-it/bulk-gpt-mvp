@@ -96,14 +96,6 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
           )}
         </div>
 
-        {/* Tips - Simplified, less overwhelming */}
-        {columns.length > 0 && (
-          <div className="mt-4">
-            <p className="text-xs text-zinc-500">
-              Use column names like <code className="px-1 py-0.5 bg-zinc-900 rounded text-blue-300 font-mono text-xs">{`{{${columns[0]}}`}</code> in your prompt
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )

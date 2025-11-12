@@ -668,20 +668,9 @@ export default function BulkProcessor() {
             {!variableValidation.isValid && variableValidation.missing.length > 0 && (
               <div className="flex items-start gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-md">
                 <XCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="text-xs font-medium text-orange-400">
-                    Missing variables in your CSV
-                  </p>
-                  <p className="text-xs text-orange-300/80">
-                    These variables are used in your prompt but don&apos;t exist in your CSV:{' '}
-                    <span className="font-mono font-semibold">
-                      {variableValidation.missing.map(v => `{{${v}}}`).join(', ')}
-                    </span>
-                  </p>
-                  <p className="text-xs text-orange-300/60">
-                    Please check your column names or remove these variables from your prompt.
-                  </p>
-                </div>
+                <p className="text-xs text-orange-400">
+                  Missing variables: {variableValidation.missing.map(v => v.replace(/[{}]/g, '')).join(', ')}
+                </p>
               </div>
             )}
 
@@ -1000,7 +989,7 @@ export default function BulkProcessor() {
         }
       >
         <div className="space-y-6">
-          <p className="text-sm text-zinc-400">Speed up your workflow with these keyboard shortcuts</p>
+          <p className="text-sm text-zinc-400">Keyboard shortcuts</p>
 
           <div className="space-y-4">
             {/* File Operations */}
