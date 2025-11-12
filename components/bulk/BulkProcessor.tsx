@@ -83,17 +83,18 @@ export default function BulkProcessor() {
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null)
 
   // === COLLAPSIBLE SECTIONS STATE ===
+  // Sections start collapsed to reduce initial overwhelm - user expands as needed
   const dataInputSection = useCollapsibleState({
     storageKey: 'bulk-processor-data-input',
-    defaultOpen: true
+    defaultOpen: false // Start collapsed - less overwhelming
   })
   const promptSection = useCollapsibleState({
     storageKey: 'bulk-processor-prompt',
-    defaultOpen: true
+    defaultOpen: false // Start collapsed - less overwhelming
   })
   const outputSettingsSection = useCollapsibleState({
     storageKey: 'bulk-processor-output-settings',
-    defaultOpen: true
+    defaultOpen: false // Start collapsed - less overwhelming
   })
 
   // === ONBOARDING STATE ===
@@ -715,15 +716,7 @@ export default function BulkProcessor() {
 
             {/* Unused columns warning - Hidden to reduce noise */}
 
-            {/* WORKFLOW STEPS - Simplified, only show when actively working */}
-            {(!csvParser.csvData || !prompt) && (
-              <WorkflowSteps
-                hasCSV={!!csvParser.csvData}
-                hasPrompt={!!prompt}
-                isProcessing={batchProcessor.isProcessing}
-                hasResults={displayResults.length > 0}
-              />
-            )}
+            {/* WORKFLOW STEPS - Hidden to reduce visual noise, onboarding handles guidance */}
 
             {/* DATA INPUT SECTION */}
             <CollapsibleSection
@@ -822,14 +815,16 @@ export default function BulkProcessor() {
                 </>
               )}
 
-              {/* AI ASSISTANT - Consolidated */}
-              <AIAssistantSection
-                hasPrompt={!!prompt}
-                hasCSVData={!!csvParser.csvData}
-                isOptimizing={isOptimizing}
-                hasOptimizedPrompt={!!optimizedPrompt}
-                onOptimize={triggerOptimization}
-              />
+              {/* AI ASSISTANT - Only show when CSV and prompt are ready */}
+              {csvParser.csvData && prompt && (
+                <AIAssistantSection
+                  hasPrompt={!!prompt}
+                  hasCSVData={!!csvParser.csvData}
+                  isOptimizing={isOptimizing}
+                  hasOptimizedPrompt={!!optimizedPrompt}
+                  onOptimize={triggerOptimization}
+                />
+              )}
             </CollapsibleSection>
 
             {/* AI-OPTIMIZED JOB PREVIEW */}
@@ -903,32 +898,13 @@ export default function BulkProcessor() {
             // Show CSV preview when CSV is uploaded but no results yet
             <CSVPreviewTable csvData={csvParser.csvData} />
           ) : (
-            // Empty state - no CSV uploaded
+            // Empty state - minimal, not overwhelming
             <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center space-y-4 max-w-md">
-                <div className="mx-auto w-16 h-16 rounded-full bg-blue-500/10 border-2 border-blue-500/20 flex items-center justify-center">
-                  <FileText className="h-7 w-7 text-blue-500" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-base font-medium text-zinc-200">No results yet</h3>
-                  <p className="text-sm text-zinc-400 leading-relaxed">
-                    Upload a CSV, configure your prompt, and click Run to see results here
-                  </p>
-                </div>
-                <div className="pt-2 space-y-2 text-xs text-zinc-500">
-                  <p>Your results will appear as:</p>
-                  <div className="flex items-center justify-center gap-2 p-3 bg-zinc-900/50 border border-white/5 rounded-lg">
-                    <div className="flex-1 text-left">
-                      <div className="text-zinc-400 font-mono text-xs">Input</div>
-                      <div className="text-zinc-300 text-xs">Row data</div>
-                    </div>
-                    <div className="text-zinc-600">→</div>
-                    <div className="flex-1 text-left">
-                      <div className="text-zinc-400 font-mono text-xs">Output</div>
-                      <div className="text-zinc-300 text-xs">AI result</div>
-                    </div>
-                  </div>
-                </div>
+              <div className="text-center space-y-2 max-w-sm">
+                <FileText className="h-8 w-8 text-zinc-600 mx-auto" />
+                <p className="text-sm text-zinc-500">
+                  Results will appear here after you run a batch
+                </p>
               </div>
             </div>
           )}
