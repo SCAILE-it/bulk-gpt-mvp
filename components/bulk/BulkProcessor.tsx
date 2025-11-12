@@ -101,39 +101,39 @@ export default function BulkProcessor() {
     storageKey: 'bulk-processor-output-settings',
     defaultOpen: false
   })
+  const aiAssistantSection = useCollapsibleState({
+    storageKey: 'bulk-processor-ai-assistant',
+    defaultOpen: true // Always expanded when visible
+  })
 
-  // Auto-expand sections based on active state (progressive disclosure)
+  // Auto-expand sections sequentially (one by one) based on user flow
   // Track previous states to only expand on transitions (not continuously)
   const prevHasCSV = useRef(false)
   const prevHasPrompt = useRef(false)
-  const prevHasPromptForOutput = useRef(false)
 
   useEffect(() => {
-    // Expand Data Input when CSV is first uploaded (transition from no CSV to CSV)
+    // Step 1: Expand Data Input when CSV is first uploaded
     const hasCSV = !!csvParser.csvData
     if (hasCSV && !prevHasCSV.current && !dataInputSection.isOpen) {
       dataInputSection.setIsOpen(true)
+      // Close other sections to focus on current step
+      if (promptSection.isOpen) promptSection.setIsOpen(false)
+      if (outputSettingsSection.isOpen) outputSettingsSection.setIsOpen(false)
     }
     prevHasCSV.current = hasCSV
-  }, [csvParser.csvData, dataInputSection.isOpen, dataInputSection.setIsOpen])
+  }, [csvParser.csvData, dataInputSection.isOpen, dataInputSection.setIsOpen, promptSection.isOpen, promptSection.setIsOpen, outputSettingsSection.isOpen, outputSettingsSection.setIsOpen])
 
   useEffect(() => {
-    // Expand Prompt section when prompt is first filled (transition from empty to filled)
+    // Step 2: Expand Prompt section when prompt is first filled (only after CSV is uploaded)
     const hasPrompt = !!(prompt && prompt.trim())
-    if (hasPrompt && !prevHasPrompt.current && !promptSection.isOpen) {
+    const hasCSV = !!csvParser.csvData
+    if (hasPrompt && hasCSV && !prevHasPrompt.current && !promptSection.isOpen) {
       promptSection.setIsOpen(true)
+      // Close Output Settings if open (user should focus on prompt first)
+      if (outputSettingsSection.isOpen) outputSettingsSection.setIsOpen(false)
     }
     prevHasPrompt.current = hasPrompt
-  }, [prompt, promptSection.isOpen, promptSection.setIsOpen])
-
-  useEffect(() => {
-    // Expand Output Settings when prompt is first filled (user needs to configure output)
-    const hasPrompt = !!(prompt && prompt.trim())
-    if (hasPrompt && !prevHasPromptForOutput.current && !outputSettingsSection.isOpen) {
-      outputSettingsSection.setIsOpen(true)
-    }
-    prevHasPromptForOutput.current = hasPrompt
-  }, [prompt, outputSettingsSection.isOpen, outputSettingsSection.setIsOpen])
+  }, [prompt, csvParser.csvData, promptSection.isOpen, promptSection.setIsOpen, outputSettingsSection.isOpen, outputSettingsSection.setIsOpen])
 
   // === ONBOARDING STATE ===
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -807,8 +807,18 @@ export default function BulkProcessor() {
                 </>
               )}
 
-              {/* AI ASSISTANT - Only show when CSV and prompt are ready */}
-              {csvParser.csvData && prompt && (
+            </CollapsibleSection>
+
+            {/* AI ASSISTANT SECTION - Separate collapsible section, only show when CSV and prompt are ready */}
+            {csvParser.csvData && prompt && (
+              <CollapsibleSection
+                title="AI Optimization"
+                open={aiAssistantSection.isOpen}
+                onOpenChange={aiAssistantSection.setIsOpen}
+                className="bg-secondary/30 border border-border rounded-lg"
+                triggerClassName="hover:bg-accent/50"
+                contentClassName="px-0 pb-0"
+              >
                 <AIAssistantSection
                   hasPrompt={!!prompt}
                   hasCSVData={!!csvParser.csvData}
@@ -816,8 +826,8 @@ export default function BulkProcessor() {
                   hasOptimizedPrompt={!!optimizedPrompt}
                   onOptimize={triggerOptimization}
                 />
-              )}
-            </CollapsibleSection>
+              </CollapsibleSection>
+            )}
 
             {/* AI-OPTIMIZED JOB PREVIEW */}
             {optimizedPrompt && (
