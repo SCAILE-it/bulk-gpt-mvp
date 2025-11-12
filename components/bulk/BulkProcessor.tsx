@@ -653,7 +653,7 @@ export default function BulkProcessor() {
 
       {/* Beta Banner - Subtle, integrated */}
       {showBetaBanner && (
-        <div className="flex-shrink-0 border-b border-border/50 bg-muted/30 px-4 sm:px-6 py-1.5">
+        <div className="flex-shrink-0 border-b border-border/30 bg-muted/20 px-4 sm:px-6 py-1.5">
           <div className="flex items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {usage && (
@@ -735,8 +735,8 @@ export default function BulkProcessor() {
               title="Input"
               open={dataInputSection.isOpen}
               onOpenChange={dataInputSection.setIsOpen}
-              className="border border-border/50 rounded-lg bg-background/50"
-              triggerClassName="hover:bg-accent/30"
+              className="border border-border/30 rounded-md bg-background/30"
+              triggerClassName="hover:bg-accent/20"
               contentClassName="px-0 pb-0"
             >
               <FileUploadSection
@@ -756,8 +756,8 @@ export default function BulkProcessor() {
               title="Task"
               open={promptSection.isOpen}
               onOpenChange={promptSection.setIsOpen}
-              className="border border-border/50 rounded-lg bg-background/50"
-              triggerClassName="hover:bg-accent/30"
+              className="border border-border/30 rounded-md bg-background/30"
+              triggerClassName="hover:bg-accent/20"
               contentClassName="px-0 pb-0"
             >
               <PromptSection
@@ -773,8 +773,8 @@ export default function BulkProcessor() {
               title="Output"
               open={outputSettingsSection.isOpen}
               onOpenChange={outputSettingsSection.setIsOpen}
-              className="border border-border/50 rounded-lg bg-background/50"
-              triggerClassName="hover:bg-accent/30"
+              className="border border-border/30 rounded-md bg-background/30"
+              triggerClassName="hover:bg-accent/20"
               contentClassName="space-y-3"
             >
               {/* JSON MODE TOGGLE */}
@@ -798,7 +798,7 @@ export default function BulkProcessor() {
 
               {/* OUTPUT COLUMNS - Disabled when JSON mode is OFF */}
               {useJsonMode && (
-                <div className="space-y-3 pt-2 border-t border-border/50">
+                <div className="space-y-3 pt-2 border-t border-border/30">
                   <OutputFieldsSection
                     outputFields={outputFields}
                     newField={newField}
@@ -834,14 +834,14 @@ export default function BulkProcessor() {
 
           {/* AI OPTIMIZATION - Global, above actions */}
           {csvParser.csvData && prompt && (
-            <div className="flex-shrink-0 border-t border-border bg-background/95 backdrop-blur-md">
+            <div className="flex-shrink-0 border-t border-border/30 bg-background/50">
               <CollapsibleSection
                 title="AI Optimization"
                 open={aiAssistantSection.isOpen}
                 onOpenChange={aiAssistantSection.setIsOpen}
                 className="border-0 bg-transparent"
-                triggerClassName="hover:bg-accent/30 px-4 py-3"
-                contentClassName="px-4 pb-4"
+                triggerClassName="hover:bg-accent/20 px-4 py-2.5"
+                contentClassName="px-4 pb-3"
               >
                 <div className="space-y-3">
                   {/* Optimization selector */}
@@ -884,7 +884,7 @@ export default function BulkProcessor() {
                       selectedInputColumns,
                     })}
                     disabled={!csvParser.csvData || !prompt || isOptimizing || (!optimizeInput && !optimizeTask && !optimizeOutput)}
-                    className="w-full px-4 py-2.5 bg-gradient-to-r from-primary/10 to-purple-600/10 hover:from-primary/20 hover:to-purple-600/20 border border-primary/20 hover:border-primary/30 rounded-lg text-sm font-medium text-foreground transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 h-9 bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-md text-xs font-medium text-foreground transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isOptimizing ? (
                       <>
@@ -904,18 +904,18 @@ export default function BulkProcessor() {
           )}
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-border bg-background/95 backdrop-blur-md sticky bottom-0 z-10">
+          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
             <TooltipProvider>
-              <div className="flex gap-3 items-stretch max-w-4xl mx-auto">
+              <div className="flex gap-2.5 items-stretch max-w-4xl mx-auto">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleTest}
                       disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 min-h-[48px] bg-secondary border border-border rounded-lg text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-sm hover:shadow"
+                      className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 h-9 bg-secondary/50 border border-border/50 rounded-md text-xs font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                       aria-label="Test prompt with first CSV row"
                     >
-                      {isTesting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
+                      {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
                       <span className="whitespace-nowrap">Test</span>
                     </button>
                   </TooltipTrigger>
@@ -928,11 +928,11 @@ export default function BulkProcessor() {
                     <button
                       onClick={handleProcess}
                       disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                      className="flex-[2] flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-all duration-200 ease-out rounded-lg text-sm text-primary-foreground font-semibold disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-md hover:shadow-lg"
+                      className="flex-[2] flex items-center justify-center gap-2 px-4 py-2 h-9 bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                       data-testid="run-button"
                       aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
                     >
-                      {batchProcessor.isProcessing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
+                      {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
                       <span className="whitespace-nowrap">
                         Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
                       </span>
@@ -948,7 +948,7 @@ export default function BulkProcessor() {
         </div>
 
         {/* RIGHT PANEL - Results */}
-        <div className="h-full overflow-hidden flex flex-col">
+        <div className="h-full overflow-hidden flex flex-col border-l border-border/30 bg-muted/20">
           {displayResults.length > 0 || batchProcessor.isProcessing ? (
             <ResultsTable
               results={displayResults}
@@ -959,105 +959,39 @@ export default function BulkProcessor() {
               onExport={handleExport}
             />
           ) : (
-            // Empty state with preview example
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="max-w-2xl mx-auto space-y-6">
-                {/* Preview Example */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-foreground">Example Output</h3>
-                    <span className="text-xs text-muted-foreground">Preview</span>
-                  </div>
-                  
-                  {/* Example Results Table */}
-                  <div className="border border-border/50 rounded-lg overflow-hidden bg-background/50">
-                    <div className="border-b border-border/50 bg-secondary/30 px-4 py-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">Results</span>
-                        <span className="text-xs text-muted-foreground">3 rows</span>
-                      </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead className="bg-secondary/30 border-b border-border/50">
-                          <tr>
-                            <th className="px-3 py-2 text-left w-8"></th>
-                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">name</th>
-                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">company</th>
-                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">bio</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-b border-border/30">
-                            <td className="px-3 py-2.5">
-                              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                            </td>
-                            <td className="px-3 py-2.5 text-muted-foreground font-mono">Alice Johnson</td>
-                            <td className="px-3 py-2.5 text-muted-foreground font-mono">TechCorp</td>
-                            <td className="px-3 py-2.5 text-foreground">
-                              <div className="line-clamp-2 text-xs leading-relaxed">
-                                Alice Johnson is a data analyst at TechCorp with expertise in statistical analysis and data visualization...
-                              </div>
-                            </td>
-                          </tr>
-                          <tr className="border-b border-border/30">
-                            <td className="px-3 py-2.5">
-                              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                            </td>
-                            <td className="px-3 py-2.5 text-muted-foreground font-mono">Bob Smith</td>
-                            <td className="px-3 py-2.5 text-muted-foreground font-mono">DataCo</td>
-                            <td className="px-3 py-2.5 text-foreground">
-                              <div className="line-clamp-2 text-xs leading-relaxed">
-                                Bob Smith is a senior engineer at DataCo specializing in machine learning and cloud infrastructure...
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="px-3 py-2.5">
-                              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                            </td>
-                            <td className="px-3 py-2.5 text-muted-foreground font-mono">Carol White</td>
-                            <td className="px-3 py-2.5 text-muted-foreground font-mono">StartupXYZ</td>
-                            <td className="px-3 py-2.5 text-foreground">
-                              <div className="line-clamp-2 text-xs leading-relaxed">
-                                Carol White is the founder of StartupXYZ, focusing on AI-powered solutions for enterprise clients...
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+            // Empty state - clearly inactive
+            <div className="flex-1 overflow-y-auto p-8 flex items-center justify-center">
+              <div className="max-w-md mx-auto space-y-4 text-center opacity-50">
+                <div className="flex items-center justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-muted/50 border border-border/30 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>
-
-                {/* Use Cases */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-foreground">What you can do</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
-                      <div className="text-xs font-medium text-foreground mb-1">Generate Content</div>
-                      <div className="text-xs text-muted-foreground">Create bios, descriptions, summaries at scale</div>
-                    </div>
-                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
-                      <div className="text-xs font-medium text-foreground mb-1">Enrich Data</div>
-                      <div className="text-xs text-muted-foreground">Add context, research, validation to your datasets</div>
-                    </div>
-                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
-                      <div className="text-xs font-medium text-foreground mb-1">Transform Text</div>
-                      <div className="text-xs text-muted-foreground">Rephrase, translate, format thousands of rows</div>
-                    </div>
-                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
-                      <div className="text-xs font-medium text-foreground mb-1">Extract Insights</div>
-                      <div className="text-xs text-muted-foreground">Analyze and categorize data with AI</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="pt-4 border-t border-border/50">
-                  <p className="text-xs text-center text-muted-foreground">
-                    Upload a CSV and configure your prompt to get started
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">No results yet</h3>
+                  <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                    Upload a CSV file, configure your prompt, and run a test or process all rows to see results here.
                   </p>
+                </div>
+                <div className="pt-4 border-t border-border/20">
+                  <div className="grid grid-cols-2 gap-2 text-left">
+                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
+                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Generate Content</div>
+                      <div className="text-xs text-muted-foreground/60">Bios, descriptions, summaries</div>
+                    </div>
+                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
+                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Enrich Data</div>
+                      <div className="text-xs text-muted-foreground/60">Add context, research</div>
+                    </div>
+                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
+                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Transform Text</div>
+                      <div className="text-xs text-muted-foreground/60">Rephrase, translate, format</div>
+                    </div>
+                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
+                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Extract Insights</div>
+                      <div className="text-xs text-muted-foreground/60">Analyze and categorize</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
