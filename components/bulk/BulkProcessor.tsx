@@ -954,39 +954,103 @@ export default function BulkProcessor() {
               onExport={handleExport}
             />
           ) : (
-            // Empty state - clearly inactive
-            <div className="flex-1 overflow-y-auto p-8 flex items-center justify-center">
-              <div className="max-w-md mx-auto space-y-4 text-center opacity-50">
-                <div className="flex items-center justify-center mb-2">
-                  <div className="w-12 h-12 rounded-full bg-muted/50 border border-border/30 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
+            // Preview state - show example results
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-medium text-muted-foreground">Results Preview</h3>
+                  <span className="text-xs text-muted-foreground/60">Example</span>
+                </div>
+                
+                {/* Example Results Table */}
+                <div className="border border-border/30 rounded-md overflow-hidden bg-background/50">
+                  <div className="border-b border-border/30 bg-secondary/20 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Results</span>
+                      <span className="text-xs text-muted-foreground/60">3 rows</span>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-secondary/20 border-b border-border/30">
+                        <tr>
+                          <th className="px-3 py-2 text-left w-6"></th>
+                          {csvParser.csvData ? (
+                            <>
+                              {csvParser.csvData.columns.slice(0, 3).map((col) => (
+                                <th key={col} className="px-3 py-2 text-left font-medium text-muted-foreground">
+                                  {col}
+                                </th>
+                              ))}
+                              {outputFields.length > 0 ? (
+                                outputFields.slice(0, 2).map((field) => (
+                                  <th key={field} className="px-3 py-2 text-left font-medium text-muted-foreground">
+                                    {field}
+                                  </th>
+                                ))
+                              ) : (
+                                <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                                  output
+                                </th>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">name</th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">company</th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">bio</th>
+                            </>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[1, 2, 3].map((row) => (
+                          <tr key={row} className="border-b border-border/20 last:border-0">
+                            <td className="px-3 py-2.5">
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+                            </td>
+                            {csvParser.csvData ? (
+                              <>
+                                {csvParser.csvData.columns.slice(0, 3).map((col, idx) => (
+                                  <td key={col} className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">
+                                    {idx === 0 ? `Sample ${row}` : `data-${row}-${idx}`}
+                                  </td>
+                                ))}
+                                {outputFields.length > 0 ? (
+                                  outputFields.slice(0, 2).map((field) => (
+                                    <td key={field} className="px-3 py-2.5 text-foreground/60 text-[10px]">
+                                      <div className="line-clamp-1">
+                                        {field === outputFields[0] ? 'Generated content...' : 'Result data...'}
+                                      </div>
+                                    </td>
+                                  ))
+                                ) : (
+                                  <td className="px-3 py-2.5 text-foreground/60 text-[10px]">
+                                    <div className="line-clamp-1">AI-generated output...</div>
+                                  </td>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <td className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">Alice Johnson</td>
+                                <td className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">TechCorp</td>
+                                <td className="px-3 py-2.5 text-foreground/60 text-[10px]">
+                                  <div className="line-clamp-1">Data analyst with expertise in statistical analysis...</div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">No results yet</h3>
-                  <p className="text-xs text-muted-foreground/70 leading-relaxed">
-                    Upload a CSV file, configure your prompt, and run a test or process all rows to see results here.
+
+                {/* Helper text */}
+                <div className="pt-2 border-t border-border/20">
+                  <p className="text-xs text-muted-foreground/70 text-center">
+                    {csvParser.csvData ? 'Run a test or process all rows to see real results' : 'Upload CSV and configure prompt to see results'}
                   </p>
-                </div>
-                <div className="pt-4 border-t border-border/20">
-                  <div className="grid grid-cols-2 gap-2 text-left">
-                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
-                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Generate Content</div>
-                      <div className="text-xs text-muted-foreground/60">Bios, descriptions, summaries</div>
-                    </div>
-                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
-                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Enrich Data</div>
-                      <div className="text-xs text-muted-foreground/60">Add context, research</div>
-                    </div>
-                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
-                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Transform Text</div>
-                      <div className="text-xs text-muted-foreground/60">Rephrase, translate, format</div>
-                    </div>
-                    <div className="p-2.5 border border-border/20 rounded-md bg-background/30">
-                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Extract Insights</div>
-                      <div className="text-xs text-muted-foreground/60">Analyze and categorize</div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
