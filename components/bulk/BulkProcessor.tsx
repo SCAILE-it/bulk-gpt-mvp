@@ -82,19 +82,50 @@ export default function BulkProcessor() {
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null)
 
   // === COLLAPSIBLE SECTIONS STATE ===
-  // Sections start collapsed to reduce initial overwhelm - user expands as needed
+  // Sections start collapsed, but auto-expand based on active state
   const dataInputSection = useCollapsibleState({
     storageKey: 'bulk-processor-data-input',
-    defaultOpen: false // Start collapsed - less overwhelming
+    defaultOpen: false
   })
   const promptSection = useCollapsibleState({
     storageKey: 'bulk-processor-prompt',
-    defaultOpen: false // Start collapsed - less overwhelming
+    defaultOpen: false
   })
   const outputSettingsSection = useCollapsibleState({
     storageKey: 'bulk-processor-output-settings',
-    defaultOpen: false // Start collapsed - less overwhelming
+    defaultOpen: false
   })
+
+  // Auto-expand sections based on active state (progressive disclosure)
+  // Track previous states to only expand on transitions (not continuously)
+  const prevHasCSV = useRef(false)
+  const prevHasPrompt = useRef(false)
+
+  useEffect(() => {
+    // Expand Data Input when CSV is first uploaded (transition from no CSV to CSV)
+    const hasCSV = !!csvParser.csvData
+    if (hasCSV && !prevHasCSV.current && !dataInputSection.isOpen) {
+      dataInputSection.setIsOpen(true)
+    }
+    prevHasCSV.current = hasCSV
+  }, [csvParser.csvData, dataInputSection.isOpen, dataInputSection.setIsOpen])
+
+  useEffect(() => {
+    // Expand Prompt section when prompt is first filled (transition from empty to filled)
+    const hasPrompt = !!(prompt && prompt.trim())
+    if (hasPrompt && !prevHasPrompt.current && !promptSection.isOpen) {
+      promptSection.setIsOpen(true)
+    }
+    prevHasPrompt.current = hasPrompt
+  }, [prompt, promptSection.isOpen, promptSection.setIsOpen])
+
+  useEffect(() => {
+    // Expand Output Settings when prompt is first filled (user needs to configure output)
+    const hasPrompt = !!(prompt && prompt.trim())
+    if (hasPrompt && !prevHasPrompt.current && !outputSettingsSection.isOpen) {
+      outputSettingsSection.setIsOpen(true)
+    }
+  }, [prompt, outputSettingsSection.isOpen, outputSettingsSection.setIsOpen])
 
   // === ONBOARDING STATE ===
   const [showOnboarding, setShowOnboarding] = useState(false)

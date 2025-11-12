@@ -55,7 +55,7 @@ export function AIAssistantSection({
         onClick={onOptimize}
         disabled={!hasPrompt || !hasCSVData || isOptimizing || hasOptimizedPrompt}
         className="w-full px-3 py-2.5 bg-gradient-to-r from-blue-600/10 to-purple-600/10 hover:from-blue-600/20 hover:to-purple-600/20 border border-blue-500/20 hover:border-blue-500/30 rounded-md text-sm font-medium text-zinc-100 transition-all active:scale-[0.98] flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
-        aria-label="Optimize prompt and auto-generate columns with AI"
+        aria-label="Optimize prompt, output columns, and tool selection with AI"
       >
         <div className="flex-shrink-0">
           {isOptimizing ? (
