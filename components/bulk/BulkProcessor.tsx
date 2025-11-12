@@ -92,25 +92,26 @@ export default function BulkProcessor() {
 
   // === COLLAPSIBLE SECTIONS STATE ===
   // Sections start collapsed, but auto-expand based on active state
+  // Progressive disclosure: Input open by default, Task/Output closed
   const dataInputSection = useCollapsibleState({
     storageKey: 'bulk-processor-data-input',
-    defaultOpen: false
+    defaultOpen: true // Open by default
   })
   const promptSection = useCollapsibleState({
     storageKey: 'bulk-processor-prompt',
-    defaultOpen: false
+    defaultOpen: false // Closed by default
   })
   const outputSettingsSection = useCollapsibleState({
     storageKey: 'bulk-processor-output-settings',
-    defaultOpen: false
+    defaultOpen: false // Closed by default
   })
   const aiAssistantSection = useCollapsibleState({
     storageKey: 'bulk-processor-ai-assistant',
     defaultOpen: true // Always expanded when visible
   })
 
-  // Auto-expand sections sequentially (one by one) based on user flow
-  // Track previous states to only expand on transitions (not continuously)
+  // Progressive disclosure: Auto-collapse/expand sections based on completion
+  // Track previous states to only trigger on transitions (not continuously)
   const prevHasCSV = useRef(false)
   const prevHasPrompt = useRef(false)
 
@@ -131,39 +132,45 @@ export default function BulkProcessor() {
   }, [csvParser.csvData?.columns.join(',')]) // Only depend on column names, not the whole object
 
   useEffect(() => {
-    // Step 1: Expand Input when CSV is first uploaded (one by one)
+    // Step 1: When CSV is uploaded, collapse Input and expand Task
     const hasCSV = !!csvParser.csvData
     const wasCSV = prevHasCSV.current
     
-    // Only expand on transition from no CSV to CSV
+    // Only trigger on transition from no CSV to CSV
     if (hasCSV && !wasCSV) {
-      // Expand Input section
-      if (!dataInputSection.isOpen) {
-        dataInputSection.setIsOpen(true)
+      // Collapse Input section
+      if (dataInputSection.isOpen) {
+        dataInputSection.setIsOpen(false)
       }
-      // Don't force-close other sections - let user control them
+      // Expand Task section
+      if (!promptSection.isOpen) {
+        promptSection.setIsOpen(true)
+      }
     }
     
     prevHasCSV.current = hasCSV
-  }, [csvParser.csvData, dataInputSection])
+  }, [csvParser.csvData, dataInputSection, promptSection])
 
   useEffect(() => {
-    // Step 2: Expand Prompt section when prompt is first filled (only after CSV exists)
+    // Step 2: When prompt is entered, collapse Task and expand Output
     const hasPrompt = !!(prompt && prompt.trim())
     const hasCSV = !!csvParser.csvData
     const wasPrompt = prevHasPrompt.current
     
-    // Only expand on transition from no prompt to prompt (and CSV must exist)
+    // Only trigger on transition from no prompt to prompt (and CSV must exist)
     if (hasPrompt && hasCSV && !wasPrompt) {
-      // Expand Prompt section
-      if (!promptSection.isOpen) {
-        promptSection.setIsOpen(true)
+      // Collapse Task section
+      if (promptSection.isOpen) {
+        promptSection.setIsOpen(false)
       }
-      // Don't force-close Output Settings - let user control
+      // Expand Output section
+      if (!outputSettingsSection.isOpen) {
+        outputSettingsSection.setIsOpen(true)
+      }
     }
     
     prevHasPrompt.current = hasPrompt
-  }, [prompt, csvParser.csvData, promptSection])
+  }, [prompt, csvParser.csvData, promptSection, outputSettingsSection])
 
   // === ONBOARDING STATE ===
   const [showOnboarding, setShowOnboarding] = useState(false)
