@@ -605,31 +605,14 @@ export default function BulkProcessor() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header - Minimal, clean */}
       <header className="flex-shrink-0 sticky top-0 z-50 border-b border-white/5 bg-zinc-950/95 backdrop-blur-md supports-[backdrop-filter]:bg-zinc-950/60">
         <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-6">
-            <h1 className="text-sm font-medium tracking-tight">Bulk Processor</h1>
-            <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
-            <div className="hidden sm:flex items-center gap-3 text-xs text-zinc-500">
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-xs">⌘O</kbd>
-                <span>Upload</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-xs">⌘T</kbd>
-                <span>Test</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-zinc-900 border border-white/5 rounded text-xs">⌘↵</kbd>
-                <span>Run</span>
-              </div>
-            </div>
-          </div>
+          <h1 className="text-sm font-medium tracking-tight">Bulk Processor</h1>
           <div className="flex items-center gap-3">
             {csvParser.csvData && (
               <div className="text-xs text-zinc-500">
-                {csvParser.csvData.totalRows} rows • {csvParser.csvData.columns.length} cols
+                {csvParser.csvData.totalRows} rows
               </div>
             )}
             <button
@@ -719,7 +702,7 @@ export default function BulkProcessor() {
 
             {/* DATA INPUT SECTION */}
             <CollapsibleSection
-              title="📁 Data Input"
+              title="Data Input"
               open={dataInputSection.isOpen}
               onOpenChange={dataInputSection.setIsOpen}
               className="bg-zinc-900/30 border border-white/5 rounded-lg"
@@ -738,7 +721,7 @@ export default function BulkProcessor() {
 
             {/* PROMPT CONFIGURATION SECTION */}
             <CollapsibleSection
-              title="✏️ Prompt Configuration"
+              title="Prompt Configuration"
               open={promptSection.isOpen}
               onOpenChange={promptSection.setIsOpen}
               className="bg-zinc-900/30 border border-white/5 rounded-lg"
@@ -755,7 +738,7 @@ export default function BulkProcessor() {
 
             {/* OUTPUT SETTINGS SECTION - Grouped */}
             <CollapsibleSection
-              title="⚙️ Output Settings"
+              title="Output Settings"
               open={outputSettingsSection.isOpen}
               onOpenChange={outputSettingsSection.setIsOpen}
               className="bg-zinc-900/30 border border-white/5 rounded-lg"
@@ -784,13 +767,6 @@ export default function BulkProcessor() {
                     />
                   </button>
                 </div>
-                <p className="text-xs text-zinc-500">
-                  {useJsonMode ? (
-                    <span>JSON mode: AI returns structured data matching your output columns</span>
-                  ) : (
-                    <span>Free-form mode: AI returns unstructured text (ignores output columns)</span>
-                  )}
-                </p>
               </div>
 
               {/* OUTPUT COLUMNS - Disabled when JSON mode is OFF */}
