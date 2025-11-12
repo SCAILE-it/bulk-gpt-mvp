@@ -1,0 +1,120 @@
+{
+  "timestamp": "2025-11-12T13:13:50.875Z",
+  "overall": {
+    "score": 29,
+    "maxScore": 76,
+    "ready": false
+  },
+  "categories": {
+    "authentication": {
+      "score": 6,
+      "maxScore": 7,
+      "issues": [],
+      "passed": [
+        "✅ HTTPS enabled",
+        "✅ Login form present",
+        "✅ Email autocomplete set",
+        "✅ Password autocomplete set",
+        "✅ Login successful"
+      ]
+    },
+    "coreFunctionality": {
+      "score": 3,
+      "maxScore": 17,
+      "issues": [
+        "❌ CSV upload failed: No file input found",
+        "❌ Prompt textarea not found",
+        "⚠️ Run button disabled (may be expected if validation fails)"
+      ],
+      "passed": [
+        "✅ Navigation present",
+        "✅ Bulk processor page accessible",
+        "✅ Run button visible"
+      ]
+    },
+    "apiAccess": {
+      "score": 3,
+      "maxScore": 6,
+      "issues": [
+        "❌ API Keys section not found"
+      ],
+      "passed": [
+        "✅ Create API Key button visible",
+        "✅ API usage example visible"
+      ]
+    },
+    "security": {
+      "score": 3,
+      "maxScore": 13,
+      "issues": [
+        "⚠️ X-Frame-Options header missing",
+        "⚠️ Possible sensitive data in page content",
+        "⚠️ XSS protection headers missing"
+      ],
+      "passed": [
+        "✅ Protected routes require authentication"
+      ]
+    },
+    "errorHandling": {
+      "score": 0,
+      "maxScore": 5,
+      "issues": [
+        "⚠️ Error handling not obvious",
+        "⚠️ 4 console errors found",
+        "  - Failed to load resource: the server responded with a status of 404 ()",
+        "  - Failed to load resource: the server responded with a status of 404 ()",
+        "  - Failed to load resource: the server responded with a status of 401 ()",
+        "  - Failed to fetch RSC payload for https://bulk-gpt-app.vercel.app/dashboard. Falling back to browser n",
+        "⚠️ 2 network errors found",
+        "  - https://bulk-gpt-app.vercel.app/icon.png: 404",
+        "  - https://bulk-gpt-app.vercel.app/api/usage: 401"
+      ],
+      "passed": []
+    },
+    "userExperience": {
+      "score": 6,
+      "maxScore": 10,
+      "issues": [
+        "⚠️ Loading states not obvious",
+        "⚠️ Theme toggle not found",
+        "⚠️ Empty states not obvious",
+        "⚠️ Onboarding not obvious"
+      ],
+      "passed": [
+        "✅ Tooltips/help text present",
+        "✅ Good accessibility (labels present)",
+        "✅ Mobile responsive",
+        "✅ Error message structure present"
+      ]
+    },
+    "performance": {
+      "score": 4,
+      "maxScore": 5,
+      "issues": [
+        "⚠️ Lazy loading not obvious"
+      ],
+      "passed": [
+        "✅ Fast page load (1614ms)",
+        "✅ Reasonable JS bundle size (0KB)",
+        "✅ Reasonable total page size (0.0MB)"
+      ]
+    },
+    "productionReadiness": {
+      "score": 4,
+      "maxScore": 13,
+      "issues": [
+        "⚠️ Analytics not found",
+        "⚠️ Error tracking not found",
+        "⚠️ Health check endpoint not found",
+        "⚠️ Rate limiting not verified",
+        "⚠️ CORS headers not verified"
+      ],
+      "passed": [
+        "✅ 404 page exists",
+        "✅ Essential meta tags present",
+        "✅ PWA manifest present",
+        "✅ No server env vars exposed"
+      ]
+    }
+  }
+}
