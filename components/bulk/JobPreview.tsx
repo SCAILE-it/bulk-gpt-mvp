@@ -4,9 +4,10 @@ import { Sparkles, Check, X } from 'lucide-react'
 import type { OutputColumn } from '@/hooks/useManualJobOptimizer'
 
 interface JobPreviewProps {
-  optimizedPrompt: string
+  optimizedPrompt?: string
   setOptimizedPrompt: (prompt: string) => void
-  outputColumns: OutputColumn[]
+  outputColumns?: OutputColumn[]
+  suggestedInputColumns?: string[]
   reasoning: string | null
   isOptimizing: boolean
   onAccept: () => void
@@ -20,7 +21,8 @@ interface JobPreviewProps {
 export function JobPreview({
   optimizedPrompt,
   setOptimizedPrompt,
-  outputColumns,
+  outputColumns = [],
+  suggestedInputColumns = [],
   reasoning,
   isOptimizing,
   onAccept,
@@ -31,13 +33,14 @@ export function JobPreview({
       <div data-testid="job-preview" className="mt-3 p-3 rounded-md bg-primary/10 border border-primary/20">
         <div className="flex items-center gap-2 text-xs text-primary/90">
           <Sparkles className="h-3 w-3 animate-pulse" />
-          <span>AI is analyzing your prompt and generating output columns...</span>
+          <span>AI is analyzing your job and generating optimizations...</span>
         </div>
       </div>
     )
   }
 
-  if (!optimizedPrompt) {
+  // Show preview if any optimization exists
+  if (!optimizedPrompt && outputColumns.length === 0 && suggestedInputColumns.length === 0) {
     return null
   }
 
@@ -62,22 +65,42 @@ export function JobPreview({
             className="px-3 py-1 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded transition-all active:scale-95"
           >
             <Check className="h-3 w-3 inline mr-1" />
-            Use This Prompt
+            Apply
           </button>
         </div>
       </div>
 
+      {/* Suggested Input Columns */}
+      {suggestedInputColumns.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs text-primary/90 font-medium">Suggested Input Columns:</p>
+          <div className="flex flex-wrap gap-2">
+            {suggestedInputColumns.map((column, index) => (
+              <div
+                key={index}
+                data-testid="input-column"
+                className="text-xs bg-primary/20 text-primary/80 px-2 py-1 rounded border border-primary/30"
+              >
+                {column}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Editable Optimized Prompt */}
-      <div className="space-y-1">
-        <p className="text-xs text-primary/90 font-medium">Optimized Prompt (editable):</p>
-        <textarea
-          data-testid="optimized-prompt"
-          value={optimizedPrompt}
-          onChange={(e) => setOptimizedPrompt(e.target.value)}
-          className="w-full text-xs text-foreground font-mono bg-secondary/70 p-2 rounded border border-primary/20 focus:border-primary/40 focus:outline-none resize-none"
-          rows={3}
-        />
-      </div>
+      {optimizedPrompt && (
+        <div className="space-y-1">
+          <p className="text-xs text-primary/90 font-medium">Optimized Prompt (editable):</p>
+          <textarea
+            data-testid="optimized-prompt"
+            value={optimizedPrompt}
+            onChange={(e) => setOptimizedPrompt(e.target.value)}
+            className="w-full text-xs text-foreground font-mono bg-secondary/70 p-2 rounded border border-primary/20 focus:border-primary/40 focus:outline-none resize-none"
+            rows={3}
+          />
+        </div>
+      )}
 
       {/* Output Columns */}
       {outputColumns.length > 0 && (

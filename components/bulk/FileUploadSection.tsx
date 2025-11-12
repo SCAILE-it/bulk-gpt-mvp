@@ -14,6 +14,8 @@ interface FileUploadSectionProps {
   errors: (string | null)[]
   isUploading: boolean
   onFileUpload: (file: File) => void
+  selectedInputColumns?: string[]
+  onInputColumnsChange?: (columns: string[]) => void
 }
 
 export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionProps>(function FileUploadSection({
@@ -21,7 +23,9 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
   fileName,
   errors,
   isUploading,
-  onFileUpload
+  onFileUpload,
+  selectedInputColumns,
+  onInputColumnsChange
 }, forwardedRef) {
   const localRef = useRef<HTMLInputElement>(null)
 
@@ -73,11 +77,29 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-secondary/95 border-b border-border">
                   <tr>
-                    {csvData.columns.map(col => (
-                      <th key={col} className="px-2 py-1 text-left font-medium text-muted-foreground whitespace-nowrap">
-                        {col}
-                      </th>
-                    ))}
+                    {csvData.columns.map(col => {
+                      const isSelected = selectedInputColumns?.includes(col) ?? true
+                      return (
+                        <th key={col} className="px-2 py-1 text-left font-medium text-muted-foreground whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (!onInputColumnsChange || !csvData) return
+                                const newSelection = e.target.checked
+                                  ? [...(selectedInputColumns || csvData.columns), col]
+                                  : (selectedInputColumns || csvData.columns).filter(c => c !== col)
+                                onInputColumnsChange(newSelection)
+                              }}
+                              className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-1 focus:ring-ring cursor-pointer"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className={!isSelected ? 'opacity-50' : ''}>{col}</span>
+                          </div>
+                        </th>
+                      )
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -86,11 +108,19 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
                       key={i}
                       className={`border-b border-border last:border-0 ${i % 2 === 0 ? 'bg-secondary/40' : 'bg-transparent'}`}
                     >
-                      {csvData.columns.map(col => (
-                        <td key={col} className="px-2 py-1 text-foreground font-mono text-xs whitespace-nowrap">
-                          {row.data[col] || '—'}
-                        </td>
-                      ))}
+                      {csvData.columns.map(col => {
+                        const isSelected = selectedInputColumns?.includes(col) ?? true
+                        return (
+                          <td 
+                            key={col} 
+                            className={`px-2 py-1 text-foreground font-mono text-xs whitespace-nowrap ${
+                              !isSelected ? 'opacity-30' : ''
+                            }`}
+                          >
+                            {row.data[col] || '—'}
+                          </td>
+                        )
+                      })}
                     </tr>
                   ))}
                 </tbody>

@@ -10,7 +10,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle, XCircle,
   Loader2, X, ChevronDown, HelpCircle,
-  Search, Filter, AlertTriangle
+  Search, Filter, AlertTriangle, Sparkles
 } from 'lucide-react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
@@ -27,7 +27,6 @@ import { ResultsTable } from './ResultsTable'
 import { FileUploadSection } from './FileUploadSection'
 import { OutputFieldsSection } from './OutputFieldsSection'
 import { ToolSelectionSection } from './ToolSelectionSection'
-import { AIAssistantSection } from './AIAssistantSection'
 import { Modal } from '@/components/ui/modal'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import {
@@ -71,6 +70,10 @@ export default function BulkProcessor() {
   const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
   const [useJsonMode, setUseJsonMode] = useState(true) // JSON schema toggle
   const [selectedTools, setSelectedTools] = useState<string[]>([]) // GTM tools to enable
+  const [selectedInputColumns, setSelectedInputColumns] = useState<string[]>([]) // Input columns to include in output
+  const [optimizeInput, setOptimizeInput] = useState(true)
+  const [optimizeTask, setOptimizeTask] = useState(true)
+  const [optimizeOutput, setOptimizeOutput] = useState(true)
 
   // === BETA BANNER ===
   const { showBanner: showBetaBanner, usage, dismissBanner: dismissBetaBanner } = useBetaBanner()
@@ -110,14 +113,22 @@ export default function BulkProcessor() {
   const prevHasCSV = useRef(false)
   const prevHasPrompt = useRef(false)
 
+  // Initialize selected input columns when CSV is loaded
   useEffect(() => {
-    // Step 1: Expand Data Input when CSV is first uploaded (one by one)
+    if (csvParser.csvData && selectedInputColumns.length === 0) {
+      // Default: all columns selected
+      setSelectedInputColumns(csvParser.csvData.columns)
+    }
+  }, [csvParser.csvData, selectedInputColumns.length])
+
+  useEffect(() => {
+    // Step 1: Expand Input when CSV is first uploaded (one by one)
     const hasCSV = !!csvParser.csvData
     const wasCSV = prevHasCSV.current
     
     // Only expand on transition from no CSV to CSV
     if (hasCSV && !wasCSV) {
-      // Expand Data Input section
+      // Expand Input section
       if (!dataInputSection.isOpen) {
         dataInputSection.setIsOpen(true)
       }
@@ -182,6 +193,7 @@ export default function BulkProcessor() {
     setOptimizedPrompt,
     outputColumns,
     suggestedTools,
+    suggestedInputColumns,
     reasoning,
     isOptimizing,
     triggerOptimization,
@@ -192,18 +204,22 @@ export default function BulkProcessor() {
   const handleAcceptOptimization = useCallback(() => {
     if (optimizedPrompt) {
       setPrompt(optimizedPrompt)
-      // Use AI-detected output columns
-      if (outputColumns.length > 0) {
-        setOutputFields(outputColumns.map((col) => col.name))
-      }
-      // Apply AI-suggested tools
-      if (suggestedTools.length > 0) {
-        setSelectedTools(suggestedTools)
-      }
-      clearOptimization()
-      toast.success('AI suggestion applied!')
     }
-  }, [optimizedPrompt, outputColumns, suggestedTools, clearOptimization])
+    // Use AI-detected output columns
+    if (outputColumns.length > 0) {
+      setOutputFields(outputColumns.map((col) => col.name))
+    }
+    // Apply AI-suggested tools
+    if (suggestedTools.length > 0) {
+      setSelectedTools(suggestedTools)
+    }
+    // Apply AI-suggested input columns
+    if (suggestedInputColumns.length > 0) {
+      setSelectedInputColumns(suggestedInputColumns)
+    }
+    clearOptimization()
+    toast.success('AI suggestion applied!')
+  }, [optimizedPrompt, outputColumns, suggestedTools, suggestedInputColumns, clearOptimization])
 
   // Handle rejecting AI suggestion
   const handleRejectOptimization = useCallback(() => {
@@ -704,9 +720,9 @@ export default function BulkProcessor() {
 
             {/* WORKFLOW STEPS - Hidden to reduce visual noise, onboarding handles guidance */}
 
-            {/* DATA INPUT SECTION */}
+            {/* INPUT SECTION */}
             <CollapsibleSection
-              title="Data Input"
+              title="Input"
               open={dataInputSection.isOpen}
               onOpenChange={dataInputSection.setIsOpen}
               className="border border-border/50 rounded-lg bg-background/50"
@@ -720,12 +736,14 @@ export default function BulkProcessor() {
                 errors={[fileUpload.error, csvParser.error, batchProcessor.error, error]}
                 isUploading={isUploading}
                 onFileUpload={handleFileUpload}
+                selectedInputColumns={selectedInputColumns}
+                onInputColumnsChange={setSelectedInputColumns}
               />
             </CollapsibleSection>
 
-            {/* PROMPT CONFIGURATION SECTION */}
+            {/* TASK SECTION */}
             <CollapsibleSection
-              title="Prompt"
+              title="Task"
               open={promptSection.isOpen}
               onOpenChange={promptSection.setIsOpen}
               className="border border-border/50 rounded-lg bg-background/50"
@@ -740,17 +758,17 @@ export default function BulkProcessor() {
               />
             </CollapsibleSection>
 
-            {/* OUTPUT SETTINGS SECTION - Grouped */}
+            {/* OUTPUT SECTION */}
             <CollapsibleSection
               title="Output"
               open={outputSettingsSection.isOpen}
               onOpenChange={outputSettingsSection.setIsOpen}
               className="border border-border/50 rounded-lg bg-background/50"
               triggerClassName="hover:bg-accent/30"
-              contentClassName="space-y-4"
+              contentClassName="space-y-3"
             >
               {/* JSON MODE TOGGLE */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-1">
                 <span className="text-xs text-muted-foreground">JSON Mode</span>
                 <button
                   onClick={() => setUseJsonMode(!useJsonMode)}
@@ -770,7 +788,7 @@ export default function BulkProcessor() {
 
               {/* OUTPUT COLUMNS - Disabled when JSON mode is OFF */}
               {useJsonMode && (
-                <>
+                <div className="space-y-3 pt-2 border-t border-border/50">
                   <OutputFieldsSection
                     outputFields={outputFields}
                     newField={newField}
@@ -784,57 +802,96 @@ export default function BulkProcessor() {
                     selectedTools={selectedTools}
                     onToggleTool={toggleTool}
                   />
-                </>
+                </div>
               )}
 
             </CollapsibleSection>
 
-            {/* AI ASSISTANT SECTION - Separate collapsible section, only show when CSV and prompt are ready */}
-            {csvParser.csvData && prompt && (
-              <CollapsibleSection
-                title="AI Optimization"
-                open={aiAssistantSection.isOpen}
-                onOpenChange={aiAssistantSection.setIsOpen}
-                className="bg-secondary/30 border border-border rounded-lg"
-                triggerClassName="hover:bg-accent/50"
-                contentClassName="px-0 pb-0"
-              >
-                <AIAssistantSection
-                  hasPrompt={!!prompt}
-                  hasCSVData={!!csvParser.csvData}
-                  isOptimizing={isOptimizing}
-                  hasOptimizedPrompt={!!optimizedPrompt}
-                  onOptimize={triggerOptimization}
-                />
-              </CollapsibleSection>
-            )}
-
             {/* AI-OPTIMIZED JOB PREVIEW */}
-            {optimizedPrompt && (
+            {(optimizedPrompt || outputColumns.length > 0 || suggestedInputColumns.length > 0 || isOptimizing) && (
               <JobPreview
-                optimizedPrompt={optimizedPrompt}
+                optimizedPrompt={optimizedPrompt || undefined}
                 setOptimizedPrompt={setOptimizedPrompt}
                 outputColumns={outputColumns}
+                suggestedInputColumns={suggestedInputColumns}
                 reasoning={reasoning}
                 isOptimizing={isOptimizing}
                 onAccept={handleAcceptOptimization}
                 onReject={handleRejectOptimization}
               />
             )}
-
-            {/* Show loading state */}
-            {isOptimizing && !optimizedPrompt && (
-              <JobPreview
-                optimizedPrompt={''}
-                setOptimizedPrompt={() => {}}
-                outputColumns={[]}
-                reasoning={null}
-                isOptimizing={true}
-                onAccept={() => {}}
-                onReject={() => {}}
-              />
-            )}
           </div>
+
+          {/* AI OPTIMIZATION - Global, above actions */}
+          {csvParser.csvData && prompt && (
+            <div className="flex-shrink-0 border-t border-border bg-background/95 backdrop-blur-md">
+              <CollapsibleSection
+                title="AI Optimization"
+                open={aiAssistantSection.isOpen}
+                onOpenChange={aiAssistantSection.setIsOpen}
+                className="border-0 bg-transparent"
+                triggerClassName="hover:bg-accent/30 px-4 py-3"
+                contentClassName="px-4 pb-4"
+              >
+                <div className="space-y-3">
+                  {/* Optimization selector */}
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={optimizeInput}
+                        onChange={(e) => setOptimizeInput(e.target.checked)}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
+                      />
+                      <span className="text-xs text-foreground group-hover:text-foreground transition-colors">Optimize Input</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={optimizeTask}
+                        onChange={(e) => setOptimizeTask(e.target.checked)}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
+                      />
+                      <span className="text-xs text-foreground group-hover:text-foreground transition-colors">Optimize Task</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={optimizeOutput}
+                        onChange={(e) => setOptimizeOutput(e.target.checked)}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
+                      />
+                      <span className="text-xs text-foreground group-hover:text-foreground transition-colors">Optimize Output</span>
+                    </label>
+                  </div>
+                  
+                  {/* Optimize button */}
+                  <button
+                    onClick={() => triggerOptimization({
+                      optimizeInput,
+                      optimizeTask,
+                      optimizeOutput,
+                      selectedInputColumns,
+                    })}
+                    disabled={!csvParser.csvData || !prompt || isOptimizing || (!optimizeInput && !optimizeTask && !optimizeOutput)}
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-primary/10 to-purple-600/10 hover:from-primary/20 hover:to-purple-600/20 border border-primary/20 hover:border-primary/30 rounded-lg text-sm font-medium text-foreground transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isOptimizing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Optimizing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        <span>Optimize Selected</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </CollapsibleSection>
+            </div>
+          )}
 
           {/* ACTIONS - Fixed Bottom */}
           <div className="flex-shrink-0 p-4 sm:p-6 border-t border-border bg-background/95 backdrop-blur-md sticky bottom-0 z-10">

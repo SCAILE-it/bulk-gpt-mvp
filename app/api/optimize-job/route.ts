@@ -5,40 +5,48 @@ import { ALL_GTM_TOOLS } from '@/lib/types/gtm-types'
 // ABOUTME: Server-side API route for AI-powered job optimization
 // ABOUTME: Analyzes user prompts and suggests improvements + output columns + tool suggestions
 
-const SYSTEM_PROMPT = `You are a bulk data processing expert. Analyze the user's prompt and optimize it for structured AI output.
+const SYSTEM_PROMPT = `You are a bulk data processing expert. Analyze the user's job and optimize it holistically.
 
 Given:
 - User's raw prompt (may be vague or unclear)
 - Available CSV columns
-- Available GTM enrichment tools (for data enrichment, web research, email/phone validation, company research, etc.)
+- Currently selected input columns (which columns user wants in output)
+- Available GTM enrichment tools
 
-Your task:
-1. Improve the prompt for clarity and effectiveness
-2. Suggest 2-5 output columns based on what the prompt naturally produces
-3. Suggest 0-3 GTM tools that would help complete this task (ONLY if truly beneficial - do not suggest tools unnecessarily)
-4. Explain your reasoning briefly
+Your task (based on what user wants optimized):
+1. If optimizing INPUT: Suggest which input columns to include/exclude (some may be redundant like IDs, timestamps, or not needed for the task)
+2. If optimizing TASK: Improve the prompt for clarity and effectiveness
+3. If optimizing OUTPUT: Suggest 2-5 output columns and 0-3 GTM tools
 
-Return JSON:
+Return JSON (only include fields that were optimized):
 {
-  "optimizedPrompt": "clear, specific, actionable prompt with {{variables}} preserved",
-  "outputColumns": [
+  "suggestedInputColumns": ["name", "email", "company"], // if optimizing input
+  "optimizedPrompt": "clear, specific, actionable prompt with {{variables}} preserved", // if optimizing task
+  "outputColumns": [ // if optimizing output
     {"name": "column_name", "description": "what this contains"}
   ],
-  "suggestedTools": ["tool-name-1", "tool-name-2"],
-  "reasoning": "1-sentence explanation of changes and why tools were suggested"
+  "suggestedTools": ["tool-name-1"], // if optimizing output
+  "reasoning": "Brief explanation of all optimizations made"
 }
 
 Guidelines:
-- Preserve ALL {{variable}} placeholders exactly
-- Make prompts specific and structured
-- Suggest columns that match the prompt's natural outputs
-- ONLY suggest tools if they would significantly improve the task (e.g., web-search for bio generation, email-validate for contact verification, company-data for company research)
+- Preserve ALL {{variable}} placeholders exactly in prompts
+- For input columns: Exclude redundant/internal columns (IDs, timestamps, metadata) unless needed
+- For output columns: Match the prompt's natural outputs
+- ONLY suggest tools if truly beneficial (e.g., web-search for bio generation, email-validate for contact verification)
 - If no tools are beneficial, return empty array for suggestedTools
 - Optimize for Gemini's structured output capabilities`
 
 export async function POST(req: Request) {
   try {
-    const { prompt, csvColumns } = await req.json()
+    const { 
+      prompt, 
+      csvColumns, 
+      optimizeInput = false,
+      optimizeTask = false,
+      optimizeOutput = false,
+      selectedInputColumns = []
+    } = await req.json()
 
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json(
@@ -50,6 +58,14 @@ export async function POST(req: Request) {
     if (!csvColumns || !Array.isArray(csvColumns)) {
       return NextResponse.json(
         { error: 'Invalid csvColumns provided' },
+        { status: 400 }
+      )
+    }
+
+    // At least one optimization must be requested
+    if (!optimizeInput && !optimizeTask && !optimizeOutput) {
+      return NextResponse.json(
+        { error: 'At least one optimization option must be selected' },
         { status: 400 }
       )
     }
@@ -70,18 +86,34 @@ export async function POST(req: Request) {
     // Prepare GTM tools list for AI context
     const toolsList = ALL_GTM_TOOLS.map(tool => `- ${tool.name}: ${tool.description}`).join('\n')
 
+    // Build optimization context
+    const optimizationContext = []
+    if (optimizeInput) {
+      optimizationContext.push(`- Optimize INPUT columns (currently selected: ${selectedInputColumns.join(', ') || 'all'})`)
+    }
+    if (optimizeTask) {
+      optimizationContext.push(`- Optimize TASK prompt: "${prompt}"`)
+    }
+    if (optimizeOutput) {
+      optimizationContext.push(`- Optimize OUTPUT columns and tools`)
+    }
+
     // Combine system prompt + user prompt into single text (no systemInstruction support)
     const fullPrompt = `${SYSTEM_PROMPT}
 
 ---
 
+Optimization requested:
+${optimizationContext.join('\n')}
+
 User prompt: "${prompt}"
-CSV columns: ${csvColumns.join(', ')}
+All CSV columns: ${csvColumns.join(', ')}
+Currently selected input columns: ${selectedInputColumns.length > 0 ? selectedInputColumns.join(', ') : 'all'}
 
 Available GTM Tools:
 ${toolsList}
 
-Optimize this job and return JSON.`
+Optimize the requested aspects and return JSON.`
 
     // Call Gemini with timeout
     const controller = new AbortController()
@@ -104,9 +136,24 @@ Optimize this job and return JSON.`
 
       const parsed = JSON.parse(jsonText)
 
-      // Validate response structure
-      if (!parsed.optimizedPrompt || !parsed.outputColumns || !Array.isArray(parsed.outputColumns)) {
-        throw new Error('Invalid response structure from Gemini')
+      // Validate response structure - must have reasoning
+      if (!parsed.reasoning) {
+        throw new Error('Invalid response structure from Gemini - missing reasoning')
+      }
+
+      // Validate optimized prompt if task optimization was requested
+      if (optimizeTask && parsed.optimizedPrompt && typeof parsed.optimizedPrompt !== 'string') {
+        throw new Error('Invalid optimizedPrompt in response')
+      }
+
+      // Validate output columns if output optimization was requested
+      if (optimizeOutput && parsed.outputColumns && !Array.isArray(parsed.outputColumns)) {
+        throw new Error('Invalid outputColumns in response')
+      }
+
+      // Validate suggested input columns if input optimization was requested
+      if (optimizeInput && parsed.suggestedInputColumns && !Array.isArray(parsed.suggestedInputColumns)) {
+        throw new Error('Invalid suggestedInputColumns in response')
       }
 
       // Ensure suggestedTools is an array (default to empty if not provided)
@@ -119,6 +166,13 @@ Optimize this job and return JSON.`
       parsed.suggestedTools = parsed.suggestedTools.filter((tool: string) =>
         validToolNames.includes(tool)
       )
+
+      // Validate that suggested input columns exist in csvColumns
+      if (parsed.suggestedInputColumns && Array.isArray(parsed.suggestedInputColumns)) {
+        parsed.suggestedInputColumns = parsed.suggestedInputColumns.filter((col: string) =>
+          csvColumns.includes(col)
+        )
+      }
 
       return NextResponse.json(parsed)
     } catch (error) {

@@ -18,9 +18,10 @@ export interface OutputColumn {
  * Optimization result from API
  */
 export interface OptimizationResult {
-  optimizedPrompt: string
-  outputColumns: OutputColumn[]
+  optimizedPrompt?: string
+  outputColumns?: OutputColumn[]
   suggestedTools?: string[]
+  suggestedInputColumns?: string[]
   reasoning: string
 }
 
@@ -32,10 +33,16 @@ export interface UseManualJobOptimizerResult {
   setOptimizedPrompt: (prompt: string | null) => void
   outputColumns: OutputColumn[]
   suggestedTools: string[]
+  suggestedInputColumns: string[]
   reasoning: string | null
   isOptimizing: boolean
   error: string | null
-  triggerOptimization: () => void
+  triggerOptimization: (options?: {
+    optimizeInput?: boolean
+    optimizeTask?: boolean
+    optimizeOutput?: boolean
+    selectedInputColumns?: string[]
+  }) => void
   clearOptimization: () => void
 }
 
@@ -53,19 +60,25 @@ export function useManualJobOptimizer(
   const [optimizedPrompt, setOptimizedPrompt] = useState<string | null>(null)
   const [outputColumns, setOutputColumns] = useState<OutputColumn[]>([])
   const [suggestedTools, setSuggestedTools] = useState<string[]>([])
+  const [suggestedInputColumns, setSuggestedInputColumns] = useState<string[]>([])
   const [reasoning, setReasoning] = useState<string | null>(null)
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const triggerOptimization = useCallback(async () => {
+  const triggerOptimization = useCallback(async (options?: {
+    optimizeInput?: boolean
+    optimizeTask?: boolean
+    optimizeOutput?: boolean
+    selectedInputColumns?: string[]
+  }) => {
     // Skip if no prompt or no CSV columns available
     if (!prompt || !csvColumns || csvColumns.length === 0) {
       setError('Please enter a prompt and upload a CSV file first')
       return
     }
 
-    // Skip if prompt is too short (less than 5 characters)
-    if (prompt.trim().length < 5) {
+    // Skip if prompt is too short (less than 5 characters) and optimizing task
+    if (options?.optimizeTask !== false && prompt.trim().length < 5) {
       setError('Prompt is too short. Please enter a more detailed prompt.')
       return
     }
@@ -82,6 +95,10 @@ export function useManualJobOptimizer(
         body: JSON.stringify({
           prompt,
           csvColumns,
+          optimizeInput: options?.optimizeInput ?? false,
+          optimizeTask: options?.optimizeTask ?? false,
+          optimizeOutput: options?.optimizeOutput ?? false,
+          selectedInputColumns: options?.selectedInputColumns || csvColumns,
         }),
       })
 
@@ -92,6 +109,7 @@ export function useManualJobOptimizer(
         if (errorData.fallback) {
           setOptimizedPrompt(null)
           setOutputColumns([])
+          setSuggestedInputColumns([])
           setReasoning(null)
           return
         }
@@ -101,9 +119,10 @@ export function useManualJobOptimizer(
 
       const result: OptimizationResult = await response.json()
 
-      setOptimizedPrompt(result.optimizedPrompt)
-      setOutputColumns(result.outputColumns)
-      setSuggestedTools(result.suggestedTools || [])
+      if (result.optimizedPrompt) setOptimizedPrompt(result.optimizedPrompt)
+      if (result.outputColumns) setOutputColumns(result.outputColumns)
+      if (result.suggestedTools) setSuggestedTools(result.suggestedTools)
+      if (result.suggestedInputColumns) setSuggestedInputColumns(result.suggestedInputColumns)
       setReasoning(result.reasoning)
     } catch (err) {
       console.error('Optimization error:', err)
@@ -111,6 +130,7 @@ export function useManualJobOptimizer(
       setOptimizedPrompt(null)
       setOutputColumns([])
       setSuggestedTools([])
+      setSuggestedInputColumns([])
       setReasoning(null)
     } finally {
       setIsOptimizing(false)
@@ -121,6 +141,7 @@ export function useManualJobOptimizer(
     setOptimizedPrompt(null)
     setOutputColumns([])
     setSuggestedTools([])
+    setSuggestedInputColumns([])
     setReasoning(null)
     setError(null)
   }, [])
@@ -130,6 +151,7 @@ export function useManualJobOptimizer(
     setOptimizedPrompt,
     outputColumns,
     suggestedTools,
+    suggestedInputColumns,
     reasoning,
     isOptimizing,
     error,
