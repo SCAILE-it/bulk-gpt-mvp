@@ -67,7 +67,7 @@ export const metadata: Metadata = {
       { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
-  manifest: '/manifest.json', // TODO: Create web app manifest
+      manifest: '/manifest.json',
 }
 
 export default function RootLayout({

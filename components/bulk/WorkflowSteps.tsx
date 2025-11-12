@@ -22,7 +22,7 @@ export function WorkflowSteps({
     <div className="space-y-1">
       {/* Step 1: Upload CSV */}
       <div className="flex items-center gap-3">
-        <div className={`flex items-center gap-2 ${hasCSV ? 'text-green-400' : 'text-blue-400'}`}>
+        <div className={`flex items-center gap-2 ${hasCSV ? 'text-green-400' : 'text-primary'}`}>
           {hasCSV ? (
             <CheckCircle className="h-4 w-4" />
           ) : (
@@ -30,12 +30,12 @@ export function WorkflowSteps({
           )}
           <span className="text-xs font-medium">1. Upload CSV</span>
         </div>
-        <div className="flex-1 h-px bg-zinc-800" />
+        <div className="flex-1 h-px bg-accent" />
       </div>
 
       {/* Step 2: Configure Prompt */}
       <div className="flex items-center gap-3">
-        <div className={`flex items-center gap-2 ${hasCSV && hasPrompt ? 'text-green-400' : hasCSV ? 'text-blue-400' : 'text-zinc-600'}`}>
+        <div className={`flex items-center gap-2 ${hasCSV && hasPrompt ? 'text-green-400' : hasCSV ? 'text-primary' : 'text-muted-foreground'}`}>
           {hasCSV && hasPrompt ? (
             <CheckCircle className="h-4 w-4" />
           ) : hasCSV ? (
@@ -47,12 +47,12 @@ export function WorkflowSteps({
           )}
           <span className="text-xs font-medium">2. Configure Prompt</span>
         </div>
-        <div className="flex-1 h-px bg-zinc-800" />
+        <div className="flex-1 h-px bg-accent" />
       </div>
 
       {/* Step 3: Process Data */}
       <div className="flex items-center gap-3">
-        <div className={`flex items-center gap-2 ${isProcessing ? 'text-blue-400' : hasResults ? 'text-green-400' : 'text-zinc-600'}`}>
+        <div className={`flex items-center gap-2 ${isProcessing ? 'text-primary' : hasResults ? 'text-green-400' : 'text-muted-foreground'}`}>
           {isProcessing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : hasResults ? (
@@ -62,7 +62,7 @@ export function WorkflowSteps({
           )}
           <span className="text-xs font-medium">3. Process Data</span>
         </div>
-        <div className="flex-1 h-px bg-zinc-800" />
+        <div className="flex-1 h-px bg-accent" />
       </div>
     </div>
   )

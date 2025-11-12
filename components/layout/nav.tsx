@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Activity, LogOut, User, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ThemeToggle } from './theme-toggle'
 
 export function Nav() {
   const router = useRouter()
@@ -52,7 +53,7 @@ export function Nav() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/80">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container mx-auto flex items-center justify-between gap-4 px-6 py-3">
         {/* Logo */}
         <Link 
@@ -60,8 +61,8 @@ export function Nav() {
           className="flex items-center gap-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
           aria-label="Bulk GPT Home"
         >
-          <Activity className="h-4 w-4 text-zinc-400" aria-hidden="true" />
-          <span className="text-sm font-medium tracking-tight text-zinc-100">Bulk GPT</span>
+          <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <span className="text-sm font-medium tracking-tight text-foreground">Bulk GPT</span>
         </Link>
 
         {/* Navigation Links */}
@@ -73,8 +74,8 @@ export function Nav() {
               className={cn(
                 'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 pathname === link.href
-                  ? 'text-zinc-100 bg-zinc-900'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+                  ? 'text-foreground bg-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               )}
               aria-current={pathname === link.href ? 'page' : undefined}
             >
@@ -83,40 +84,43 @@ export function Nav() {
           ))}
         </nav>
 
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="flex items-center gap-2 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-900" 
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent" 
               data-testid="user-menu-button"
               aria-label="User menu"
               aria-haspopup="true"
             >
-              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-zinc-900">
-                <User className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-secondary">
+                <User className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
               </div>
-              <ChevronDown className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/5">
-            <DropdownMenuLabel className="text-zinc-100">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-xs font-medium leading-none">My Account</p>
                 {userEmail && (
-                  <p className="text-xs leading-none text-zinc-500">
+                  <p className="text-xs leading-none text-muted-foreground">
                     {userEmail}
                   </p>
                 )}
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/5" />
-            <DropdownMenuItem onClick={() => router.push('/profile')} className="text-zinc-300 hover:bg-zinc-800">
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push('/profile')}>
               <User className="mr-2 h-4 w-4" />
               <span className="text-xs">Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/5" />
-            <DropdownMenuItem onClick={handleSignOut} className="text-zinc-300 hover:bg-zinc-800">
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               <span className="text-xs">Sign Out</span>
             </DropdownMenuItem>

@@ -34,31 +34,31 @@ export function TokenSummary({ totalInputTokens, totalOutputTokens }: TokenSumma
   }
 
   return (
-    <div className="flex items-center gap-6 px-4 py-3 bg-zinc-900/50 border-t border-white/5 text-xs">
-      <div className="flex items-center gap-2 text-blue-400">
+    <div className="flex items-center gap-6 px-4 py-3 bg-secondary/50 border-t border-border text-xs">
+      <div className="flex items-center gap-2 text-primary">
         <Zap className="h-4 w-4" aria-hidden="true" />
         <span className="font-medium">Token Usage</span>
       </div>
 
       <div className="flex items-center gap-1">
-        <span className="text-zinc-500">Input:</span>
-        <span className="font-mono text-zinc-300">{formatNumber(totalInputTokens)}</span>
+        <span className="text-muted-foreground">Input:</span>
+        <span className="font-mono text-foreground">{formatNumber(totalInputTokens)}</span>
       </div>
 
       <div className="flex items-center gap-1">
-        <span className="text-zinc-500">Output:</span>
-        <span className="font-mono text-zinc-300">{formatNumber(totalOutputTokens)}</span>
+        <span className="text-muted-foreground">Output:</span>
+        <span className="font-mono text-foreground">{formatNumber(totalOutputTokens)}</span>
       </div>
 
       <div className="flex items-center gap-1">
-        <span className="text-zinc-500">Total:</span>
-        <span className="font-mono text-zinc-300">{formatNumber(totalTokens)}</span>
+        <span className="text-muted-foreground">Total:</span>
+        <span className="font-mono text-foreground">{formatNumber(totalTokens)}</span>
       </div>
 
-      <div className="h-3 w-px bg-zinc-800" />
+      <div className="h-3 w-px bg-accent" />
 
       <div className="flex items-center gap-1">
-        <span className="text-zinc-500">Est. Cost:</span>
+        <span className="text-muted-foreground">Est. Cost:</span>
         <span className="font-mono text-green-400">{formatCost(totalCost)}</span>
       </div>
     </div>

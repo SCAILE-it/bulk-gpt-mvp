@@ -32,14 +32,14 @@ export function BatchStatusCard({
     : 0
 
   return (
-    <div className="px-6 py-4 border-b border-white/5 bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 animate-slide-in-up">
+    <div className="px-6 py-4 border-b border-border bg-gradient-to-br from-secondary/50 to-background/50 animate-slide-in-up">
       {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {/* Success */}
         <div className="flex items-center gap-2 px-3 py-2 bg-green-500/5 border border-green-500/10 rounded-lg transition-all duration-300 hover:bg-green-500/10">
           <CheckCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs text-zinc-500">Success</p>
+            <p className="text-xs text-muted-foreground">Success</p>
             <p className="text-lg font-semibold text-green-400 tabular-nums transition-all duration-300">{successCount}</p>
           </div>
         </div>
@@ -48,17 +48,17 @@ export function BatchStatusCard({
         <div className="flex items-center gap-2 px-3 py-2 bg-red-500/5 border border-red-500/10 rounded-lg transition-all duration-300 hover:bg-red-500/10">
           <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs text-zinc-500">Failed</p>
+            <p className="text-xs text-muted-foreground">Failed</p>
             <p className="text-lg font-semibold text-red-400 tabular-nums transition-all duration-300">{errorCount}</p>
           </div>
         </div>
 
         {/* Pending */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/5 border border-blue-500/10 rounded-lg transition-all duration-300 hover:bg-blue-500/10">
-          <Clock className="h-4 w-4 text-blue-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg transition-all duration-300 hover:bg-primary/10">
+          <Clock className="h-4 w-4 text-primary flex-shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs text-zinc-500">Pending</p>
-            <p className="text-lg font-semibold text-blue-400 tabular-nums transition-all duration-300">{pendingCount}</p>
+            <p className="text-xs text-muted-foreground">Pending</p>
+            <p className="text-lg font-semibold text-primary tabular-nums transition-all duration-300">{pendingCount}</p>
           </div>
         </div>
       </div>
@@ -67,20 +67,20 @@ export function BatchStatusCard({
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-3.5 w-3.5 text-zinc-500" />
-            <span className="text-zinc-400 font-medium">
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground font-medium">
               {successCount + errorCount} / {progress.total} processed
             </span>
           </div>
           {estimatedSeconds && estimatedSeconds > 0 && (
-            <span className="text-zinc-500">
+            <span className="text-muted-foreground">
               ~{estimatedSeconds}s remaining
             </span>
           )}
         </div>
 
         {/* Enhanced Progress Bar */}
-        <div className="relative w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-white/5">
+        <div className="relative w-full h-2 bg-secondary rounded-full overflow-hidden border border-border">
           {/* Success segment */}
           <div
             className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-500 ease-linear"
@@ -97,7 +97,7 @@ export function BatchStatusCard({
           {/* Processing indicator (blue, no pulse) */}
           {pendingCount > 0 && (
             <div
-              className="absolute top-0 h-full bg-blue-500/40 transition-all duration-500 ease-linear"
+              className="absolute top-0 h-full bg-primary/40 transition-all duration-500 ease-linear"
               style={{
                 left: `${((successCount + errorCount) / progress.total) * 100}%`,
                 width: `${(pendingCount / progress.total) * 100}%`
@@ -108,7 +108,7 @@ export function BatchStatusCard({
 
         {/* Percentage */}
         <div className="text-right">
-          <span className="text-xs font-mono text-zinc-500">
+          <span className="text-xs font-mono text-muted-foreground">
             {progressPercentage.toFixed(1)}%
           </span>
         </div>

@@ -82,7 +82,7 @@ export function ApiKeyList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-zinc-400">Loading API keys...</div>
+        <div className="text-sm text-muted-foreground">Loading API keys...</div>
       </div>
     )
   }
@@ -99,14 +99,14 @@ export function ApiKeyList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-zinc-100">API Keys</h3>
-          <p className="text-xs text-zinc-400 mt-1">
+          <h3 className="text-sm font-medium text-foreground">API Keys</h3>
+          <p className="text-xs text-muted-foreground mt-1">
             Use API keys for programmatic access (curl, n8n, Zapier)
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
           Create New Key
@@ -114,23 +114,23 @@ export function ApiKeyList() {
       </div>
 
       {keys.length === 0 ? (
-        <div className="border border-white/5 rounded-lg p-8 text-center bg-zinc-900/30">
-          <Key className="h-12 w-12 text-zinc-600 mx-auto mb-3" />
-          <p className="text-xs font-medium text-zinc-300 mb-1">No API keys yet</p>
-          <p className="text-xs text-zinc-500">
+        <div className="border border-border rounded-lg p-8 text-center bg-secondary/30">
+          <Key className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-xs font-medium text-foreground mb-1">No API keys yet</p>
+          <p className="text-xs text-muted-foreground">
             Create an API key to access the Bulk GPT API programmatically
           </p>
         </div>
       ) : (
-        <div className="border border-white/5 rounded-lg divide-y divide-white/5 overflow-hidden">
+        <div className="border border-border rounded-lg divide-y divide-white/5 overflow-hidden">
           {keys.map((key) => (
-            <div key={key.id} className="p-4 flex items-center justify-between hover:bg-zinc-900/30 transition-colors">
+            <div key={key.id} className="p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Key className="h-3.5 w-3.5 text-zinc-500" />
-                  <span className="text-xs font-medium text-zinc-100">{key.name}</span>
+                  <Key className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-foreground">{key.name}</span>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-zinc-500">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="font-mono">{key.prefix}...</span>
                   <span>Created {formatDate(key.createdAt)}</span>
                   <span>Last used {formatDate(key.lastUsedAt)}</span>

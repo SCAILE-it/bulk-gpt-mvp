@@ -44,7 +44,7 @@ export function Modal({
   onClose,
   title,
   titleIcon: TitleIcon,
-  titleIconColor = 'text-zinc-400',
+  titleIconColor = 'text-muted-foreground',
   children,
   footer,
   size = 'md',
@@ -66,7 +66,7 @@ export function Modal({
       <div
         ref={modalRef}
         className={cn(
-          'bg-zinc-900 border border-white/10 rounded-lg shadow-lg w-full overflow-hidden transition-all',
+          'bg-secondary border border-border rounded-lg shadow-lg w-full overflow-hidden transition-all',
           sizeClasses[size],
           footer ? 'flex flex-col' : '',
           className
@@ -78,18 +78,18 @@ export function Modal({
       >
         {/* Header */}
         <div className={cn(
-          'flex items-center justify-between p-6 border-b border-white/5',
+          'flex items-center justify-between p-6 border-b border-border',
           footer ? 'flex-shrink-0' : ''
         )}>
           <div className="flex items-center gap-3">
             {TitleIcon && <TitleIcon className={cn('h-5 w-5', titleIconColor)} />}
-            <h2 id={titleId} className="text-lg font-medium text-zinc-100">
+            <h2 id={titleId} className="text-lg font-medium text-foreground">
               {title}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+            className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
             aria-label={`Close ${title}`}
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -105,7 +105,7 @@ export function Modal({
 
         {/* Optional Footer */}
         {footer && (
-          <div className="flex items-center justify-end p-6 border-t border-white/5 bg-zinc-900/50 flex-shrink-0">
+          <div className="flex items-center justify-end p-6 border-t border-border bg-secondary/50 flex-shrink-0">
             {footer}
           </div>
         )}

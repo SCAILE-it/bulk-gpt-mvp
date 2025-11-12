@@ -55,8 +55,8 @@ export function SectionHeader({
     <div className={cn('space-y-1', className)}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" aria-hidden="true" />}
-          <h3 className="text-xs font-medium text-zinc-400">
+          {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" aria-hidden="true" />}
+          <h3 className="text-xs font-medium text-muted-foreground">
             {title}
             {required && <span className="ml-1 text-red-400" aria-label="required">*</span>}
           </h3>
@@ -64,7 +64,7 @@ export function SectionHeader({
         {rightContent && <div className="flex items-center gap-2">{rightContent}</div>}
       </div>
       {description && (
-        <p className="text-xs text-zinc-500 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           {description}
         </p>
       )}

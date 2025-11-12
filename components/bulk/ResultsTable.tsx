@@ -65,11 +65,11 @@ export function ResultsTable({
       )}
 
       {/* Header */}
-      <div className="border-b border-white/5">
+      <div className="border-b border-border">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-zinc-400">Results</span>
-            <span className="text-xs text-zinc-600">
+            <span className="text-xs font-medium text-muted-foreground">Results</span>
+            <span className="text-xs text-muted-foreground">
               {progress
                 ? `${progress.completed}/${progress.total} rows`
                 : `${results.length} rows`
@@ -78,7 +78,7 @@ export function ResultsTable({
           </div>
           <button
             onClick={onExport}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Export</span>
@@ -89,18 +89,18 @@ export function ResultsTable({
       {/* Table */}
       <div className="flex-1 overflow-auto">
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-zinc-900/95 backdrop-blur-md border-b border-white/5">
+          <thead className="sticky top-0 bg-secondary/95 backdrop-blur-md border-b border-border">
             <tr>
               <th className="px-4 py-2 text-left w-8"></th>
               {columns.map(h => (
-                <th key={h} className="px-4 py-2 text-left font-medium text-zinc-500">{h}</th>
+                <th key={h} className="px-4 py-2 text-left font-medium text-muted-foreground">{h}</th>
               ))}
               {outputColumns.length > 0 ? (
                 outputColumns.map(col => (
-                  <th key={col} className="px-4 py-2 text-left font-medium text-zinc-500">{col}</th>
+                  <th key={col} className="px-4 py-2 text-left font-medium text-muted-foreground">{col}</th>
                 ))
               ) : (
-                <th className="px-4 py-2 text-left font-medium text-zinc-500">Output</th>
+                <th className="px-4 py-2 text-left font-medium text-muted-foreground">Output</th>
               )}
             </tr>
           </thead>
@@ -109,16 +109,16 @@ export function ResultsTable({
               <tr
                 key={result.id}
                 className={`
-                  relative border-b border-white/5
-                  hover:bg-zinc-800/40
+                  relative border-b border-border
+                  hover:bg-accent/40
                   transition-colors duration-150
                   cursor-pointer
-                  ${i % 2 === 0 ? 'bg-zinc-900/40' : 'bg-transparent'}
+                  ${i % 2 === 0 ? 'bg-secondary/40' : 'bg-transparent'}
                 `}
               >
                 {/* Processing accent bar */}
                 {result.status === 'processing' && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-blue-500/50" />
+                  <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-primary/50" />
                 )}
 
                 <td className="px-4 py-3">
@@ -126,7 +126,7 @@ export function ResultsTable({
                     {result.status === 'completed' && (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span className="text-xs text-zinc-500">Done</span>
+                        <span className="text-xs text-muted-foreground">Done</span>
                       </>
                     )}
                     {result.status === 'failed' && (
@@ -137,21 +137,21 @@ export function ResultsTable({
                     )}
                     {result.status === 'processing' && (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-400 flex-shrink-0" />
-                        <span className="text-xs text-blue-400">Processing...</span>
+                        <Loader2 className="h-4 w-4 animate-spin text-primary flex-shrink-0" />
+                        <span className="text-xs text-primary">Processing...</span>
                       </>
                     )}
                     {result.status === 'pending' && (
                       <>
-                        <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
+                        <Loader2 className="h-4 w-4 text-primary animate-spin flex-shrink-0" />
                         <div className="flex flex-col">
-                          <span className="text-xs text-blue-400">
+                          <span className="text-xs text-primary">
                             {processingStartTime && Date.now() - processingStartTime > 60000
                               ? 'Processing...'
                               : 'Starting AI processor...'}
                           </span>
                           {processingStartTime && Date.now() - processingStartTime < 120000 && (
-                            <span className="text-xs text-zinc-600">
+                            <span className="text-xs text-muted-foreground">
                               {Math.floor((Date.now() - processingStartTime) / 1000)}s elapsed
                               {Date.now() - processingStartTime < 60000 && ' (may take 60-90s)'}
                             </span>
@@ -162,7 +162,7 @@ export function ResultsTable({
                   </div>
                 </td>
                 {columns.map(h => (
-                  <td key={h} className="px-4 py-3 text-zinc-400 font-mono text-xs">
+                  <td key={h} className="px-4 py-3 text-muted-foreground font-mono text-xs">
                     {result.input[h] || '—'}
                   </td>
                 ))}
@@ -180,7 +180,7 @@ export function ResultsTable({
                     if (!result.output) {
                       return (
                         <td key={col} className="px-4 py-3">
-                          <span className="text-zinc-600">—</span>
+                          <span className="text-muted-foreground">—</span>
                         </td>
                       )
                     }
@@ -213,7 +213,7 @@ export function ResultsTable({
                             className="px-4 py-3"
                             title={`Expected field "${col}" but AI returned: ${availableKeys}`}
                           >
-                            <span className="text-zinc-600">—</span>
+                            <span className="text-muted-foreground">—</span>
                           </td>
                         )
                       }
@@ -224,7 +224,7 @@ export function ResultsTable({
                         : String(value)
 
                       return (
-                        <td key={col} className="px-4 py-3 text-zinc-300">
+                        <td key={col} className="px-4 py-3 text-foreground">
                           <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">
                             {displayValue}
                           </span>
@@ -234,7 +234,7 @@ export function ResultsTable({
                       // If JSON parsing fails, show the formatted output in the first column only
                       if (col === outputColumns[0]) {
                         return (
-                          <td key={col} className="px-4 py-3 text-zinc-300">
+                          <td key={col} className="px-4 py-3 text-foreground">
                             <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">
                               {formatOutputValue(result.output)}
                             </span>
@@ -243,20 +243,20 @@ export function ResultsTable({
                       }
                       return (
                         <td key={col} className="px-4 py-3">
-                          <span className="text-zinc-600">—</span>
+                          <span className="text-muted-foreground">—</span>
                         </td>
                       )
                     }
                   })
                 ) : (
                   // Fallback to single output column (original behavior)
-                  <td className="px-4 py-3 text-zinc-300">
+                  <td className="px-4 py-3 text-foreground">
                     {result.error ? (
                       <span className="text-red-400 text-xs">{result.error}</span>
                     ) : result.output ? (
                       <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">{formatOutputValue(result.output)}</span>
                     ) : (
-                      <span className="text-zinc-600">—</span>
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </td>
                 )}

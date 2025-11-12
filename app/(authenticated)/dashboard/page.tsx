@@ -272,8 +272,8 @@ export default function DashboardPage() {
 
   const getStatusBadge = (status: Batch['status']) => {
     const variants = {
-      pending: { icon: Clock, label: 'Pending', className: 'bg-zinc-800 text-zinc-400 border-white/5' },
-      processing: { icon: Loader2, label: 'Processing', className: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+      pending: { icon: Clock, label: 'Pending', className: 'bg-accent text-muted-foreground border-border' },
+      processing: { icon: Loader2, label: 'Processing', className: 'bg-primary/10 text-primary border-primary/20' },
       completed: { icon: CheckCircle2, label: 'Completed', className: 'bg-green-500/10 text-green-400 border-green-500/20' },
       completed_with_errors: { icon: CheckCircle2, label: 'Completed with errors', className: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
       failed: { icon: XCircle, label: 'Failed', className: 'bg-red-500/10 text-red-400 border-red-500/20' },
@@ -309,19 +309,19 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-zinc-950">
-        <div className="max-w-md w-full bg-zinc-900/40 border border-white/5 rounded-lg p-6">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <div className="max-w-md w-full bg-secondary/40 border border-border rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
             <h2 className="text-sm font-medium text-red-400">Failed to Load Dashboard</h2>
           </div>
-          <p className="text-xs text-zinc-400 mb-4">
+          <p className="text-xs text-muted-foreground mb-4">
             {error}
           </p>
           <div className="flex flex-col gap-3">
             <Button
               onClick={() => window.location.reload()}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               aria-label="Retry loading dashboard"
             >
               <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -330,7 +330,7 @@ export default function DashboardPage() {
             <Button
               onClick={() => router.push('/bulk')}
               variant="outline"
-              className="w-full bg-zinc-900 border-white/5 text-zinc-300 hover:bg-zinc-800"
+              className="w-full bg-secondary border-border text-foreground hover:bg-accent"
               aria-label="Go to bulk processor"
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -343,23 +343,23 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-zinc-950 text-zinc-100 p-6">
+    <div className="h-full overflow-y-auto bg-background text-foreground p-6">
       <div className="container mx-auto max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-sm font-medium tracking-tight flex items-center gap-2">
-              <Activity className="h-4 w-4 text-zinc-400" aria-hidden="true" />
+              <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               Executions
             </h1>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Overview of your batch processing activity
             </p>
           </div>
           <Button 
             onClick={() => router.push('/bulk')} 
             size="sm"
-            className="bg-blue-600 hover:bg-blue-500 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             aria-label="Create new batch"
           >
             <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -369,28 +369,28 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-zinc-900/40 border border-white/5 rounded-lg p-4">
-            <div className="text-xs font-medium text-zinc-400 mb-2">Total Batches</div>
-            <div className="text-xl font-semibold text-zinc-100">{stats.totalBatches}</div>
+          <div className="bg-secondary/40 border border-border rounded-lg p-4">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Total Batches</div>
+            <div className="text-xl font-semibold text-foreground">{stats.totalBatches}</div>
           </div>
 
-          <div className="bg-zinc-900/40 border border-white/5 rounded-lg p-4">
-            <div className="text-xs font-medium text-zinc-400 mb-2">Completed</div>
+          <div className="bg-secondary/40 border border-border rounded-lg p-4">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Completed</div>
             <div className="text-xl font-semibold text-green-400">
               {stats.completedBatches}
             </div>
           </div>
 
-          <div className="bg-zinc-900/40 border border-white/5 rounded-lg p-4">
-            <div className="text-xs font-medium text-zinc-400 mb-2">Failed</div>
+          <div className="bg-secondary/40 border border-border rounded-lg p-4">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Failed</div>
             <div className="text-xl font-semibold text-red-400">
               {stats.failedBatches}
             </div>
           </div>
 
-          <div className="bg-zinc-900/40 border border-white/5 rounded-lg p-4">
-            <div className="text-xs font-medium text-zinc-400 mb-2">Success Rate</div>
-            <div className="text-xl font-semibold flex items-center gap-2 text-zinc-100">
+          <div className="bg-secondary/40 border border-border rounded-lg p-4">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Success Rate</div>
+            <div className="text-xl font-semibold flex items-center gap-2 text-foreground">
               <TrendingUp className="h-4 w-4 text-green-400" aria-hidden="true" />
               <span>{stats.successRate}%</span>
             </div>
@@ -398,12 +398,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Batches */}
-        <div className="bg-zinc-900/40 border border-white/5 rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/5">
+        <div className="bg-secondary/40 border border-border rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-sm font-medium text-zinc-100">Recent Batches</h2>
-                <p className="text-xs text-zinc-500 mt-1">Search, filter, and download your batch history</p>
+                <h2 className="text-sm font-medium text-foreground">Recent Batches</h2>
+                <p className="text-xs text-muted-foreground mt-1">Search, filter, and download your batch history</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -411,7 +411,7 @@ export default function DashboardPage() {
                   size="sm"
                   onClick={downloadCSV}
                   disabled={filteredBatches.length === 0}
-                  className="bg-zinc-900 border-white/5 text-zinc-300 hover:bg-zinc-800"
+                  className="bg-secondary border-border text-foreground hover:bg-accent"
                   aria-label="Download batches as CSV"
                 >
                   <Download className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -422,7 +422,7 @@ export default function DashboardPage() {
                   size="sm"
                   onClick={downloadJSON}
                   disabled={filteredBatches.length === 0}
-                  className="bg-zinc-900 border-white/5 text-zinc-300 hover:bg-zinc-800"
+                  className="bg-secondary border-border text-foreground hover:bg-accent"
                   aria-label="Download batches as JSON"
                 >
                   <Download className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -432,12 +432,12 @@ export default function DashboardPage() {
             </div>
             {batches.length > 0 && (
               <div className="relative mt-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" aria-hidden="true" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <Input
                   placeholder="Search by filename or status..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
+                  className="pl-10 bg-secondary/70 border-border text-foreground placeholder:text-muted-foreground"
                   aria-label="Search batches"
                 />
               </div>
@@ -446,14 +446,14 @@ export default function DashboardPage() {
           <div className="p-6">
             {batches.length === 0 ? (
               <div className="text-center py-12" role="status" aria-live="polite">
-                <Activity className="h-12 w-12 mx-auto text-zinc-600 mb-4" aria-hidden="true" />
-                <h3 className="text-sm font-medium text-zinc-300 mb-2">No batches yet</h3>
-                <p className="text-xs text-zinc-500 mb-4">
+                <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" aria-hidden="true" />
+                <h3 className="text-sm font-medium text-foreground mb-2">No batches yet</h3>
+                <p className="text-xs text-muted-foreground mb-4">
                   Get started by creating your first batch
                 </p>
                 <Button 
                   onClick={() => router.push('/bulk')} 
-                  className="bg-blue-600 hover:bg-blue-500 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   aria-label="Create your first batch"
                 >
                   <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -462,46 +462,46 @@ export default function DashboardPage() {
               </div>
             ) : filteredBatches.length === 0 ? (
               <div className="text-center py-12" role="status" aria-live="polite">
-                <Search className="h-12 w-12 mx-auto text-zinc-600 mb-4" aria-hidden="true" />
-                <h3 className="text-sm font-medium text-zinc-300 mb-2">No results found</h3>
-                <p className="text-xs text-zinc-500">
+                <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" aria-hidden="true" />
+                <h3 className="text-sm font-medium text-foreground mb-2">No results found</h3>
+                <p className="text-xs text-muted-foreground">
                   Try adjusting your search query
                 </p>
               </div>
             ) : (
-              <div className="border border-white/5 rounded-lg overflow-hidden">
+              <div className="border border-border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-zinc-900/50 border-b border-white/5">
+                  <thead className="bg-secondary/50 border-b border-border">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Filename</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Progress</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Model & Tokens</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Created</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Filename</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Progress</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Model & Tokens</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Created</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {filteredBatches.map((batch) => (
-                      <tr key={batch.id} className="hover:bg-zinc-900/30 transition-colors">
-                        <td className="px-4 py-3 text-zinc-200 font-medium">{batch.csv_filename}</td>
+                      <tr key={batch.id} className="hover:bg-secondary/30 transition-colors">
+                        <td className="px-4 py-3 text-foreground font-medium">{batch.csv_filename}</td>
                         <td className="px-4 py-3">{getStatusBadge(batch.status)}</td>
-                        <td className="px-4 py-3 text-right text-xs text-zinc-500">
+                        <td className="px-4 py-3 text-right text-xs text-muted-foreground">
                           {batch.processed_rows} / {batch.total_rows} rows
                         </td>
-                        <td className="px-4 py-3 text-right text-xs text-zinc-500">
+                        <td className="px-4 py-3 text-right text-xs text-muted-foreground">
                           {batch.model_used ? (
                             <div className="space-y-1">
-                              <div className="font-medium text-zinc-300">{batch.model_used}</div>
+                              <div className="font-medium text-foreground">{batch.model_used}</div>
                               <div className="text-xs">
                                 ↑ {batch.total_input_tokens?.toLocaleString() || 0} / ↓ {batch.total_output_tokens?.toLocaleString() || 0}
                               </div>
                             </div>
                           ) : (
-                            <span className="text-zinc-600">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right text-xs text-zinc-500">
+                        <td className="px-4 py-3 text-right text-xs text-muted-foreground">
                           {formatDate(batch.created_at)}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -510,7 +510,7 @@ export default function DashboardPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => downloadBatchResults(batch.id, batch.csv_filename)}
-                              className="h-8 w-8 p-0 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
                               aria-label={`Download results for ${batch.csv_filename}`}
                               data-testid="download-results-button"
                             >

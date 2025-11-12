@@ -92,14 +92,14 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-zinc-950">
-      <div className="w-full max-w-md bg-zinc-900/40 border border-white/5 rounded-lg overflow-hidden">
-        <div className="px-6 py-6 text-center border-b border-white/5">
-          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
-            <Activity className="h-5 w-5 text-blue-400" />
+    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md bg-card border border-border rounded-lg overflow-hidden">
+        <div className="px-6 py-6 text-center border-b border-border">
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <Activity className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-sm font-medium tracking-tight text-zinc-100 mb-1">Welcome to Bulk GPT</h1>
-          <p className="text-xs text-zinc-500">
+          <h1 className="text-sm font-medium tracking-tight text-foreground mb-1">Welcome to Bulk GPT</h1>
+          <p className="text-xs text-muted-foreground">
             Sign in to start processing CSV data with AI
           </p>
         </div>
@@ -110,14 +110,14 @@ function LoginForm() {
                 id="form-error"
                 role="alert"
                 aria-live="polite"
-                className="mb-4 rounded-md bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400"
+                className="mb-4 rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive"
               >
                 {error}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium text-zinc-300">Email</Label>
+              <Label htmlFor="email" className="text-xs font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -127,14 +127,13 @@ function LoginForm() {
                 disabled={isLoading}
                 required
                 autocomplete="email"
-                className="bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
                 aria-describedby={error ? "form-error" : undefined}
                 aria-invalid={!!error}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-medium text-zinc-300">Password</Label>
+              <Label htmlFor="password" className="text-xs font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -144,7 +143,6 @@ function LoginForm() {
                 disabled={isLoading}
                 required
                 autocomplete="current-password"
-                className="bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
                 aria-describedby={error ? "form-error" : undefined}
                 aria-invalid={!!error}
               />
@@ -152,14 +150,14 @@ function LoginForm() {
 
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-zinc-500">
+          <p className="mt-4 text-center text-xs text-muted-foreground">
             Demo credentials: test@bulkgpt.local / Test123456!
           </p>
         </div>
@@ -171,12 +169,12 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center p-4 bg-zinc-950">
-        <div className="w-full max-w-md bg-zinc-900/40 border border-white/5 rounded-lg p-6 text-center">
-          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
-            <Activity className="h-5 w-5 text-blue-400 animate-pulse" />
+      <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+        <div className="w-full max-w-md bg-card border border-border rounded-lg p-6 text-center">
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <Activity className="h-5 w-5 text-primary animate-pulse" />
           </div>
-          <h1 className="text-sm font-medium tracking-tight text-zinc-100">Loading...</h1>
+          <h1 className="text-sm font-medium tracking-tight text-foreground">Loading...</h1>
         </div>
       </div>
     }>

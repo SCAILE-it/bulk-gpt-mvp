@@ -71,9 +71,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="max-w-md w-full">
-            <div className="bg-zinc-900 border border-white/5 rounded-lg p-6 space-y-4">
+            <div className="bg-secondary border border-border rounded-lg p-6 space-y-4">
               {/* Error Icon */}
               <div className="flex justify-center">
                 <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center">
@@ -83,10 +83,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Error Message */}
               <div className="text-center space-y-2">
-                <h2 className="text-lg font-medium text-zinc-100">
+                <h2 className="text-lg font-medium text-foreground">
                   Something went wrong
                 </h2>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-muted-foreground">
                   We&apos;ve encountered an unexpected error. Our team has been notified.
                 </p>
               </div>
@@ -94,15 +94,15 @@ export class ErrorBoundary extends Component<Props, State> {
               {/* Error Details (Development only) */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mt-4">
-                  <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-400">
+                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-muted-foreground">
                     Error details
                   </summary>
-                  <div className="mt-2 p-3 bg-zinc-950 rounded border border-white/5">
+                  <div className="mt-2 p-3 bg-background rounded border border-border">
                     <p className="text-xs font-mono text-red-400 break-all">
                       {this.state.error.toString()}
                     </p>
                     {this.state.errorInfo && (
-                      <pre className="mt-2 text-xs text-zinc-600 overflow-auto">
+                      <pre className="mt-2 text-xs text-muted-foreground overflow-auto">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     )}
@@ -114,14 +114,14 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={this.handleReset}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-white/5 rounded-md text-sm text-zinc-300 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-accent hover:bg-accent border border-border rounded-md text-sm text-foreground transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Try again
                 </button>
                 <button
                   onClick={() => window.location.href = '/'}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-white/5 rounded-md text-sm text-zinc-300 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-accent hover:bg-accent border border-border rounded-md text-sm text-foreground transition-colors"
                 >
                   <Home className="w-4 h-4" />
                   Go home
@@ -130,7 +130,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             {/* Beta Notice */}
-            <p className="mt-4 text-center text-xs text-zinc-600">
+            <p className="mt-4 text-center text-xs text-muted-foreground">
               Bulk GPT is in beta. Thank you for your patience.
             </p>
           </div>
@@ -170,15 +170,15 @@ export function BulkProcessorErrorBoundary({ children }: { children: ReactNode }
     <ErrorBoundary
       onError={handleError}
       fallback={
-        <div className="p-6 bg-zinc-900 border border-white/5 rounded-lg">
+        <div className="p-6 bg-secondary border border-border rounded-lg">
           <div className="flex items-center gap-3 text-yellow-500 mb-3">
             <AlertTriangle className="w-5 h-5" />
             <span className="font-medium">Processing Error</span>
           </div>
-          <p className="text-sm text-zinc-400 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             The bulk processor encountered an error. This might be due to:
           </p>
-          <ul className="text-sm text-zinc-500 list-disc list-inside space-y-1 mb-4">
+          <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1 mb-4">
             <li>Invalid CSV format</li>
             <li>Network connectivity issues</li>
             <li>API rate limits</li>
@@ -186,7 +186,7 @@ export function BulkProcessorErrorBoundary({ children }: { children: ReactNode }
           </ul>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm transition-colors"
+            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md text-sm transition-colors"
           >
             Reload Page
           </button>

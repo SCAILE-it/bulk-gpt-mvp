@@ -50,13 +50,13 @@ export function UsageDisplay() {
   function getProgressColor(percentage: number) {
     if (percentage >= 90) return 'bg-red-500'
     if (percentage >= 70) return 'bg-amber-500'
-    return 'bg-blue-500'
+    return 'bg-primary'
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-zinc-400">Loading usage stats...</div>
+        <div className="text-sm text-muted-foreground">Loading usage stats...</div>
       </div>
     )
   }
@@ -77,9 +77,9 @@ export function UsageDisplay() {
       {/* Plan Badge */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-zinc-100">Usage & Limits</h3>
-          <p className="text-xs text-zinc-400 mt-1">
-            Current plan: <span className="capitalize text-blue-400">{usage.planType}</span>
+          <h3 className="text-sm font-medium text-foreground">Usage & Limits</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Current plan: <span className="capitalize text-primary">{usage.planType}</span>
           </p>
         </div>
       </div>
@@ -89,14 +89,14 @@ export function UsageDisplay() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-zinc-500" />
-              <span className="text-sm text-zinc-300">Batches Today</span>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">Batches Today</span>
             </div>
-            <span className="text-sm font-medium text-zinc-100">
+            <span className="text-sm font-medium text-foreground">
               {usage.batchesToday} / {usage.dailyBatchLimit}
             </span>
           </div>
-          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-accent rounded-full overflow-hidden">
             <div
               className={`h-full transition-all ${getProgressColor(batchPercentage)}`}
               style={{ width: `${batchPercentage}%` }}
@@ -112,14 +112,14 @@ export function UsageDisplay() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-zinc-500" />
-              <span className="text-sm text-zinc-300">Rows Today</span>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">Rows Today</span>
             </div>
-            <span className="text-sm font-medium text-zinc-100">
+            <span className="text-sm font-medium text-foreground">
               {usage.rowsToday.toLocaleString()} / {usage.dailyRowLimit.toLocaleString()}
             </span>
           </div>
-          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-accent rounded-full overflow-hidden">
             <div
               className={`h-full transition-all ${getProgressColor(rowPercentage)}`}
               style={{ width: `${rowPercentage}%` }}
@@ -134,29 +134,29 @@ export function UsageDisplay() {
       </div>
 
       {/* Monthly Stats */}
-      <div className="border border-white/5 rounded-lg p-4 bg-zinc-900/30">
+      <div className="border border-border rounded-lg p-4 bg-secondary/30">
         <div className="flex items-center gap-2 mb-3">
-          <Calendar className="h-3.5 w-3.5 text-zinc-500" />
-          <span className="text-xs font-medium text-zinc-300">This Month</span>
+          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-medium text-foreground">This Month</span>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-xl font-semibold text-zinc-100">
+            <div className="text-xl font-semibold text-foreground">
               {usage.batchesThisMonth.toLocaleString()}
             </div>
-            <div className="text-xs text-zinc-500">Batches</div>
+            <div className="text-xs text-muted-foreground">Batches</div>
           </div>
           <div>
-            <div className="text-xl font-semibold text-zinc-100">
+            <div className="text-xl font-semibold text-foreground">
               {usage.rowsThisMonth.toLocaleString()}
             </div>
-            <div className="text-xs text-zinc-500">Rows</div>
+            <div className="text-xs text-muted-foreground">Rows</div>
           </div>
         </div>
       </div>
 
       {/* All-time Stats */}
-      <div className="text-xs text-zinc-500 flex items-center justify-between">
+      <div className="text-xs text-muted-foreground flex items-center justify-between">
         <span>All-time: {usage.totalBatches.toLocaleString()} batches</span>
         <span>{usage.totalRows.toLocaleString()} rows processed</span>
       </div>

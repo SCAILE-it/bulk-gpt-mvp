@@ -65,7 +65,7 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
           {/* Close button */}
           <button
             onClick={handleComplete}
-            className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
             aria-label="Skip onboarding"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -77,7 +77,7 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
               <div
                 key={s.number}
                 className={`h-2 rounded-full transition-all ${
-                  s.number <= step ? 'bg-blue-600 w-8' : 'bg-zinc-700 w-2'
+                  s.number <= step ? 'bg-primary w-8' : 'bg-accent w-2'
                 }`}
                 aria-hidden="true"
               />
@@ -86,13 +86,13 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
 
           {/* Step content */}
           <div className="text-center space-y-4 mb-6">
-            <div className="mx-auto w-16 h-16 rounded-full bg-blue-500/10 border-2 border-blue-500/20 flex items-center justify-center">
-              <CurrentIcon className="h-8 w-8 text-blue-500" aria-hidden="true" />
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+              <CurrentIcon className="h-8 w-8 text-primary" aria-hidden="true" />
             </div>
-            <h2 className="text-2xl font-semibold text-zinc-100">
+            <h2 className="text-2xl font-semibold text-foreground">
               {currentStep.title}
             </h2>
-            <p className="text-zinc-400 max-w-md mx-auto">
+            <p className="text-muted-foreground max-w-md mx-auto">
               {currentStep.description}
             </p>
           </div>
@@ -105,7 +105,7 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
             >
               {step > 1 ? 'Back' : 'Skip'}
             </Button>
-            <div className="text-sm text-zinc-500">
+            <div className="text-sm text-muted-foreground">
               Step {step} of {steps.length}
             </div>
             <Button

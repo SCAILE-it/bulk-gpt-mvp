@@ -21,14 +21,14 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-white/5">
+      <div className="px-6 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <Table2 className="h-5 w-5 text-blue-400" />
+          <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+            <Table2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-base font-medium text-zinc-100">CSV Preview</h3>
-            <p className="text-sm text-zinc-400 mt-0.5">
+            <h3 className="text-base font-medium text-foreground">CSV Preview</h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
               {rows.length} row{rows.length !== 1 ? 's' : ''} • {columns.length} column{columns.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -37,17 +37,17 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
 
       {/* Table */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="border border-white/5 rounded-lg overflow-hidden">
+        <div className="border border-border rounded-lg overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-900/50 sticky top-0">
+            <thead className="bg-secondary/50 sticky top-0">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider border-b border-white/5 w-12">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border w-12">
                   #
                 </th>
                 {columns.map((column) => (
                   <th
                     key={column}
-                    className="px-4 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider border-b border-white/5"
+                    className="px-4 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider border-b border-border"
                   >
                     {column}
                   </th>
@@ -57,14 +57,14 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
             <tbody className="divide-y divide-white/5">
               {previewRows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-sm text-zinc-500">
+                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No data rows found in CSV. Please check your file format.
                   </td>
                 </tr>
               ) : (
                 previewRows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="hover:bg-zinc-900/30 transition-colors">
-                    <td className="px-4 py-3 text-xs text-zinc-500 font-mono">
+                  <tr key={rowIndex} className="hover:bg-secondary/30 transition-colors">
+                    <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
                       {rowIndex + 1}
                     </td>
                     {columns.map((column) => {
@@ -73,10 +73,10 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
                       return (
                         <td
                           key={column}
-                          className="px-4 py-3 text-sm text-zinc-200 max-w-xs truncate"
+                          className="px-4 py-3 text-sm text-foreground max-w-xs truncate"
                           title={value || ''}
                         >
-                          {isEmpty ? <span className="text-zinc-600 italic">—</span> : value}
+                          {isEmpty ? <span className="text-muted-foreground italic">—</span> : value}
                         </td>
                       )
                     })}
@@ -88,8 +88,8 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
 
           {/* Remaining rows indicator */}
           {remainingRows > 0 && (
-            <div className="px-4 py-3 bg-zinc-900/30 border-t border-white/5 text-center">
-              <p className="text-xs text-zinc-500">
+            <div className="px-4 py-3 bg-secondary/30 border-t border-border text-center">
+              <p className="text-xs text-muted-foreground">
                 + {remainingRows} more row{remainingRows !== 1 ? 's' : ''} (showing first {maxRows})
               </p>
             </div>

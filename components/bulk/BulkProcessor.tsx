@@ -31,6 +31,12 @@ import { ToolSelectionSection } from './ToolSelectionSection'
 import { AIAssistantSection } from './AIAssistantSection'
 import { Modal } from '@/components/ui/modal'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
@@ -600,7 +606,7 @@ export default function BulkProcessor() {
 
   // === RENDER ===
   return (
-    <div className="h-full bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="h-full bg-background text-foreground flex flex-col">
       {/* Onboarding Flow */}
       {showOnboarding && (
         <OnboardingFlow
@@ -611,18 +617,18 @@ export default function BulkProcessor() {
 
       {/* Beta Banner - Minimal */}
       {showBetaBanner && (
-        <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-1.5">
+        <div className="bg-primary/10 border-b border-primary/20 px-4 sm:px-6 py-1.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs font-medium rounded flex-shrink-0">BETA</span>
+              <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs font-medium rounded flex-shrink-0">BETA</span>
               {usage && (
-                <p className="text-xs text-blue-300 truncate">
+                <p className="text-xs text-primary/80 truncate">
                   {usage.batchesToday}/{usage.dailyBatchLimit} batches today
                 </p>
               )}
             </div>
             <button
-              className="text-blue-400 hover:text-blue-300 flex-shrink-0"
+              className="text-primary hover:text-primary/80 flex-shrink-0"
               onClick={dismissBetaBanner}
               aria-label="Dismiss beta banner"
             >
@@ -633,18 +639,18 @@ export default function BulkProcessor() {
       )}
 
       {/* Header - Minimal, clean */}
-      <header className="flex-shrink-0 sticky top-0 z-50 border-b border-white/5 bg-zinc-950/95 backdrop-blur-md supports-[backdrop-filter]:bg-zinc-950/60">
+      <header className="flex-shrink-0 sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between px-6 py-3">
           <h1 className="text-sm font-medium tracking-tight">Bulk Processor</h1>
           <div className="flex items-center gap-3">
             {csvParser.csvData && (
-              <div className="text-xs text-zinc-500">
+              <div className="text-xs text-muted-foreground">
                 {csvParser.csvData.totalRows} rows
               </div>
             )}
             <button
               onClick={() => setShowKeyboardHelp(true)}
-              className="flex items-center justify-center w-7 h-7 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-white/5 text-zinc-400 hover:text-zinc-300 transition-colors"
+              className="flex items-center justify-center w-7 h-7 rounded-md bg-secondary hover:bg-accent border border-border text-muted-foreground hover:text-foreground transition-colors"
               aria-label="View keyboard shortcuts"
               title="Keyboard shortcuts"
             >
@@ -657,7 +663,7 @@ export default function BulkProcessor() {
       {/* Main Content */}
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 h-screen overflow-hidden">
         {/* LEFT PANEL - Configuration */}
-        <div className="h-full border-r border-white/5 bg-zinc-900 flex flex-col">
+        <div className="h-full border-r border-border bg-secondary flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-12rem)]">
             {/* Error - Use V2 error if available */}
             {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
@@ -716,8 +722,8 @@ export default function BulkProcessor() {
               title="Data Input"
               open={dataInputSection.isOpen}
               onOpenChange={dataInputSection.setIsOpen}
-              className="bg-zinc-900/30 border border-white/5 rounded-lg"
-              triggerClassName="hover:bg-zinc-800/50"
+              className="bg-secondary/30 border border-border rounded-lg"
+              triggerClassName="hover:bg-accent/50"
               contentClassName="px-0 pb-0"
             >
               <FileUploadSection
@@ -735,8 +741,8 @@ export default function BulkProcessor() {
               title="Prompt Configuration"
               open={promptSection.isOpen}
               onOpenChange={promptSection.setIsOpen}
-              className="bg-zinc-900/30 border border-white/5 rounded-lg"
-              triggerClassName="hover:bg-zinc-800/50"
+              className="bg-secondary/30 border border-border rounded-lg"
+              triggerClassName="hover:bg-accent/50"
               contentClassName="px-0 pb-0"
             >
               <PromptSection
@@ -752,21 +758,21 @@ export default function BulkProcessor() {
               title="Output Settings"
               open={outputSettingsSection.isOpen}
               onOpenChange={outputSettingsSection.setIsOpen}
-              className="bg-zinc-900/30 border border-white/5 rounded-lg"
-              triggerClassName="hover:bg-zinc-800/50"
+              className="bg-secondary/30 border border-border rounded-lg"
+              triggerClassName="hover:bg-accent/50"
               contentClassName="space-y-4"
             >
               {/* JSON MODE TOGGLE */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Code className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
-                    <label className="text-xs font-medium text-zinc-400">Output Format</label>
+                    <Code className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <label className="text-xs font-medium text-muted-foreground">Output Format</label>
                   </div>
                   <button
                     onClick={() => setUseJsonMode(!useJsonMode)}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      useJsonMode ? 'bg-blue-600' : 'bg-zinc-700'
+                      useJsonMode ? 'bg-primary' : 'bg-accent'
                     }`}
                     aria-label={useJsonMode ? 'Switch to free-form text mode' : 'Switch to JSON mode'}
                     title={useJsonMode ? 'JSON mode (structured output)' : 'Free-form mode (unstructured text)'}
@@ -841,32 +847,46 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-3 border-t border-white/5 bg-zinc-950/95 backdrop-blur-md">
-            <div className="flex gap-2">
-              <button
-                onClick={handleTest}
-                disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                title="Test with first row (⌘T)"
-                aria-label="Test prompt with first CSV row"
-              >
-                {isTesting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
-                <span className="whitespace-nowrap">Test</span>
-              </button>
-              <button
-                onClick={handleProcess}
-                disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
-                title="Run all rows (⌘Enter)"
-                data-testid="run-button"
-                aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
-              >
-                {batchProcessor.isProcessing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
-                <span className="whitespace-nowrap">
-                  Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
-                </span>
-              </button>
-            </div>
+          <div className="flex-shrink-0 p-3 border-t border-border bg-background/95 backdrop-blur-md">
+            <TooltipProvider>
+              <div className="flex gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleTest}
+                      disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      aria-label="Test prompt with first CSV row"
+                    >
+                      {isTesting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
+                      <span className="whitespace-nowrap">Test</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : 'Test with first row (⌘T)'}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleProcess}
+                      disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
+                      className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-primary hover:bg-primary/90 active:bg-primary/95 transition-all duration-150 ease-out rounded-md text-sm text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      data-testid="run-button"
+                      aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
+                    >
+                      {batchProcessor.isProcessing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
+                      <span className="whitespace-nowrap">
+                        Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Run all ${csvParser.csvData?.totalRows || 0} rows (⌘Enter)`}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
           </div>
         </div>
 
@@ -887,8 +907,8 @@ export default function BulkProcessor() {
             // Empty state - minimal, not overwhelming
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center space-y-2 max-w-sm">
-                <FileText className="h-8 w-8 text-zinc-600 mx-auto" />
-                <p className="text-sm text-zinc-500">
+                <FileText className="h-8 w-8 text-muted-foreground mx-auto" />
+                <p className="text-sm text-muted-foreground">
                   Results will appear here after you run a batch
                 </p>
               </div>
@@ -912,20 +932,20 @@ export default function BulkProcessor() {
           <div className="space-y-3">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 value={templateSearchQuery}
                 onChange={(e) => setTemplateSearchQuery(e.target.value)}
                 placeholder="Search templates..."
-                className="w-full pl-10 pr-3 py-2.5 bg-zinc-900/70 border border-white/5 rounded-md text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all"
+                className="w-full pl-10 pr-3 py-2.5 bg-secondary/70 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-border transition-all"
                 aria-label="Search templates by name or category"
               />
             </div>
 
             {/* Category Filter */}
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+              <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex gap-2 flex-wrap">
                 {TEMPLATE_CATEGORIES.map((category) => {
                   const Icon = category.icon
@@ -938,8 +958,8 @@ export default function BulkProcessor() {
                         Icon ? 'flex items-center gap-1.5' : ''
                       } ${
                         isActive
-                          ? 'bg-zinc-700 text-zinc-200 border border-white/10'
-                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                          ? 'bg-accent text-foreground border border-border'
+                          : 'bg-accent text-muted-foreground hover:bg-accent hover:text-foreground'
                       }`}
                       aria-label={`Filter templates by ${category.label}`}
                       aria-pressed={isActive}
@@ -960,43 +980,43 @@ export default function BulkProcessor() {
                 <button
                   key={template.id}
                   onClick={() => applyTemplate(template)}
-                  className="text-left p-4 bg-zinc-900/70 hover:bg-zinc-800/70 border border-white/5 hover:border-white/10 rounded-md transition-all group"
+                  className="text-left p-4 bg-secondary/70 hover:bg-accent/70 border border-border hover:border-border rounded-md transition-all group"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h4 className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
+                        <h4 className="text-sm font-medium text-foreground group-hover:text-white transition-colors">
                           {template.name}
                         </h4>
-                        <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded text-xs font-mono">
+                        <span className="px-2 py-0.5 bg-accent text-muted-foreground rounded text-xs font-mono">
                           {template.category}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 mb-2 leading-relaxed">
+                      <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
                         {template.description}
                       </p>
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-600">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span>Uses:</span>
                         <span className="font-mono">
                           {template.exampleVariables.map(v => `{{${v}}}`).join(', ')}
                         </span>
                       </div>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 rotate-[-90deg] transition-colors flex-shrink-0 mt-1" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground rotate-[-90deg] transition-colors flex-shrink-0 mt-1" />
                   </div>
                 </button>
               ))
             ) : (
               <div className="p-12 text-center">
-                <Search className="h-10 w-10 mx-auto mb-3 text-zinc-700" />
-                <p className="text-sm text-zinc-500 mb-1">No templates match your search</p>
-                <p className="text-xs text-zinc-600 mb-4">Try a different search term or category</p>
+                <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-1">No templates match your search</p>
+                <p className="text-xs text-muted-foreground mb-4">Try a different search term or category</p>
                 <button
                   onClick={() => {
                     setTemplateSearchQuery('')
                     setTemplateCategoryFilter('all')
                   }}
-                  className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors underline"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
                 >
                   Clear filters
                 </button>
@@ -1012,32 +1032,32 @@ export default function BulkProcessor() {
         onClose={() => setShowKeyboardHelp(false)}
         title="Keyboard Shortcuts"
         titleIcon={HelpCircle}
-        titleIconColor="text-blue-400"
+        titleIconColor="text-primary"
         size="md"
         ariaLabelledBy="keyboard-shortcuts-title"
         footer={
-          <button onClick={() => setShowKeyboardHelp(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors">
+          <button onClick={() => setShowKeyboardHelp(false)} className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-md transition-colors">
             Got it
           </button>
         }
       >
         <div className="space-y-6">
-          <p className="text-sm text-zinc-400">Keyboard shortcuts</p>
+          <p className="text-sm text-muted-foreground">Keyboard shortcuts</p>
 
           <div className="space-y-4">
             {/* File Operations */}
             <div className="space-y-3">
-              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">File Operations</h3>
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">File Operations</h3>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                <div className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-md">
                   <div className="flex items-center gap-3">
-                    <Upload className="h-4 w-4 text-zinc-500" />
-                    <span className="text-sm text-zinc-300">Open file picker</span>
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">Open file picker</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
-                    <span className="text-zinc-600">+</span>
-                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">O</kbd>
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">⌘</kbd>
+                    <span className="text-muted-foreground">+</span>
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">O</kbd>
                   </div>
                 </div>
               </div>
@@ -1045,40 +1065,40 @@ export default function BulkProcessor() {
 
             {/* Processing */}
             <div className="space-y-3">
-              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Processing</h3>
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Processing</h3>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                <div className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-md">
                   <div className="flex items-center gap-3">
-                    <Play className="h-4 w-4 text-zinc-500" />
-                    <span className="text-sm text-zinc-300">Test with first row</span>
+                    <Play className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">Test with first row</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
-                    <span className="text-zinc-600">+</span>
-                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">T</kbd>
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">⌘</kbd>
+                    <span className="text-muted-foreground">+</span>
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">T</kbd>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-zinc-950/50 border border-white/5 rounded-md">
+                <div className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-md">
                   <div className="flex items-center gap-3">
                     <Play className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-zinc-300">Run all rows</span>
+                    <span className="text-sm text-foreground">Run all rows</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">⌘</kbd>
-                    <span className="text-zinc-600">+</span>
-                    <kbd className="px-2 py-1 bg-zinc-900 border border-white/10 rounded text-xs text-zinc-400 font-mono">↵</kbd>
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">⌘</kbd>
+                    <span className="text-muted-foreground">+</span>
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">↵</kbd>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Tips */}
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-md space-y-2">
+            <div className="p-4 bg-primary/10 border border-primary/20 rounded-md space-y-2">
               <div className="flex items-start gap-2">
-                <CheckCircle className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-blue-300">Pro Tip</p>
-                  <p className="text-xs text-blue-200/80 leading-relaxed">
+                  <p className="text-xs font-medium text-primary/90">Pro Tip</p>
+                  <p className="text-xs text-primary/70 leading-relaxed">
                     Use ⌘T to test your prompt with the first row before running the full batch. This helps you verify the output format and catch any issues early.
                   </p>
                 </div>
@@ -1101,7 +1121,7 @@ export default function BulkProcessor() {
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={() => setFieldToDelete(null)}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-md transition-colors"
+              className="px-4 py-2 bg-accent hover:bg-accent text-foreground text-sm font-medium rounded-md transition-colors"
             >
               Cancel
             </button>
@@ -1115,10 +1135,10 @@ export default function BulkProcessor() {
         }
       >
         <div className="space-y-4">
-          <p className="text-sm text-zinc-300">
-            Are you sure you want to delete the output field <span className="font-mono text-blue-400">{fieldToDelete}</span>?
+          <p className="text-sm text-foreground">
+            Are you sure you want to delete the output field <span className="font-mono text-primary">{fieldToDelete}</span>?
           </p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             This action cannot be undone. You&apos;ll need to manually add it back if you change your mind.
           </p>
         </div>

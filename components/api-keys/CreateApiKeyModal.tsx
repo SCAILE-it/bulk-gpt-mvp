@@ -70,15 +70,15 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-zinc-900/95 border border-white/5 rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-secondary/95 border border-border rounded-lg shadow-xl max-w-md w-full">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h3 className="text-sm font-medium tracking-tight text-zinc-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-sm font-medium tracking-tight text-foreground">
             {createdKey ? 'API Key Created' : 'Create API Key'}
           </h3>
           <button
             onClick={handleClose}
-            className="text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -89,7 +89,7 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
           {!createdKey ? (
             <>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Key Name
                 </label>
                 <input
@@ -97,13 +97,13 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
                   value={keyName}
                   onChange={(e) => setKeyName(e.target.value)}
                   placeholder="e.g., Production API, n8n Workflow"
-                  className="w-full px-3 py-2 bg-zinc-900/70 border border-white/5 rounded text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 bg-secondary/70 border border-border rounded text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCreate()
                   }}
                 />
-                <p className="text-xs text-zinc-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Choose a descriptive name to identify where this key will be used
                 </p>
               </div>
@@ -117,7 +117,7 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
               <button
                 onClick={handleCreate}
                 disabled={creating || !keyName.trim()}
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white text-sm font-medium rounded transition-colors"
+                className="w-full px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-accent disabled:text-muted-foreground text-primary-foreground text-sm font-medium rounded transition-colors"
               >
                 {creating ? 'Creating...' : 'Create API Key'}
               </button>
@@ -135,7 +135,7 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
               </div>
 
               <div className="mb-4">
-                <label className="block text-xs font-medium text-zinc-300 mb-2">
+                <label className="block text-xs font-medium text-foreground mb-2">
                   Your API Key
                 </label>
                 <div className="flex gap-2">
@@ -143,11 +143,11 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
                     type="text"
                     value={createdKey}
                     readOnly
-                    className="flex-1 px-3 py-2 bg-zinc-900/70 border border-white/5 rounded text-zinc-300 font-mono text-xs"
+                    className="flex-1 px-3 py-2 bg-secondary/70 border border-border rounded text-foreground font-mono text-xs"
                   />
                   <button
                     onClick={copyToClipboard}
-                    className="px-3 py-2 bg-zinc-900 border border-white/5 hover:bg-zinc-800 rounded transition-colors flex items-center gap-1.5"
+                    className="px-3 py-2 bg-secondary border border-border hover:bg-accent rounded transition-colors flex items-center gap-1.5"
                   >
                     {copied ? (
                       <>
@@ -156,17 +156,17 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
                       </>
                     ) : (
                       <>
-                        <Copy className="h-4 w-4 text-zinc-400" />
-                        <span className="text-xs text-zinc-400">Copy</span>
+                        <Copy className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Copy</span>
                       </>
                     )}
                   </button>
                 </div>
               </div>
 
-              <div className="mb-4 text-xs text-zinc-500 space-y-2">
+              <div className="mb-4 text-xs text-muted-foreground space-y-2">
                 <p>Use this key in your API requests:</p>
-                <pre className="px-3 py-2 bg-zinc-900/70 border border-white/5 rounded text-xs font-mono overflow-x-auto text-zinc-300">
+                <pre className="px-3 py-2 bg-secondary/70 border border-border rounded text-xs font-mono overflow-x-auto text-foreground">
 {`curl -X POST https://bulk-gpt-app.vercel.app/api/process \\
   -H "Authorization: Bearer ${createdKey}" \\
   -H "Content-Type: application/json" \\
@@ -176,7 +176,7 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
 
               <button
                 onClick={handleClose}
-                className="w-full px-4 py-2 bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-300 text-sm font-medium rounded transition-colors"
+                className="w-full px-4 py-2 bg-secondary border border-border hover:bg-accent text-foreground text-sm font-medium rounded transition-colors"
               >
                 Done
               </button>

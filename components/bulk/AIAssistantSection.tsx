@@ -54,14 +54,14 @@ export function AIAssistantSection({
       <button
         onClick={onOptimize}
         disabled={!hasPrompt || !hasCSVData || isOptimizing || hasOptimizedPrompt}
-        className="w-full px-3 py-2.5 bg-gradient-to-r from-blue-600/10 to-purple-600/10 hover:from-blue-600/20 hover:to-purple-600/20 border border-blue-500/20 hover:border-blue-500/30 rounded-md text-sm font-medium text-zinc-100 transition-all active:scale-[0.98] flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+        className="w-full px-3 py-2.5 bg-gradient-to-r from-primary/10 to-purple-600/10 hover:from-primary/20 hover:to-purple-600/20 border border-primary/20 hover:border-primary/30 rounded-md text-sm font-medium text-foreground transition-all active:scale-[0.98] flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
         aria-label="Optimize prompt, output columns, and tool selection with AI"
       >
         <div className="flex-shrink-0">
           {isOptimizing ? (
-            <Loader2 className="h-4 w-4 animate-spin text-blue-400" aria-hidden="true" />
+            <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
           ) : (
-            <Sparkles className="h-4 w-4 text-blue-400 group-hover:text-blue-300 transition-colors" aria-hidden="true" />
+            <Sparkles className="h-4 w-4 text-primary group-hover:text-primary/80 transition-colors" aria-hidden="true" />
           )}
         </div>
         <div className="flex-1 text-left">
@@ -73,12 +73,12 @@ export function AIAssistantSection({
 
       {/* Info text */}
       {!hasPrompt && (
-        <p className="text-xs text-zinc-600 italic">
+        <p className="text-xs text-muted-foreground italic">
           Add a prompt to enable AI optimization
         </p>
       )}
       {hasPrompt && !hasCSVData && (
-        <p className="text-xs text-zinc-600 italic">
+        <p className="text-xs text-muted-foreground italic">
           Upload CSV data to enable AI optimization
         </p>
       )}
