@@ -42,7 +42,7 @@ export function PromptSection({ prompt, onPromptChange, csvData, onOpenTemplates
         id="prompt"
         value={prompt}
         onChange={(e) => onPromptChange(e.target.value)}
-        className="w-full min-h-[120px] max-h-[400px] bg-secondary/70 border-border text-foreground font-mono resize-y focus-visible:ring-white/10 focus-visible:border-border"
+        className="w-full min-h-[120px] max-h-[400px] bg-secondary/70 border border-border text-foreground font-mono resize-y focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-border"
         placeholder="Write a bio for {{name}} at {{company}}"
         data-testid="prompt-textarea"
       />

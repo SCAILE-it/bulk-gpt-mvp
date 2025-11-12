@@ -51,12 +51,12 @@ export function OutputFieldsSection({
             onChange={(e) => onNewFieldChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddField()}
             placeholder="field..."
-            className="w-24 px-2 py-1 bg-secondary/70 border border-border rounded text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-border transition-all duration-150 ease-out"
+            className="w-24 px-2 py-1 bg-secondary/70 border border-border rounded text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-ring focus:border-border transition-all duration-150 ease-out"
             aria-label="New output field name"
           />
           <button
             onClick={onAddField}
-            className="p-1 hover:bg-accent rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+            className="p-1 hover:bg-accent rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Add new output field"
           >
             <Plus className="h-3 w-3 text-muted-foreground" aria-hidden="true" />

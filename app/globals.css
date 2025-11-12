@@ -52,7 +52,7 @@
     --accent-foreground: 0 0% 98%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 10% / 0.05; /* ~white/5 */
+    --border: 240 5.9% 20% / 0.3; /* More visible border in dark mode */
     --input: 240 5.9% 10% / 0.7; /* ~zinc-900/70 */
     --ring: 217 91% 60%; /* blue-600 */
     --chart-1: 220 70% 50%;

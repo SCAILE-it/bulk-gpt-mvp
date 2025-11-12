@@ -122,7 +122,7 @@ export function ApiKeyList() {
           </p>
         </div>
       ) : (
-        <div className="border border-border rounded-lg divide-y divide-white/5 overflow-hidden">
+        <div className="border border-border rounded-lg divide-y divide-border overflow-hidden">
           {keys.map((key) => (
             <div key={key.id} className="p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors">
               <div className="flex-1 min-w-0">

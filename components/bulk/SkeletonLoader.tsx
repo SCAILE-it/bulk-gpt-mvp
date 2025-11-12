@@ -34,7 +34,7 @@ export function SkeletonLoader({ rows = 3, columns = 3 }: SkeletonLoaderProps) {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border">
             {Array.from({ length: rows }).map((_, rowIndex) => (
               <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-secondary/40' : 'bg-transparent'}>
                 <td className="px-4 py-3">

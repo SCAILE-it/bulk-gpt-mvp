@@ -54,7 +54,7 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-border">
               {previewRows.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-sm text-muted-foreground">
