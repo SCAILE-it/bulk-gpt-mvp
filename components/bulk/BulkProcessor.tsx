@@ -276,7 +276,7 @@ export default function BulkProcessor() {
         outputFieldsCount: outputFields.length
       })
 
-      // Step 1: Create batch (async)
+      // Step 1: Create batch (async) - testMode bypasses batch limit
       const response = await fetch('/api/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -287,6 +287,7 @@ export default function BulkProcessor() {
           context: '',
           outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
           tools: selectedTools.length > 0 ? selectedTools : undefined,
+          testMode: true, // Enable test mode to bypass batch limit
         }),
       })
 
@@ -298,6 +299,11 @@ export default function BulkProcessor() {
       if (!response.ok) {
         const errorData = await response.json()
         debugLog.error('Test mode API call failed', { status: response.status, error: errorData })
+        
+        // Enhanced error message for limit issues
+        if (response.status === 429 && errorData.error) {
+          throw new Error(errorData.error)
+        }
         throw new Error(errorData.error || 'Test failed')
       }
 
@@ -641,11 +647,26 @@ export default function BulkProcessor() {
         <div className="h-full border-r border-white/5 bg-zinc-900 flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-12rem)]">
             {/* Error - Use V2 error if available */}
-            {(fileUpload.error || csvParser.error || batchProcessor.error || error || error) && (
+            {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-400">{fileUpload.error || csvParser.error || batchProcessor.error || error || error}</p>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm text-red-400">
+                      {fileUpload.error || csvParser.error || batchProcessor.error || error}
+                    </p>
+                    {/* Enhanced limit error display */}
+                    {(error?.includes('limit reached') || error?.includes('limit resets') || batchProcessor.error?.includes('limit')) && (
+                      <div className="text-xs text-red-300/80 space-y-1 mt-2 pt-2 border-t border-red-500/20">
+                        <p className="font-medium">💡 What you can do:</p>
+                        <ul className="list-disc list-inside space-y-0.5 ml-2">
+                          <li>Use <kbd className="px-1.5 py-0.5 bg-red-500/20 border border-red-500/30 rounded text-xs font-mono">⌘T</kbd> to test your prompt without using a batch</li>
+                          <li>Wait for the limit to reset (shown above)</li>
+                          <li>Review your previous batches in the Dashboard</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {(error?.includes('wait for your current batch') || error?.includes('batch to complete')) && (
                   <button

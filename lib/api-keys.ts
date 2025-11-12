@@ -182,10 +182,23 @@ export async function getUserUsage(userId: string): Promise<UsageStats | null> {
 
 /**
  * Check if user can process a batch (checks usage limits)
+ * @param userId - User ID to check limits for
+ * @param rowCount - Number of rows in the batch
+ * @param testMode - If true, bypasses batch limit check (allows testing even when limit reached)
+ * @returns Object with allowed status and detailed reason if not allowed
  */
-export async function checkUsageLimits(userId: string, rowCount: number): Promise<{
+export async function checkUsageLimits(
+  userId: string,
+  rowCount: number,
+  testMode = false
+): Promise<{
   allowed: boolean
   reason?: string
+  batchesToday?: number
+  dailyBatchLimit?: number
+  rowsToday?: number
+  dailyRowLimit?: number
+  resetTime?: string
 }> {
   // Note: check_usage_limits is a RETURNS TABLE function, so it returns an array
   const { data, error } = await supabaseAdmin
@@ -213,10 +226,62 @@ export async function checkUsageLimits(userId: string, rowCount: number): Promis
   // Extract first row from table result
   const result = data?.[0]
 
-  if (!result || !result.can_process) {
+  if (!result) {
     return {
       allowed: false,
-      reason: result?.reason || 'Unable to verify usage limits'
+      reason: 'Unable to verify usage limits'
+    }
+  }
+
+  // Calculate reset time (midnight UTC tomorrow)
+  const now = new Date()
+  const tomorrow = new Date(now)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+  tomorrow.setUTCHours(0, 0, 0, 0)
+  const resetTime = tomorrow.toISOString()
+
+  // In test mode, bypass batch limit check but still check row limit
+  if (testMode) {
+    // Only check row limit for test mode
+    const wouldExceedRows = (result.rows_today + rowCount) > result.daily_row_limit
+    if (wouldExceedRows) {
+      return {
+        allowed: false,
+        reason: `Test mode: This would exceed your daily row limit. You have ${result.rows_today}/${result.daily_row_limit} rows processed today. Limit resets at ${new Date(resetTime).toLocaleString()}.`,
+        batchesToday: result.batches_today,
+        dailyBatchLimit: result.daily_batch_limit,
+        rowsToday: result.rows_today,
+        dailyRowLimit: result.daily_row_limit,
+        resetTime
+      }
+    }
+    // Test mode allowed - batch limit bypassed
+    return { allowed: true }
+  }
+
+  // Full batch mode - check both batch and row limits
+  if (!result.can_process) {
+    // Determine which limit was hit
+    const isBatchLimit = result.batches_today >= result.daily_batch_limit
+    const isRowLimit = result.rows_today >= result.daily_row_limit
+
+    let reason = result.reason || 'Daily limit reached'
+    
+    // Enhance error message with reset time and suggestions
+    if (isBatchLimit) {
+      reason = `Daily batch limit reached. You've processed ${result.batches_today}/${result.daily_batch_limit} batches today. Limit resets at ${new Date(resetTime).toLocaleString()}. Tip: Use "Test" mode (⌘T) to test your prompt without using a batch.`
+    } else if (isRowLimit) {
+      reason = `Daily row limit reached. You've processed ${result.rows_today}/${result.daily_row_limit} rows today. Limit resets at ${new Date(resetTime).toLocaleString()}.`
+    }
+
+    return {
+      allowed: false,
+      reason,
+      batchesToday: result.batches_today,
+      dailyBatchLimit: result.daily_batch_limit,
+      rowsToday: result.rows_today,
+      dailyRowLimit: result.daily_row_limit,
+      resetTime
     }
   }
 
@@ -225,7 +290,12 @@ export async function checkUsageLimits(userId: string, rowCount: number): Promis
   if (wouldExceedRows) {
     return {
       allowed: false,
-      reason: `This batch would exceed your daily row limit. You have ${result.rows_today}/${result.daily_row_limit} rows processed today, and this batch has ${rowCount} rows.`
+      reason: `This batch would exceed your daily row limit. You have ${result.rows_today}/${result.daily_row_limit} rows processed today, and this batch has ${rowCount} rows. Limit resets at ${new Date(resetTime).toLocaleString()}.`,
+      batchesToday: result.batches_today,
+      dailyBatchLimit: result.daily_batch_limit,
+      rowsToday: result.rows_today,
+      dailyRowLimit: result.daily_row_limit,
+      resetTime
     }
   }
 

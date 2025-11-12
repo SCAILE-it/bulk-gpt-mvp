@@ -74,13 +74,22 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    const { csvFilename, rows, prompt, context = '', outputColumns = [], tools = [] } = body
+    const { csvFilename, rows, prompt, context = '', outputColumns = [], tools = [], testMode = false } = body
 
     // Check usage limits (database-backed)
-    const usageLimitCheck = await checkUsageLimits(userId, rows.length)
+    // testMode bypasses batch limit but still checks row limit
+    const usageLimitCheck = await checkUsageLimits(userId, rows.length, testMode)
     if (!usageLimitCheck.allowed) {
       return NextResponse.json(
-        { error: usageLimitCheck.reason },
+        {
+          error: usageLimitCheck.reason,
+          batchesToday: usageLimitCheck.batchesToday,
+          dailyBatchLimit: usageLimitCheck.dailyBatchLimit,
+          rowsToday: usageLimitCheck.rowsToday,
+          dailyRowLimit: usageLimitCheck.dailyRowLimit,
+          resetTime: usageLimitCheck.resetTime,
+          testMode
+        },
         { status: 429 }
       )
     }
