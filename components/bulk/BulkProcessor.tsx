@@ -671,10 +671,10 @@ export default function BulkProcessor() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 h-screen overflow-hidden">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden min-h-0">
         {/* LEFT PANEL - Configuration */}
-        <div className="h-full border-r border-border bg-secondary flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-12rem)]">
+        <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-h-0">
             {/* Error - Use V2 error if available */}
             {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -865,15 +865,15 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-3 border-t border-border bg-background/95 backdrop-blur-md safe-area-inset-bottom">
+          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-border bg-background/95 backdrop-blur-md sticky bottom-0 z-10">
             <TooltipProvider>
-              <div className="flex gap-2 items-stretch">
+              <div className="flex gap-3 items-stretch max-w-4xl mx-auto">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleTest}
                       disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 min-h-[48px] bg-secondary border border-border rounded-lg text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-sm hover:shadow"
                       aria-label="Test prompt with first CSV row"
                     >
                       {isTesting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
@@ -889,7 +889,7 @@ export default function BulkProcessor() {
                     <button
                       onClick={handleProcess}
                       disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                      className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-all duration-150 ease-out rounded-md text-sm text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="flex-[2] flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-all duration-200 ease-out rounded-lg text-sm text-primary-foreground font-semibold disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-md hover:shadow-lg"
                       data-testid="run-button"
                       aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
                     >
