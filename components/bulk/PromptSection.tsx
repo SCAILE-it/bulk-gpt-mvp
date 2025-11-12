@@ -21,15 +21,8 @@ export function PromptSection({ prompt, onPromptChange, csvData, onOpenTemplates
           </label>
           <div className="group relative">
             <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
-            <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-80 p-3 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
-              <p className="font-medium mb-1.5">How to use variables</p>
-              <p className="mb-2">Reference CSV columns using double curly braces: <span className="font-mono text-blue-400">{'{{column_name}}'}</span></p>
-              <p className="text-zinc-400 mb-2">
-                <span className="font-medium">Example:</span> &quot;Write a bio for {'{{name}}'} who works at {'{{company}}'}&quot;
-              </p>
-              <p className="text-zinc-500 text-[11px]">
-                Variables will be replaced with actual values from each row when processing.
-              </p>
+            <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-64 p-3 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
+              <p>Use <span className="font-mono text-blue-400">{'{{column_name}}'}</span> to reference CSV columns.</p>
             </div>
           </div>
         </div>

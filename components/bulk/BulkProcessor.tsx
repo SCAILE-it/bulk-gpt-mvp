@@ -637,13 +637,8 @@ export default function BulkProcessor() {
                     </p>
                     {/* Enhanced limit error display */}
                     {(error?.includes('limit reached') || error?.includes('limit resets') || batchProcessor.error?.includes('limit')) && (
-                      <div className="text-xs text-red-300/80 space-y-1 mt-2 pt-2 border-t border-red-500/20">
-                        <p className="font-medium">💡 What you can do:</p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li>Use <kbd className="px-1.5 py-0.5 bg-red-500/20 border border-red-500/30 rounded text-xs font-mono">⌘T</kbd> to test your prompt without using a batch</li>
-                          <li>Wait for the limit to reset (shown above)</li>
-                          <li>Review your previous batches in the Dashboard</li>
-                        </ul>
+                      <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                        <p>Wait for the limit to reset or review previous batches in Dashboard.</p>
                       </div>
                     )}
                   </div>

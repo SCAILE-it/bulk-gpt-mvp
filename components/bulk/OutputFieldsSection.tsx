@@ -27,19 +27,11 @@ export function OutputFieldsSection({
         <label className="text-xs font-medium text-zinc-300">Output Columns</label>
         <div className="group relative">
           <HelpCircle className="h-3 w-3 text-zinc-600 cursor-help" />
-          <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-72 p-3 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
-            <p className="font-medium mb-1.5">What are output columns?</p>
-            <p className="mb-2">These define what fields the AI generates for each row in your CSV export.</p>
-            <p className="text-zinc-400">
-              <span className="font-medium">Example:</span> If you set &quot;bio&quot; and &quot;summary&quot;, your exported CSV will have both columns filled with AI-generated content.
-            </p>
-            <p className="mt-2 text-zinc-500 text-[11px]">Default is &quot;bio&quot; - most users keep this.</p>
+          <div className="hidden group-hover:block absolute left-0 top-5 z-50 w-56 p-2 bg-zinc-800 border border-white/10 rounded-md text-xs text-zinc-300 shadow-xl">
+            <p>Columns in exported CSV.</p>
           </div>
         </div>
       </div>
-      <p className="text-xs text-zinc-500">
-        Define what columns appear in your exported CSV. The AI will generate content for each field.
-      </p>
       <div className="flex flex-wrap gap-1.5">
         {outputFields.map(field => (
           <div key={field} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-900 border border-white/5 rounded text-sm text-zinc-300 font-mono">
