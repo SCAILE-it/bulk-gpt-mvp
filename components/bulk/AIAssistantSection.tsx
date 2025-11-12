@@ -48,7 +48,6 @@ export function AIAssistantSection({
       <SectionHeader
         icon={Sparkles}
         title="AI Assistant"
-        description="Optimize prompt and auto-generate output columns"
       />
 
       {/* Single Unified AI Button */}
