@@ -5,7 +5,6 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -93,32 +92,32 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Activity className="h-6 w-6 text-primary" />
+    <div className="flex min-h-screen items-center justify-center p-4 bg-zinc-950">
+      <div className="w-full max-w-md bg-zinc-900/40 border border-white/5 rounded-lg overflow-hidden">
+        <div className="px-6 py-6 text-center border-b border-white/5">
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+            <Activity className="h-5 w-5 text-blue-400" />
           </div>
-          <CardTitle className="text-2xl">Welcome to Bulk GPT</CardTitle>
-          <CardDescription>
+          <h1 className="text-sm font-medium tracking-tight text-zinc-100 mb-1">Welcome to Bulk GPT</h1>
+          <p className="text-xs text-zinc-500">
             Sign in to start processing CSV data with AI
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
+        </div>
+        <div className="px-6 py-6">
           <form onSubmit={handleSignIn} className="space-y-4">
             {error && (
               <div
                 id="form-error"
                 role="alert"
                 aria-live="polite"
-                className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+                className="mb-4 rounded-md bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400"
               >
                 {error}
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium text-zinc-300">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -128,13 +127,14 @@ function LoginForm() {
                 disabled={isLoading}
                 required
                 autocomplete="email"
+                className="bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
                 aria-describedby={error ? "form-error" : undefined}
                 aria-invalid={!!error}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-medium text-zinc-300">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -144,6 +144,7 @@ function LoginForm() {
                 disabled={isLoading}
                 required
                 autocomplete="current-password"
+                className="bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
                 aria-describedby={error ? "form-error" : undefined}
                 aria-invalid={!!error}
               />
@@ -151,19 +152,18 @@ function LoginForm() {
 
             <Button
               type="submit"
-              className="w-full"
-              size="lg"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white"
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-4 text-center text-xs text-zinc-500">
             Demo credentials: test@bulkgpt.local / Test123456!
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
@@ -171,15 +171,13 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Activity className="h-6 w-6 text-primary animate-pulse" />
-            </div>
-            <CardTitle className="text-2xl">Loading...</CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="flex min-h-screen items-center justify-center p-4 bg-zinc-950">
+        <div className="w-full max-w-md bg-zinc-900/40 border border-white/5 rounded-lg p-6 text-center">
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+            <Activity className="h-5 w-5 text-blue-400 animate-pulse" />
+          </div>
+          <h1 className="text-sm font-medium tracking-tight text-zinc-100">Loading...</h1>
+        </div>
       </div>
     }>
       <LoginForm />

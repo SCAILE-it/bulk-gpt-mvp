@@ -8,7 +8,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -143,8 +142,8 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center" role="status" aria-live="polite">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+      <div className="h-full flex items-center justify-center bg-zinc-950" role="status" aria-live="polite">
+        <Loader2 className="h-8 w-8 animate-spin text-zinc-400" aria-hidden="true" />
         <span className="sr-only">Loading profile...</span>
       </div>
     )
@@ -152,32 +151,28 @@ export default function ProfilePage() {
 
   if (error && !profile) {
     return (
-      <div className="h-full flex items-center justify-center p-6">
-        <Card className="max-w-md">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
-              <CardTitle className="text-destructive">Error</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p>{error}</p>
-          </CardContent>
-        </Card>
+      <div className="h-full flex items-center justify-center p-6 bg-zinc-950">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/5 rounded-lg p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
+            <h2 className="text-sm font-medium text-red-400">Error</h2>
+          </div>
+          <p className="text-xs text-zinc-400">{error}</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-background p-6">
+    <div className="h-full overflow-y-auto bg-zinc-950 text-zinc-100 p-6">
       <div className="container mx-auto max-w-2xl space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
-            <User className="h-6 w-6 sm:h-7 sm:w-7 text-primary" aria-hidden="true" />
+          <h1 className="text-sm font-medium tracking-tight flex items-center gap-2">
+            <User className="h-4 w-4 text-zinc-400" aria-hidden="true" />
             Profile Settings
           </h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
+          <p className="text-xs text-zinc-500 mt-1">
             Manage your account information
           </p>
         </div>
@@ -187,10 +182,10 @@ export default function ProfilePage() {
           <div 
             role="status"
             aria-live="polite"
-            className="flex items-center gap-2 p-4 rounded-lg border border-green-500/20 bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-300"
+            className="flex items-center gap-2 p-4 rounded-lg border border-green-500/20 bg-green-500/10 text-green-400"
           >
-            <CheckCircle2 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
-            <span>{successMessage}</span>
+            <CheckCircle2 className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+            <span className="text-xs">{successMessage}</span>
           </div>
         )}
 
@@ -199,41 +194,41 @@ export default function ProfilePage() {
           <div 
             role="alert"
             aria-live="polite"
-            className="flex items-center gap-2 p-4 rounded-lg border border-red-500/20 bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300"
+            className="flex items-center gap-2 p-4 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400"
           >
-            <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
-            <span>{error}</span>
+            <AlertCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+            <span className="text-xs">{error}</span>
           </div>
         )}
 
         {/* Profile Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-            <CardDescription>
+        <div className="bg-zinc-900/40 border border-white/5 rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/5">
+            <h2 className="text-sm font-medium text-zinc-100">Account Information</h2>
+            <p className="text-xs text-zinc-500 mt-1">
               Update your personal details and preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div className="p-6">
             <form onSubmit={handleSave} className="space-y-4">
               {/* Email (read-only) */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs font-medium text-zinc-300">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={profile?.email || ''}
                   disabled
-                  className="bg-muted cursor-not-allowed"
+                  className="bg-zinc-900/70 border-white/5 text-zinc-400 cursor-not-allowed"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-zinc-500">
                   Email cannot be changed
                 </p>
               </div>
 
               {/* Full Name */}
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="full_name" className="text-xs font-medium text-zinc-300">Full Name</Label>
                 <Input
                   id="full_name"
                   type="text"
@@ -242,13 +237,14 @@ export default function ProfilePage() {
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={isSaving}
                   autocomplete="name"
+                  className="bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
                   aria-describedby={error ? "full_name-error" : undefined}
                 />
               </div>
 
               {/* Organization */}
-              <div className="space-y-2">
-                <Label htmlFor="organization">Organization</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="organization" className="text-xs font-medium text-zinc-300">Organization</Label>
                 <Input
                   id="organization"
                   type="text"
@@ -257,12 +253,13 @@ export default function ProfilePage() {
                   onChange={(e) => setOrganization(e.target.value)}
                   disabled={isSaving}
                   autocomplete="organization"
+                  className="bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
                 />
               </div>
 
               {/* Avatar URL */}
-              <div className="space-y-2">
-                <Label htmlFor="avatar_url">Avatar URL</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="avatar_url" className="text-xs font-medium text-zinc-300">Avatar URL</Label>
                 <Input
                   id="avatar_url"
                   type="url"
@@ -271,8 +268,9 @@ export default function ProfilePage() {
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   disabled={isSaving}
                   autocomplete="photo"
+                  className="bg-zinc-900/70 border-white/5 text-zinc-300 placeholder:text-zinc-600"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-zinc-500">
                   URL to your profile picture
                 </p>
               </div>
@@ -282,7 +280,7 @@ export default function ProfilePage() {
                 <Button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white"
                   aria-label={isSaving ? "Saving profile changes" : "Save profile changes"}
                 >
                   {isSaving ? (
@@ -299,40 +297,41 @@ export default function ProfilePage() {
                   variant="outline"
                   onClick={() => router.push('/dashboard')}
                   disabled={isSaving}
+                  className="bg-zinc-900 border-white/5 text-zinc-300 hover:bg-zinc-800"
                   aria-label="Cancel and return to dashboard"
                 >
                   Cancel
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* API Keys Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>API Access</CardTitle>
-            <CardDescription>
+        <div className="bg-zinc-900/40 border border-white/5 rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/5">
+            <h2 className="text-sm font-medium text-zinc-100">API Access</h2>
+            <p className="text-xs text-zinc-500 mt-1">
               Manage API keys for programmatic access
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div className="p-6">
             <ApiKeyList />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Usage Stats Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Usage & Limits</CardTitle>
-            <CardDescription>
+        <div className="bg-zinc-900/40 border border-white/5 rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/5">
+            <h2 className="text-sm font-medium text-zinc-100">Usage & Limits</h2>
+            <p className="text-xs text-zinc-500 mt-1">
               Track your usage and plan limits
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div className="p-6">
             <UsageDisplay />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   )
