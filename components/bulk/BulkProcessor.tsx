@@ -29,6 +29,7 @@ import { OutputFieldsSection } from './OutputFieldsSection'
 import { ToolSelectionSection } from './ToolSelectionSection'
 import { Modal } from '@/components/ui/modal'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import { Switch } from '@/components/ui/switch'
 import {
   Tooltip,
   TooltipContent,
@@ -844,34 +845,28 @@ export default function BulkProcessor() {
                 contentClassName="px-4 pb-3"
               >
                 <div className="space-y-3">
-                  {/* Optimization selector */}
+                  {/* Optimization selector - Modern toggle switches */}
                   <div className="flex flex-wrap gap-4">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="checkbox"
+                      <Switch
                         checked={optimizeInput}
-                        onChange={(e) => setOptimizeInput(e.target.checked)}
-                        className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
+                        onCheckedChange={setOptimizeInput}
                       />
-                      <span className="text-xs text-foreground group-hover:text-foreground transition-colors">Optimize Input</span>
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Input</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="checkbox"
+                      <Switch
                         checked={optimizeTask}
-                        onChange={(e) => setOptimizeTask(e.target.checked)}
-                        className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
+                        onCheckedChange={setOptimizeTask}
                       />
-                      <span className="text-xs text-foreground group-hover:text-foreground transition-colors">Optimize Task</span>
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Task</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="checkbox"
+                      <Switch
                         checked={optimizeOutput}
-                        onChange={(e) => setOptimizeOutput(e.target.checked)}
-                        className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
+                        onCheckedChange={setOptimizeOutput}
                       />
-                      <span className="text-xs text-foreground group-hover:text-foreground transition-colors">Optimize Output</span>
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Output</span>
                     </label>
                   </div>
                   
@@ -888,13 +883,13 @@ export default function BulkProcessor() {
                   >
                     {isOptimizing ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Optimizing...</span>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>AI Optimizing...</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4" />
-                        <span>Optimize Selected</span>
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Optimize with AI</span>
                       </>
                     )}
                   </button>
