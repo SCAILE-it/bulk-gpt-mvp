@@ -10,7 +10,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle, XCircle,
   Loader2, X, ChevronDown, HelpCircle,
-  Code, Search, Filter, AlertTriangle
+  Search, Filter, AlertTriangle
 } from 'lucide-react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
@@ -892,13 +892,106 @@ export default function BulkProcessor() {
               onExport={handleExport}
             />
           ) : (
-            // Empty state - minimal, not overwhelming
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center space-y-2 max-w-sm">
-                <FileText className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="text-sm text-muted-foreground">
-                  Results will appear here after you run a batch
-                </p>
+            // Empty state with preview example
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="max-w-2xl mx-auto space-y-6">
+                {/* Preview Example */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-foreground">Example Output</h3>
+                    <span className="text-xs text-muted-foreground">Preview</span>
+                  </div>
+                  
+                  {/* Example Results Table */}
+                  <div className="border border-border/50 rounded-lg overflow-hidden bg-background/50">
+                    <div className="border-b border-border/50 bg-secondary/30 px-4 py-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Results</span>
+                        <span className="text-xs text-muted-foreground">3 rows</span>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-secondary/30 border-b border-border/50">
+                          <tr>
+                            <th className="px-3 py-2 text-left w-8"></th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">name</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">company</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">bio</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-border/30">
+                            <td className="px-3 py-2.5">
+                              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                            </td>
+                            <td className="px-3 py-2.5 text-muted-foreground font-mono">Alice Johnson</td>
+                            <td className="px-3 py-2.5 text-muted-foreground font-mono">TechCorp</td>
+                            <td className="px-3 py-2.5 text-foreground">
+                              <div className="line-clamp-2 text-xs leading-relaxed">
+                                Alice Johnson is a data analyst at TechCorp with expertise in statistical analysis and data visualization...
+                              </div>
+                            </td>
+                          </tr>
+                          <tr className="border-b border-border/30">
+                            <td className="px-3 py-2.5">
+                              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                            </td>
+                            <td className="px-3 py-2.5 text-muted-foreground font-mono">Bob Smith</td>
+                            <td className="px-3 py-2.5 text-muted-foreground font-mono">DataCo</td>
+                            <td className="px-3 py-2.5 text-foreground">
+                              <div className="line-clamp-2 text-xs leading-relaxed">
+                                Bob Smith is a senior engineer at DataCo specializing in machine learning and cloud infrastructure...
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2.5">
+                              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                            </td>
+                            <td className="px-3 py-2.5 text-muted-foreground font-mono">Carol White</td>
+                            <td className="px-3 py-2.5 text-muted-foreground font-mono">StartupXYZ</td>
+                            <td className="px-3 py-2.5 text-foreground">
+                              <div className="line-clamp-2 text-xs leading-relaxed">
+                                Carol White is the founder of StartupXYZ, focusing on AI-powered solutions for enterprise clients...
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Use Cases */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-foreground">What you can do</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
+                      <div className="text-xs font-medium text-foreground mb-1">Generate Content</div>
+                      <div className="text-xs text-muted-foreground">Create bios, descriptions, summaries at scale</div>
+                    </div>
+                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
+                      <div className="text-xs font-medium text-foreground mb-1">Enrich Data</div>
+                      <div className="text-xs text-muted-foreground">Add context, research, validation to your datasets</div>
+                    </div>
+                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
+                      <div className="text-xs font-medium text-foreground mb-1">Transform Text</div>
+                      <div className="text-xs text-muted-foreground">Rephrase, translate, format thousands of rows</div>
+                    </div>
+                    <div className="p-3 border border-border/50 rounded-lg bg-background/30">
+                      <div className="text-xs font-medium text-foreground mb-1">Extract Insights</div>
+                      <div className="text-xs text-muted-foreground">Analyze and categorize data with AI</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="pt-4 border-t border-border/50">
+                  <p className="text-xs text-center text-muted-foreground">
+                    Upload a CSV and configure your prompt to get started
+                  </p>
+                </div>
               </div>
             </div>
           )}
