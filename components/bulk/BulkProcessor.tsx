@@ -37,6 +37,7 @@ import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
 import { useDebugLogger } from '@/lib/hooks/useDebugLogger'
 import { DebugLogger } from '@/components/debug/DebugLogger'
+import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow'
 import { TEMPLATE_CATEGORIES, type PromptTemplate } from '@/lib/constants/promptTemplates'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -94,6 +95,18 @@ export default function BulkProcessor() {
     storageKey: 'bulk-processor-output-settings',
     defaultOpen: true
   })
+
+  // === ONBOARDING STATE ===
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  // Check if user needs onboarding on mount
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('bulk-gpt-onboarding-seen')
+    if (!hasSeenOnboarding && !csvParser.csvData && !prompt) {
+      // Show onboarding for new users
+      setShowOnboarding(true)
+    }
+  }, [csvParser.csvData, prompt])
 
   // === PROCESSING STATE ===
   const [isTesting, setIsTesting] = useState(false)
@@ -546,6 +559,14 @@ export default function BulkProcessor() {
   // === RENDER ===
   return (
     <div className="h-full bg-zinc-950 text-zinc-100 flex flex-col">
+      {/* Onboarding Flow */}
+      {showOnboarding && (
+        <OnboardingFlow
+          onDismiss={() => setShowOnboarding(false)}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
+
       {/* Beta Banner */}
       {showBetaBanner && (
         <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 sm:px-6 py-2">
@@ -646,18 +667,7 @@ export default function BulkProcessor() {
               </div>
             )}
 
-            {/* VALIDATION MESSAGES - Consolidated at top */}
-            {csvParser.csvData && prompt && variableValidation.isValid && Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).length > 0 && (
-              <div className="flex items-start gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
-                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-green-400">
-                  <span className="font-medium">Variables detected: </span>
-                  <span className="font-mono">
-                    {Array.from(new Set(prompt.match(/\{\{([^}]+)\}\}/g) || [])).join(', ')}
-                  </span>
-                </p>
-              </div>
-            )}
+            {/* VALIDATION MESSAGES - Only show errors, hide success messages to reduce noise */}
 
             {!variableValidation.isValid && variableValidation.missing.length > 0 && (
               <div className="flex items-start gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-md">
@@ -679,21 +689,17 @@ export default function BulkProcessor() {
               </div>
             )}
 
-            {csvParser.csvData && prompt && variableValidation.isValid && variableValidation.unused.length > 0 && (
-              <div className="flex items-start gap-2 p-1.5 bg-zinc-800/30 border border-zinc-700/30 rounded-md">
-                <p className="text-xs text-zinc-500">
-                  💡 FYI: You have {variableValidation.unused.length} unused column{variableValidation.unused.length > 1 ? 's' : ''} in your CSV ({variableValidation.unused.map(v => `{{${v}}}`).join(', ')}). This is fine - they&apos;ll just be ignored.
-                </p>
-              </div>
-            )}
+            {/* Unused columns warning - Hidden to reduce noise */}
 
-            {/* WORKFLOW STEPS */}
-            <WorkflowSteps
-              hasCSV={!!csvParser.csvData}
-              hasPrompt={!!prompt}
-              isProcessing={batchProcessor.isProcessing}
-              hasResults={displayResults.length > 0}
-            />
+            {/* WORKFLOW STEPS - Simplified, only show when actively working */}
+            {(!csvParser.csvData || !prompt) && (
+              <WorkflowSteps
+                hasCSV={!!csvParser.csvData}
+                hasPrompt={!!prompt}
+                isProcessing={batchProcessor.isProcessing}
+                hasResults={displayResults.length > 0}
+              />
+            )}
 
             {/* DATA INPUT SECTION */}
             <CollapsibleSection
@@ -782,11 +788,13 @@ export default function BulkProcessor() {
                     onRemoveField={removeOutputField}
                   />
 
-                  {/* TOOL SELECTION */}
-                  <ToolSelectionSection
-                    selectedTools={selectedTools}
-                    onToggleTool={toggleTool}
-                  />
+                  {/* TOOL SELECTION - Hidden by default, shown in advanced settings */}
+                  {selectedTools.length > 0 && (
+                    <ToolSelectionSection
+                      selectedTools={selectedTools}
+                      onToggleTool={toggleTool}
+                    />
+                  )}
                 </>
               )}
 
@@ -850,7 +858,7 @@ export default function BulkProcessor() {
               >
                 {batchProcessor.isProcessing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
                 <span className="whitespace-nowrap">
-                  Run All {csvParser.csvData && <span className="hidden xs:inline">({csvParser.csvData.totalRows})</span>}
+                  Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
                 </span>
               </button>
             </div>
@@ -1130,8 +1138,10 @@ export default function BulkProcessor() {
         </div>
       </Modal>
 
-      {/* Debug Logger - Fixed position bottom-right panel */}
-      <DebugLogger />
+      {/* Debug Logger - Only show in development mode or when there are errors */}
+      {(typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') || batchProcessor.error || fileUpload.error || csvParser.error) && (
+        <DebugLogger />
+      )}
     </div>
   )
 }

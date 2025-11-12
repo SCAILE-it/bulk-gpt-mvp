@@ -55,25 +55,34 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {previewRows.map((row, rowIndex) => (
-                <tr key={rowIndex} className="hover:bg-zinc-900/30 transition-colors">
-                  <td className="px-4 py-3 text-xs text-zinc-500 font-mono">
-                    {rowIndex + 1}
+              {previewRows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-sm text-zinc-500">
+                    No data rows found in CSV. Please check your file format.
                   </td>
-                  {columns.map((column) => {
-                    const value = row.data[column]
-                    return (
-                      <td
-                        key={column}
-                        className="px-4 py-3 text-sm text-zinc-200 max-w-xs truncate"
-                        title={value ?? ''}
-                      >
-                        {value || <span className="text-zinc-600 italic">—</span>}
-                      </td>
-                    )
-                  })}
                 </tr>
-              ))}
+              ) : (
+                previewRows.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="hover:bg-zinc-900/30 transition-colors">
+                    <td className="px-4 py-3 text-xs text-zinc-500 font-mono">
+                      {rowIndex + 1}
+                    </td>
+                    {columns.map((column) => {
+                      const value = row.data?.[column] ?? ''
+                      const isEmpty = !value || value.trim() === ''
+                      return (
+                        <td
+                          key={column}
+                          className="px-4 py-3 text-sm text-zinc-200 max-w-xs truncate"
+                          title={value || ''}
+                        >
+                          {isEmpty ? <span className="text-zinc-600 italic">—</span> : value}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
 
@@ -87,19 +96,14 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
           )}
         </div>
 
-        {/* Tips */}
-        <div className="mt-6 space-y-2">
-          <div className="flex items-start gap-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg">
-            <div className="mt-0.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-zinc-400">
-                <span className="text-blue-400 font-medium">Tip:</span> Use column names in your prompt with double curly braces, like <code className="px-1.5 py-0.5 bg-zinc-900 rounded text-blue-300 font-mono text-xs">{`{{${columns[0]}}`}</code>
-              </p>
-            </div>
+        {/* Tips - Simplified, less overwhelming */}
+        {columns.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs text-zinc-500">
+              Use column names like <code className="px-1 py-0.5 bg-zinc-900 rounded text-blue-300 font-mono text-xs">{`{{${columns[0]}}`}</code> in your prompt
+            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
