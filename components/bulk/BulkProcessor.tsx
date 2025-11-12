@@ -100,6 +100,7 @@ export default function BulkProcessor() {
   // Track previous states to only expand on transitions (not continuously)
   const prevHasCSV = useRef(false)
   const prevHasPrompt = useRef(false)
+  const prevHasPromptForOutput = useRef(false)
 
   useEffect(() => {
     // Expand Data Input when CSV is first uploaded (transition from no CSV to CSV)
@@ -122,9 +123,10 @@ export default function BulkProcessor() {
   useEffect(() => {
     // Expand Output Settings when prompt is first filled (user needs to configure output)
     const hasPrompt = !!(prompt && prompt.trim())
-    if (hasPrompt && !prevHasPrompt.current && !outputSettingsSection.isOpen) {
+    if (hasPrompt && !prevHasPromptForOutput.current && !outputSettingsSection.isOpen) {
       outputSettingsSection.setIsOpen(true)
     }
+    prevHasPromptForOutput.current = hasPrompt
   }, [prompt, outputSettingsSection.isOpen, outputSettingsSection.setIsOpen])
 
   // === ONBOARDING STATE ===
