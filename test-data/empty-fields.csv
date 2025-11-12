@@ -1,0 +1,13 @@
+name,email,phone,company,notes
+"Alice Johnson","alice@email.com","+1-555-0101","TechCorp","Regular entry"
+"Bob Smith","","+1-555-0102","DataCo","Missing email"
+"Carol White","carol@email.com","","AILabs","Missing phone"
+"David Kim","david@email.com","+1-555-0104","","Missing company"
+"Emma Thompson","emma@email.com","+1-555-0105","SalesPro",""
+"Frank Garcia","","","","All empty except name"
+"Grace Lee","grace@email.com","+1-555-0107","DesignStudio","Complete entry"
+"Henry Brown","henry@email.com","","","Missing phone and company"
+"Iris Chen","","+1-555-0109","HealthTech","Missing email"
+"Jack Wilson","jack@email.com","+1-555-0110","","Missing company"
+
+

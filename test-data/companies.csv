@@ -1,0 +1,13 @@
+company_name,industry,founded_year,employee_count,headquarters,revenue_millions,website
+"TechCorp Inc","Technology",2010,250,"San Francisco, CA",45.2,"www.techcorp.com"
+"DataSolutions Ltd","Data Analytics",2015,120,"New York, NY",28.7,"www.datasolutions.com"
+"CloudServices Co","Cloud Computing",2012,180,"Seattle, WA",52.3,"www.cloudservices.com"
+"AI Innovations","Artificial Intelligence",2018,95,"Boston, MA",18.9,"www.aiinnovations.com"
+"FinanceHub","Financial Services",2008,320,"Chicago, IL",67.4,"www.financehub.com"
+"HealthTech Systems","Healthcare Technology",2016,150,"Austin, TX",34.1,"www.healthtech.com"
+"EcoEnergy Solutions","Renewable Energy",2014,200,"Denver, CO",41.6,"www.ecoenergy.com"
+"RetailMax","E-commerce",2011,280,"Los Angeles, CA",58.9,"www.retailmax.com"
+"SecurityFirst","Cybersecurity",2017,110,"Washington, DC",22.3,"www.securityfirst.com"
+"MediaWorks","Digital Media",2013,165,"New York, NY",38.7,"www.mediaworks.com"
+
+

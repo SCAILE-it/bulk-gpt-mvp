@@ -1,0 +1,13 @@
+event_name,date,location,attendees,event_type,organizer,status
+"Tech Conference 2024","2024-03-15","San Francisco Convention Center",2500,"Conference","TechEvents Inc","Confirmed"
+"AI Workshop Series","2024-04-20","Online",500,"Workshop","AI Academy","Confirmed"
+"Startup Pitch Night","2024-05-10","New York Tech Hub",200,"Networking","StartupHub","Confirmed"
+"Data Science Bootcamp","2024-06-05","Boston University",150,"Training","DataEd","Pending"
+"Cloud Summit","2024-07-18","Seattle Convention Center",1800,"Conference","CloudExpo","Confirmed"
+"Design Thinking Workshop","2024-08-12","Austin Design Center",80,"Workshop","DesignLab","Confirmed"
+"Cybersecurity Forum","2024-09-25","Washington DC",600,"Conference","SecForum","Confirmed"
+"Green Tech Expo","2024-10-08","Denver Expo Center",1200,"Exhibition","GreenTech Events","Pending"
+"E-commerce Summit","2024-11-14","Los Angeles Convention Center",2200,"Conference","RetailExpo","Confirmed"
+"Media Innovation Day","2024-12-05","New York Media Center",400,"Networking","MediaWorks","Confirmed"
+
+

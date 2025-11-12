@@ -1,0 +1,29 @@
+
+🔐 Testing API Access Functionality...
+
+1. Logging in...
+✅ Logged in successfully
+
+2. Navigating to Profile page...
+✅ Profile page loaded
+
+3. Creating API key...
+
+❌ Test failed: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('button:has-text("Create API Key")').first()
+    - locator resolved to <button disabled class="w-full px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-accent disabled:text-muted-foreground text-primary-foreground text-sm font-medium rounded transition-colors">Create API Key</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    57 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+

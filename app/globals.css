@@ -8,58 +8,59 @@
     @apply font-sans;
   }
   :root {
+    /* Light theme - Cursor-inspired clean light mode */
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --foreground: 220 13% 18%; /* Dark text on light */
+    --card: 0 0% 98%;
+    --card-foreground: 220 13% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --popover-foreground: 220 13% 18%;
+    --primary: 212 100% 50%; /* #0969da - Cursor's blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 13% 96%;
+    --secondary-foreground: 220 13% 18%;
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 13% 94%;
+    --accent-foreground: 220 13% 18%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 90%;
+    --input: 220 13% 96%;
+    --ring: 212 100% 50%;
+    --chart-1: 212 100% 50%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 0 72% 51%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 280 65% 60%;
     --radius: 0.5rem;
   }
   .dark {
-    /* Dark theme matching zinc-950 palette */
-    --background: 240 10% 3.9%; /* ~zinc-950 */
-    --foreground: 0 0% 98%; /* ~zinc-100 */
-    --card: 240 10% 9.8%; /* ~zinc-900/40 */
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 9.8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 217 91% 60%; /* blue-600 */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 5.9% 10%; /* ~zinc-900 */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 5.9% 10%; /* ~zinc-900/70 */
-    --muted-foreground: 240 5% 64.9%; /* ~zinc-400 */
-    --accent: 240 5.9% 15%; /* ~zinc-800 */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 20% / 0.3; /* More visible border in dark mode */
-    --input: 240 5.9% 10% / 0.7; /* ~zinc-900/70 */
-    --ring: 217 91% 60%; /* blue-600 */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Cursor-inspired dark theme - modern, clean, professional */
+    --background: 220 13% 9%; /* #0d1117 - Cursor's dark background */
+    --foreground: 213 31% 91%; /* #c9d1d9 - Cursor's text color */
+    --card: 220 13% 13%; /* #161b22 - Cursor's card background */
+    --card-foreground: 213 31% 91%;
+    --popover: 220 13% 13%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 212 100% 67%; /* #58a6ff - Cursor's blue accent */
+    --primary-foreground: 220 13% 9%;
+    --secondary: 215 16% 17%; /* #21262d - Cursor's secondary */
+    --secondary-foreground: 213 31% 91%;
+    --muted: 215 16% 17%;
+    --muted-foreground: 215 20% 65%; /* #8b949e - Cursor's muted text */
+    --accent: 215 16% 22%; /* Slightly lighter for hover states */
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 63% 51%; /* #f85149 - Cursor's red */
+    --destructive-foreground: 213 31% 91%;
+    --border: 215 16% 27% / 0.4; /* #30363d - Cursor's border color */
+    --input: 215 16% 17% / 0.8;
+    --ring: 212 100% 67%; /* Match primary for focus rings */
+    --chart-1: 212 100% 67%;
+    --chart-2: 142 76% 36%; /* #3fb950 - Cursor's green */
+    --chart-3: 0 63% 51%;
+    --chart-4: 45 93% 47%; /* #d29922 - Cursor's yellow */
+    --chart-5: 280 65% 60%;
   }
 }
 
@@ -77,12 +78,30 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft Sans Serif", sans-serif;
+    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "SF Pro Display", system-ui, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Typography - GTM OS inspired */
+  /* Typography - Cursor-inspired clean hierarchy */
   h1, h2, h3, h4, h5, h6 {
-    font-weight: 600; /* Semi Bold */
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
   }
   
   /* Global radius overrides - Langdock-style subtle curves */
@@ -93,11 +112,11 @@
   .rounded-xl { border-radius: 0.75rem !important; }  /* 12px */
   .rounded-2xl { border-radius: 1rem !important; }    /* 16px */
 
-  /* Smooth transitions for professional feel */
+  /* Smooth transitions - Cursor-inspired subtle animations */
   * {
     transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-    transition-duration: 200ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Disable transitions for animations and specific elements */
@@ -105,9 +124,14 @@
     transition: none;
   }
 
-  /* Button press feedback */
+  /* Button press feedback - subtle like Cursor */
   button:active:not(:disabled) {
-    transform: scale(0.98);
+    transform: scale(0.99);
+  }
+  
+  /* Subtle hover effects */
+  button:hover:not(:disabled) {
+    transition-duration: 100ms;
   }
 
   /* Hover scale utility */

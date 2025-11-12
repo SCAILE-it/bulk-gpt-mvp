@@ -1,6 +1,7 @@
 /**
- * Simple analytics wrapper for tracking user events
- * Can be easily swapped for PostHog, Mixpanel, Amplitude, etc.
+ * Production-grade analytics wrapper for tracking user events
+ * Integrates with PostHog for production analytics
+ * Falls back gracefully when PostHog is not configured
  */
 
 import { devLog } from '@/lib/dev-logger'
@@ -11,25 +12,46 @@ interface AnalyticsEvent {
   timestamp?: number
 }
 
+interface PostHogInstance {
+  capture: (event: string, properties?: Record<string, unknown>) => void
+  identify: (userId: string, traits?: Record<string, unknown>) => void
+  reset: () => void
+}
+
 class Analytics {
   private queue: AnalyticsEvent[] = []
   private isInitialized = false
+  private posthog: PostHogInstance | null = null
 
-  init() {
+  async init() {
     if (this.isInitialized) return
     
-    // Initialize your analytics provider here
-    // Example: PostHog
+    // Initialize PostHog if configured
     if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-      // import('posthog-js').then(({ default: posthog }) => {
-      //   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      //     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
-      //   })
-      // })
+      try {
+        const posthogModule = await import('posthog-js')
+        const posthog = posthogModule.default
+        
+        posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+          api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
+          // Privacy settings
+          autocapture: true,
+          capture_pageview: true,
+          capture_pageleave: true,
+          // Performance
+          loaded: (ph) => {
+            this.posthog = ph as PostHogInstance
+            devLog.log('PostHog initialized')
+          },
+        })
+      } catch (error) {
+        // Silently fail if PostHog fails to load (e.g., network issues)
+        devLog.log('PostHog initialization failed:', error)
+      }
     }
     
     this.isInitialized = true
-    this.flushQueue()
+    await this.flushQueue()
   }
 
   track(event: string, properties?: Record<string, unknown>) {
@@ -49,24 +71,45 @@ class Analytics {
 
   identify(userId: string, traits?: Record<string, unknown>) {
     if (!this.isInitialized) {
-      this.init()
+      this.init().then(() => {
+        this.identify(userId, traits)
+      })
+      return
     }
 
-    // Identify user in your analytics provider
+    // Identify user in PostHog
+    if (this.posthog) {
+      this.posthog.identify(userId, traits)
+    }
+    
     devLog.log('Analytics: Identify user', userId, traits)
   }
 
-  private sendEvent(event: AnalyticsEvent) {
-    // Send to your analytics provider
-    devLog.log('Analytics:', event.event, event.properties)
-
-    // Example: PostHog
-    // if (typeof window !== 'undefined' && (window as any).posthog) {
-    //   (window as any).posthog.capture(event.event, event.properties)
-    // }
+  reset() {
+    if (this.posthog) {
+      this.posthog.reset()
+    }
+    this.queue = []
   }
 
-  private flushQueue() {
+  private sendEvent(event: AnalyticsEvent) {
+    // Send to PostHog if available
+    if (this.posthog) {
+      try {
+        this.posthog.capture(event.event, {
+          ...event.properties,
+          timestamp: event.timestamp,
+        })
+      } catch (error) {
+        devLog.log('PostHog capture failed:', error)
+      }
+    }
+    
+    // Always log to dev logger for debugging
+    devLog.log('Analytics:', event.event, event.properties)
+  }
+
+  private async flushQueue() {
     while (this.queue.length > 0) {
       const event = this.queue.shift()
       if (event) {
@@ -110,6 +153,12 @@ export const ANALYTICS_EVENTS = {
 
   // Error events
   ERROR_BOUNDARY_TRIGGERED: 'error_boundary_triggered',
+  
+  // Auth events
+  USER_SIGNED_IN: 'user_signed_in',
+  USER_SIGNED_UP: 'user_signed_up',
+  PASSWORD_RESET_REQUESTED: 'password_reset_requested',
+  PASSWORD_RESET_COMPLETED: 'password_reset_completed',
 } as const
 
 

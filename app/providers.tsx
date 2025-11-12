@@ -6,8 +6,11 @@ import { analytics } from '@/lib/analytics'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Initialize analytics on mount
-    analytics.init()
+    // Initialize analytics on mount (async)
+    analytics.init().catch((error) => {
+      // Silently fail if analytics initialization fails
+      console.error('Analytics initialization failed:', error)
+    })
   }, [])
   
   return (

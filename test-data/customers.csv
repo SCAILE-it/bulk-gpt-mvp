@@ -1,0 +1,13 @@
+customer_id,name,email,phone,address,city,country,registration_date
+C001,"Alice Johnson","alice.j@email.com","+1-555-0101","123 Main St","New York","USA","2023-01-15"
+C002,"Bob Martinez","bob.m@email.com","+1-555-0102","456 Oak Ave","Los Angeles","USA","2023-02-20"
+C003,"Carol White","carol.w@email.com","+44-20-7946-0958","789 High St","London","UK","2023-03-10"
+C004,"David Kim","david.k@email.com","+82-2-1234-5678","321 Seoul St","Seoul","South Korea","2023-04-05"
+C005,"Emma Thompson","emma.t@email.com","+1-555-0105","654 Pine Rd","Toronto","Canada","2023-05-12"
+C006,"Frank Garcia","frank.g@email.com","+34-91-123-4567","987 Madrid Ave","Madrid","Spain","2023-06-18"
+C007,"Grace Lee","grace.l@email.com","+1-555-0107","147 Maple Dr","San Francisco","USA","2023-07-22"
+C008,"Henry Brown","henry.b@email.com","+49-30-12345678","258 Berlin Str","Berlin","Germany","2023-08-30"
+C009,"Iris Chen","iris.c@email.com","+86-10-1234-5678","369 Beijing Rd","Beijing","China","2023-09-14"
+C010,"Jack Wilson","jack.w@email.com","+1-555-0110","741 Cedar Ln","Chicago","USA","2023-10-28"
+
+

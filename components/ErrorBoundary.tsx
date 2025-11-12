@@ -43,19 +43,20 @@ export class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     })
 
-    // Report to Sentry/LogRocket/etc
-    if (typeof window !== 'undefined') {
-      const windowWithSentry = window as Window & { Sentry?: { captureException: (error: Error, context?: { contexts?: Record<string, unknown> }) => void } }
-      if (windowWithSentry.Sentry) {
-        windowWithSentry.Sentry.captureException(error, {
+    // Report to Sentry
+    import('@sentry/nextjs')
+      .then((Sentry) => {
+        Sentry.captureException(error, {
           contexts: {
             react: {
               componentStack: errorInfo.componentStack,
             },
           },
         })
-      }
-    }
+      })
+      .catch(() => {
+        // Silently fail if Sentry is not available
+      })
   }
 
   handleReset = () => {
@@ -150,15 +151,18 @@ export function useErrorHandler() {
       source: 'useErrorHandler',
     })
 
-    // Report to tracking service
-    if (typeof window !== 'undefined') {
-      const windowWithSentry = window as Window & { Sentry?: { captureException: (error: Error, extra?: { extra?: ErrorInfo }) => void } }
-      if (windowWithSentry.Sentry) {
-        windowWithSentry.Sentry.captureException(error, {
-          extra: errorInfo,
+    // Report to Sentry
+    import('@sentry/nextjs')
+      .then((Sentry) => {
+        Sentry.captureException(error, {
+          extra: {
+            componentStack: errorInfo?.componentStack,
+          },
         })
-      }
-    }
+      })
+      .catch(() => {
+        // Silently fail if Sentry is not available
+      })
   }
 }
 

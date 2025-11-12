@@ -1,0 +1,13 @@
+first_name,last_name,email,phone,company,title,linkedin_url,twitter_handle
+"Alice","Johnson","alice.j@email.com","+1-555-0101","TechCorp","Senior Engineer","linkedin.com/in/alicej","@alicej"
+"Bob","Martinez","bob.m@email.com","+1-555-0102","DataCo","Data Analyst","linkedin.com/in/bobm","@bobm"
+"Carol","White","carol.w@email.com","+44-20-7946-0958","AILabs","Product Manager","linkedin.com/in/carolw","@carolw"
+"David","Kim","david.k@email.com","+82-2-1234-5678","CloudSys","Tech Lead","linkedin.com/in/davidk","@davidk"
+"Emma","Thompson","emma.t@email.com","+1-555-0105","SalesPro","Sales Manager","linkedin.com/in/emmat","@emmat"
+"Frank","Garcia","frank.g@email.com","+34-91-123-4567","MarketingCo","Marketing Director","linkedin.com/in/frankg","@frankg"
+"Grace","Lee","grace.l@email.com","+1-555-0107","DesignStudio","Creative Director","linkedin.com/in/gracel","@gracel"
+"Henry","Brown","henry.b@email.com","+49-30-12345678","FinanceHub","CFO","linkedin.com/in/henryb","@henryb"
+"Iris","Chen","iris.c@email.com","+86-10-1234-5678","HealthTech","CTO","linkedin.com/in/irisc","@irisc"
+"Jack","Wilson","jack.w@email.com","+1-555-0110","StartupXYZ","Founder","linkedin.com/in/jackw","@jackw"
+
+

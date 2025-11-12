@@ -1,0 +1,13 @@
+invoice_number,customer_name,amount,due_date,status,items_count,payment_method
+"INV-2024-001","Acme Corporation",12500.00,"2024-02-15","Paid",5,"Wire Transfer"
+"INV-2024-002","TechStart Solutions",8750.50,"2024-02-20","Paid",3,"Credit Card"
+"INV-2024-003","Global Industries",23400.75,"2024-03-01","Pending",8,"Check"
+"INV-2024-004","Digital Ventures",15600.00,"2024-03-10","Paid",4,"Wire Transfer"
+"INV-2024-005","Innovation Labs",9200.25,"2024-03-15","Overdue",6,"Credit Card"
+"INV-2024-006","Enterprise Systems",18900.50,"2024-04-01","Pending",7,"Wire Transfer"
+"INV-2024-007","Cloud Services Co",11200.00,"2024-04-10","Paid",3,"Credit Card"
+"INV-2024-008","Data Analytics Inc",16750.75,"2024-04-20","Pending",5,"Check"
+"INV-2024-009","Marketing Pro",9800.00,"2024-05-01","Paid",4,"Credit Card"
+"INV-2024-010","Finance Solutions",21300.25,"2024-05-15","Pending",9,"Wire Transfer"
+
+

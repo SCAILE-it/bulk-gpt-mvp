@@ -1,0 +1,13 @@
+name,description,price,notes
+"Product A","Standard product description",29.99,"Normal text"
+"Product B","Description with 'quotes' and \"double quotes\"",39.99,"Has quotes"
+"Product C","Description with commas, semicolons; and colons:",49.99,"Has punctuation"
+"Product D","Description with newlines\nand tabs\t",59.99,"Has whitespace"
+"Product E","Description with émojis 🎉 and spéciál chàracters",69.99,"Unicode test"
+"Product F","Description with 中文 and 日本語 characters",79.99,"Multilingual"
+"Product G","Description with <tags> and & symbols",89.99,"HTML-like"
+"Product H","Description with $money$ and %percentages%",99.99,"Special symbols"
+"Product I","Description with (parentheses) and [brackets]",109.99,"Grouping chars"
+"Product J","Description with /slashes/ and \\backslashes\\",119.99,"Path-like"
+
+

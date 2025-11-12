@@ -1,0 +1,13 @@
+product_name,reviewer_name,rating,review_text,verified_purchase,helpful_votes
+"Wireless Mouse","John Smith",5,"Excellent product! Very responsive and comfortable to use. Battery lasts forever.","Yes",23
+"Mechanical Keyboard","Sarah Johnson",4,"Great keyboard, but a bit loud for office use. Build quality is excellent.","Yes",15
+"Standing Desk","Mike Chen",5,"Life-changing! My back pain is gone. Highly recommend for anyone working from home.","Yes",42
+"Monitor Stand","Emily Davis",3,"Does the job but feels a bit flimsy. Could be sturdier for the price.","Yes",8
+"USB-C Hub","David Wilson",4,"Works well with my MacBook. All ports function correctly.","Yes",19
+"Desk Lamp","Lisa Anderson",5,"Perfect lighting! The adjustable brightness and color temperature are amazing.","Yes",31
+"Laptop Stand","Robert Taylor",4,"Good quality aluminum. Helps with ergonomics.","Yes",12
+"Webcam","Jennifer Brown",5,"Crystal clear video quality. Auto-focus works perfectly.","Yes",28
+"Wireless Headphones","James Miller",4,"Great sound quality and noise cancellation. Battery could be better.","Yes",17
+"Desk Mat","Patricia Moore",5,"Large size, comfortable wrist support. Looks professional.","Yes",14
+
+

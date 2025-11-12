@@ -23,7 +23,6 @@ import { useTemplateFilter } from '@/hooks/useTemplateFilter'
 import { useCollapsibleState } from '@/hooks/useCollapsibleState'
 import { PromptSection } from './PromptSection'
 import { JobPreview } from './JobPreview'
-import { CSVPreviewTable } from './CSVPreviewTable'
 import { ResultsTable } from './ResultsTable'
 import { FileUploadSection } from './FileUploadSection'
 import { OutputFieldsSection } from './OutputFieldsSection'
@@ -369,8 +368,8 @@ export default function BulkProcessor() {
 
       const testBatchId = data.batchId
 
-      // Step 2: Poll for completion (max 30 seconds)
-      const maxAttempts = 15 // 15 attempts * 2 seconds = 30 seconds
+      // Step 2: Poll for completion (max 90 seconds)
+      const maxAttempts = 45 // 45 attempts * 2 seconds = 90 seconds
       const pollInterval = 2000 // 2 seconds
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -431,7 +430,7 @@ export default function BulkProcessor() {
       }
 
       // Timeout
-      throw new Error('Test timed out after 30 seconds. The API may be slow or overloaded. Try again in a moment.')
+      throw new Error('Test timed out after 90 seconds. The API may be slow or overloaded. Try again in a moment.')
 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
@@ -808,13 +807,11 @@ export default function BulkProcessor() {
                     onRemoveField={removeOutputField}
                   />
 
-                  {/* TOOL SELECTION - Hidden by default, shown in advanced settings */}
-                  {selectedTools.length > 0 && (
-                    <ToolSelectionSection
-                      selectedTools={selectedTools}
-                      onToggleTool={toggleTool}
-                    />
-                  )}
+                  {/* TOOL SELECTION - Always visible when JSON mode is enabled */}
+                  <ToolSelectionSection
+                    selectedTools={selectedTools}
+                    onToggleTool={toggleTool}
+                  />
                 </>
               )}
 
@@ -868,15 +865,15 @@ export default function BulkProcessor() {
           </div>
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-3 border-t border-border bg-background/95 backdrop-blur-md">
+          <div className="flex-shrink-0 p-3 border-t border-border bg-background/95 backdrop-blur-md safe-area-inset-bottom">
             <TooltipProvider>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-stretch">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleTest}
                       disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       aria-label="Test prompt with first CSV row"
                     >
                       {isTesting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
@@ -892,7 +889,7 @@ export default function BulkProcessor() {
                     <button
                       onClick={handleProcess}
                       disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                      className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-primary hover:bg-primary/90 active:bg-primary/95 transition-all duration-150 ease-out rounded-md text-sm text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-all duration-150 ease-out rounded-md text-sm text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       data-testid="run-button"
                       aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
                     >
@@ -913,17 +910,15 @@ export default function BulkProcessor() {
 
         {/* RIGHT PANEL - Results */}
         <div className="h-full overflow-hidden flex flex-col">
-          {displayResults.length > 0 ? (
+          {displayResults.length > 0 || batchProcessor.isProcessing ? (
             <ResultsTable
               results={displayResults}
               columns={csvParser.csvData?.columns || []}
               outputColumns={outputFields}
               progress={batchProcessor.progress ?? undefined}
+              processingStartTime={batchProcessor.isProcessing ? Date.now() : undefined}
               onExport={handleExport}
             />
-          ) : csvParser.csvData ? (
-            // Show CSV preview when CSV is uploaded but no results yet
-            <CSVPreviewTable csvData={csvParser.csvData} />
           ) : (
             // Empty state - minimal, not overwhelming
             <div className="flex-1 flex items-center justify-center p-6">

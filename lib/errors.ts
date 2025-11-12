@@ -82,7 +82,7 @@ export class BulkGPTError extends Error {
 
 /**
  * Log error with context for debugging
- * In production, this would integrate with logging service
+ * Integrates with Sentry for production error tracking
  */
 export function logError(
   error: Error | BulkGPTError,
@@ -101,8 +101,29 @@ export function logError(
   // Always log to console (helps with debugging in all environments)
   console.error('[BULK_GPT_ERROR]', errorInfo)
 
-  // In production, also send to logging service (e.g., Sentry, LogRocket)
-  // This would be implemented based on your logging infrastructure
+  // Send to Sentry for production error tracking
+  // Dynamic import to avoid bundling Sentry when not configured
+  import('@sentry/nextjs')
+    .then((Sentry) => {
+      Sentry.captureException(error, {
+        tags: {
+          error_code: error instanceof BulkGPTError ? error.code : 'UNKNOWN_ERROR',
+        },
+        extra: {
+          ...errorInfo,
+          context,
+        },
+        contexts: {
+          error: {
+            code: error instanceof BulkGPTError ? error.code : 'UNKNOWN_ERROR',
+            details: error instanceof BulkGPTError ? error.details : undefined,
+          },
+        },
+      })
+    })
+    .catch(() => {
+      // Silently fail if Sentry is not available (e.g., not configured or in tests)
+    })
 }
 
 /**

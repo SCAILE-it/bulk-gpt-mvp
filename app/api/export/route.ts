@@ -46,27 +46,50 @@ export async function POST(request: NextRequest): Promise<Response> {
       }
 
       // Add output data (may be string or object) - parse and spread as separate columns
+      // IMPORTANT: Each output field should be its own column, not a single "AI_Output" column
       if (result.output_data) {
+        let outputObj: Record<string, unknown> | null = null
+        
         if (typeof result.output_data === 'string') {
           // Try to parse as JSON and spread fields
           try {
             const parsed = JSON.parse(result.output_data)
             if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-              // Spread parsed object fields as separate columns (matching UI display)
-              Object.entries(parsed).forEach(([key, value]) => {
-                flat[key] = typeof value === 'string' ? value : JSON.stringify(value)
-              })
+              outputObj = parsed
             } else {
-              // Not an object, use as single Output column
+              // Not an object, use as single Output column (fallback)
               flat.Output = String(parsed)
             }
           } catch {
-            // Not JSON, use string as-is
-            flat.Output = result.output_data
+            // Not JSON, check if it's a plain string that should be in Output column
+            // But first, try stripping markdown code blocks
+            const cleaned = result.output_data.trim()
+            const codeBlockMatch = cleaned.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/m)
+            if (codeBlockMatch) {
+              try {
+                const parsed = JSON.parse(codeBlockMatch[1].trim())
+                if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+                  outputObj = parsed
+                } else {
+                  flat.Output = String(parsed)
+                }
+              } catch {
+                flat.Output = result.output_data
+              }
+            } else {
+              flat.Output = result.output_data
+            }
           }
-        } else if (typeof result.output_data === 'object') {
-          // Already an object, spread fields directly
-          Object.entries(result.output_data as Record<string, unknown>).forEach(([key, value]) => {
+        } else if (typeof result.output_data === 'object' && result.output_data !== null) {
+          // Already an object, use it directly
+          outputObj = result.output_data as Record<string, unknown>
+        }
+        
+        // Spread object fields as separate columns (each output field = one column)
+        if (outputObj) {
+          Object.entries(outputObj).forEach(([key, value]) => {
+            // Use the key as-is (e.g., "summary", "skills", etc.)
+            // Convert non-string values to JSON strings for CSV compatibility
             flat[key] = typeof value === 'string' ? value : JSON.stringify(value)
           })
         }

@@ -1,0 +1,8 @@
+id,name,age,is_active,score,created_date,tags,metadata
+1,"Alice Johnson",28,true,95.5,"2024-01-15","tag1,tag2,tag3","{\"department\":\"Engineering\",\"level\":\"Senior\"}"
+2,"Bob Smith",35,false,87.2,"2024-02-20","tag2,tag4","{\"department\":\"Sales\",\"level\":\"Manager\"}"
+3,"Carol White",42,true,92.8,"2024-03-10","tag1,tag3,tag5","{\"department\":\"Marketing\",\"level\":\"Director\"}"
+4,"David Chen",29,true,88.1,"2024-04-05","tag2,tag6","{\"department\":\"Engineering\",\"level\":\"Mid\"}"
+5,"Emma Davis",31,false,91.3,"2024-05-12","tag1,tag4,tag5","{\"department\":\"HR\",\"level\":\"Specialist\"}"
+
+

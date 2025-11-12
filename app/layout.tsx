@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     description: 'Transform CSV data at scale with AI. Upload your spreadsheet, define custom prompts, and process thousands of rows using Google Gemini AI.',
     images: [
       {
-        url: '/og-image.png', // TODO: Create 1200x630 OG image
+        url: '/og-image.svg',
         width: 1200,
         height: 630,
         alt: 'Bulk GPT - AI-Powered Bulk Processing',
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Bulk GPT - Batch Process CSV with AI',
     description: 'Transform CSV data at scale with AI. Upload, define prompts, and process thousands of rows with Gemini AI.',
-    images: ['/og-image.png'], // TODO: Create 1200x630 OG image
+    images: ['/og-image.svg'],
     creator: '@bulk_gpt', // TODO: Update with actual Twitter handle
   },
   robots: {
@@ -60,11 +60,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.ico' },
-      { url: '/icon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
     ],
     apple: [
-      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-icon.svg', sizes: '180x180', type: 'image/svg+xml' },
     ],
   },
       manifest: '/manifest.json',
