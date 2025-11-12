@@ -1,0 +1,97 @@
+
+🔍 STARTING CRITICAL AUDIT...
+
+1. Navigating to app...
+2. Logging in...
+✅ Logged in successfully
+
+  - Dismissing onboarding...
+Page structure: {
+  "fileInputs": 0,
+  "fileInputIds": [],
+  "buttons": [
+    {
+      "text": "Toggle theme",
+      "ariaExpanded": "false",
+      "className": "inline-flex items-center justify-center gap-2 whit"
+    },
+    {
+      "text": "",
+      "ariaExpanded": "false",
+      "className": "justify-center whitespace-nowrap rounded-md text-s"
+    },
+    {
+      "text": "",
+      "ariaExpanded": null,
+      "className": "text-primary hover:text-primary/80 flex-shrink-0"
+    },
+    {
+      "text": "",
+      "ariaExpanded": null,
+      "className": "flex items-center justify-center w-7 h-7 rounded-m"
+    },
+    {
+      "text": "Data Input",
+      "ariaExpanded": "false",
+      "className": "flex w-full items-center justify-between rounded-m"
+    },
+    {
+      "text": "Prompt Configuration",
+      "ariaExpanded": "false",
+      "className": "flex w-full items-center justify-between rounded-m"
+    },
+    {
+      "text": "Output Settings",
+      "ariaExpanded": "false",
+      "className": "flex w-full items-center justify-between rounded-m"
+    },
+    {
+      "text": "Test",
+      "ariaExpanded": null,
+      "className": "flex-1 flex items-center justify-center gap-1.5 px"
+    },
+    {
+      "text": "Run All ",
+      "ariaExpanded": null,
+      "className": "flex-[2] flex items-center justify-center gap-1.5 "
+    }
+  ]
+}
+
+📋 AUDIT 1: Sequential Section Expansion
+  - Uploading CSV...
+  - Entering prompt...
+
+📋 AUDIT 2: AI Optimization Button Visibility
+
+📋 AUDIT 3: Theme Toggle
+
+📋 AUDIT 4: Console Errors
+
+📋 AUDIT 5: Run Button State
+
+============================================================
+📊 AUDIT RESULTS
+============================================================
+
+✅ SUCCESSES:
+  ✅ Prompt expanded after entering prompt
+  ✅ Theme toggle visible
+  ✅ No console errors
+  ✅ Run button visible
+
+⚠️ WARNINGS:
+  ⚠️ Run button disabled but no tooltip explaining why
+
+🔴 CRITICAL ISSUES:
+  ❌ CSV upload failed: No file input found
+  ❌ Data Input did NOT expand after CSV upload
+  ❌ AI Optimization section NOT visible
+  ❌ "Optimize with AI" button NOT visible
+  ❌ "Optimize with AI" button disabled (should be enabled)
+  ❌ Run button disabled (should be enabled with CSV + prompt)
+
+============================================================
+Total: 4 ✅ | 1 ⚠️ | 6 ❌
+============================================================
+

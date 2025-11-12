@@ -1,0 +1,30 @@
+
+Running 7 tests using 4 workers
+
+(node:49614) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49614) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🔐 Setting up authentication...
+  ✘  1 [real-auth-setup] › playwright-tests/auth.setup.ts:18:6 › authenticate (1.4s)
+
+
+  1) [real-auth-setup] › playwright-tests/auth.setup.ts:18:6 › authenticate ────────────────────────
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3334/auth
+    Call log:
+    [2m  - navigating to "http://localhost:3334/auth", waiting until "load"[22m
+
+
+      33 |
+      34 |   // Navigate to login page
+    > 35 |   await page.goto('http://localhost:3334/auth')
+         |              ^
+      36 |   await page.waitForLoadState('networkidle')
+      37 |
+      38 |   console.log('📧 Waiting for login form to appear...')
+        at /Users/federicodeponte/bulk-gpt-mvp-code/playwright-tests/auth.setup.ts:35:14
+
+  1 failed
+    [real-auth-setup] › playwright-tests/auth.setup.ts:18:6 › authenticate ─────────────────────────
+  6 did not run

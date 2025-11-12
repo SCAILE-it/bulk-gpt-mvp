@@ -112,28 +112,39 @@ export default function BulkProcessor() {
   const prevHasPrompt = useRef(false)
 
   useEffect(() => {
-    // Step 1: Expand Data Input when CSV is first uploaded
+    // Step 1: Expand Data Input when CSV is first uploaded (one by one)
     const hasCSV = !!csvParser.csvData
-    if (hasCSV && !prevHasCSV.current && !dataInputSection.isOpen) {
-      dataInputSection.setIsOpen(true)
-      // Close other sections to focus on current step
-      if (promptSection.isOpen) promptSection.setIsOpen(false)
-      if (outputSettingsSection.isOpen) outputSettingsSection.setIsOpen(false)
+    const wasCSV = prevHasCSV.current
+    
+    // Only expand on transition from no CSV to CSV
+    if (hasCSV && !wasCSV) {
+      // Expand Data Input section
+      if (!dataInputSection.isOpen) {
+        dataInputSection.setIsOpen(true)
+      }
+      // Don't force-close other sections - let user control them
     }
+    
     prevHasCSV.current = hasCSV
-  }, [csvParser.csvData, dataInputSection.isOpen, dataInputSection.setIsOpen, promptSection.isOpen, promptSection.setIsOpen, outputSettingsSection.isOpen, outputSettingsSection.setIsOpen])
+  }, [csvParser.csvData, dataInputSection])
 
   useEffect(() => {
-    // Step 2: Expand Prompt section when prompt is first filled (only after CSV is uploaded)
+    // Step 2: Expand Prompt section when prompt is first filled (only after CSV exists)
     const hasPrompt = !!(prompt && prompt.trim())
     const hasCSV = !!csvParser.csvData
-    if (hasPrompt && hasCSV && !prevHasPrompt.current && !promptSection.isOpen) {
-      promptSection.setIsOpen(true)
-      // Close Output Settings if open (user should focus on prompt first)
-      if (outputSettingsSection.isOpen) outputSettingsSection.setIsOpen(false)
+    const wasPrompt = prevHasPrompt.current
+    
+    // Only expand on transition from no prompt to prompt (and CSV must exist)
+    if (hasPrompt && hasCSV && !wasPrompt) {
+      // Expand Prompt section
+      if (!promptSection.isOpen) {
+        promptSection.setIsOpen(true)
+      }
+      // Don't force-close Output Settings - let user control
     }
+    
     prevHasPrompt.current = hasPrompt
-  }, [prompt, csvParser.csvData, promptSection.isOpen, promptSection.setIsOpen, outputSettingsSection.isOpen, outputSettingsSection.setIsOpen])
+  }, [prompt, csvParser.csvData, promptSection])
 
   // === ONBOARDING STATE ===
   const [showOnboarding, setShowOnboarding] = useState(false)
