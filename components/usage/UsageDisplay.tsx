@@ -63,7 +63,7 @@ export function UsageDisplay() {
 
   if (error || !usage) {
     return (
-      <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded text-sm text-red-400">
+      <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
         {error || 'Failed to load usage'}
       </div>
     )
@@ -134,20 +134,20 @@ export function UsageDisplay() {
       </div>
 
       {/* Monthly Stats */}
-      <div className="border border-zinc-800 rounded-lg p-4">
+      <div className="border border-white/5 rounded-lg p-4 bg-zinc-900/30">
         <div className="flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-zinc-500" />
-          <span className="text-sm font-medium text-zinc-300">This Month</span>
+          <Calendar className="h-3.5 w-3.5 text-zinc-500" />
+          <span className="text-xs font-medium text-zinc-300">This Month</span>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-2xl font-semibold text-zinc-100">
+            <div className="text-xl font-semibold text-zinc-100">
               {usage.batchesThisMonth.toLocaleString()}
             </div>
             <div className="text-xs text-zinc-500">Batches</div>
           </div>
           <div>
-            <div className="text-2xl font-semibold text-zinc-100">
+            <div className="text-xl font-semibold text-zinc-100">
               {usage.rowsThisMonth.toLocaleString()}
             </div>
             <div className="text-xs text-zinc-500">Rows</div>
