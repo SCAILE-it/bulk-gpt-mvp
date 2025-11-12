@@ -59,7 +59,7 @@ export default function Hint({ variant = 'tip', title, description, className }:
   return (
     <div
       className={cn(
-        'rounded-lg border p-4',
+        'rounded-lg border p-4 transition-shadow',
         config.bg,
         config.border,
         className
@@ -70,7 +70,7 @@ export default function Hint({ variant = 'tip', title, description, className }:
       <div className="flex gap-3">
         <Icon className={cn('h-5 w-5 flex-shrink-0 mt-0.5', config.iconColor)} aria-hidden="true" />
         <div className="flex-1 space-y-1">
-          <p className={cn('font-medium text-sm', config.titleColor)}>{title}</p>
+          <p className={cn('font-semibold text-sm', config.titleColor)}>{title}</p>
           <p className={cn('text-sm', config.descColor)}>{description}</p>
         </div>
       </div>

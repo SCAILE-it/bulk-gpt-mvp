@@ -52,26 +52,31 @@ export function Nav() {
   ]
 
   return (
-    <header className="border-b border-border bg-card px-6 py-4">
-      <div className="container mx-auto flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <div className="container mx-auto flex items-center justify-between gap-4 px-6 py-3">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <Activity className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold">Bulk GPT</span>
+        <Link 
+          href="/dashboard" 
+          className="flex items-center gap-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
+          aria-label="Bulk GPT Home"
+        >
+          <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
+          <span className="text-lg font-semibold">Bulk GPT</span>
         </Link>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                'text-sm font-medium transition-colors hover:text-primary',
+                'px-3 py-2 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 pathname === link.href
-                  ? 'text-foreground'
-                  : 'text-muted-foreground'
+                  ? 'text-foreground bg-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               )}
+              aria-current={pathname === link.href ? 'page' : undefined}
             >
               {link.label}
             </Link>
@@ -81,11 +86,17 @@ export function Nav() {
         {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu-button">
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-2" 
+              data-testid="user-menu-button"
+              aria-label="User menu"
+              aria-haspopup="true"
+            >
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
-                <User className="h-4 w-4 text-primary" />
+                <User className="h-4 w-4 text-primary" aria-hidden="true" />
               </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

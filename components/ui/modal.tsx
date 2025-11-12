@@ -66,7 +66,7 @@ export function Modal({
       <div
         ref={modalRef}
         className={cn(
-          'bg-zinc-900 border border-white/10 rounded-lg shadow-2xl w-full overflow-hidden',
+          'bg-zinc-900 border border-white/10 rounded-lg shadow-lg w-full overflow-hidden transition-all',
           sizeClasses[size],
           footer ? 'flex flex-col' : '',
           className
@@ -89,7 +89,7 @@ export function Modal({
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="text-zinc-400 hover:text-zinc-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
             aria-label={`Close ${title}`}
           >
             <X className="h-5 w-5" aria-hidden="true" />

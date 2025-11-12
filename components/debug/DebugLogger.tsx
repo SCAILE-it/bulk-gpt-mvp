@@ -184,7 +184,7 @@ export function DebugLogger({ maxLogs = 100 }: DebugLoggerProps) {
                     </span>
                   </div>
                   <div className="mt-1 break-words">{log.message}</div>
-                  {log.data && (
+                  {log.data !== undefined && (
                     <pre className="mt-1 text-xs bg-black/5 dark:bg-white/5 p-1 rounded overflow-x-auto">
                       {JSON.stringify(log.data, null, 2)}
                     </pre>

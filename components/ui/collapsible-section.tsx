@@ -67,16 +67,17 @@ const CollapsibleSection = React.forwardRef<
       >
         <CollapsibleTrigger
           className={cn(
-            'flex w-full items-center justify-between rounded-md p-4 text-left font-semibold transition-colors hover:bg-accent',
+            'flex w-full items-center justify-between rounded-md p-4 text-left font-semibold transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
             triggerClassName
           )}
         >
           {title}
           <ChevronDown
             className={cn(
-              'h-4 w-4 transition-transform duration-200',
+              'h-4 w-4 transition-transform duration-200 flex-shrink-0',
               isOpen && 'rotate-180'
             )}
+            aria-hidden="true"
           />
         </CollapsibleTrigger>
         <CollapsibleContent

@@ -143,18 +143,22 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="h-full flex items-center justify-center" role="status" aria-live="polite">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+        <span className="sr-only">Loading profile...</span>
       </div>
     )
   }
 
   if (error && !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-full flex items-center justify-center p-6">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle className="text-destructive">Error</CardTitle>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
+              <CardTitle className="text-destructive">Error</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <p>{error}</p>
@@ -165,32 +169,40 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="h-full overflow-y-auto bg-background p-6">
       <div className="container mx-auto max-w-2xl space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <User className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
+            <User className="h-6 w-6 sm:h-7 sm:w-7 text-primary" aria-hidden="true" />
             Profile Settings
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1.5">
             Manage your account information
           </p>
         </div>
 
         {/* Success Message */}
         {successMessage && (
-          <div className="flex items-center gap-2 p-4 rounded-lg border border-green-500 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
-            <CheckCircle2 className="h-5 w-5" />
-            {successMessage}
+          <div 
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 p-4 rounded-lg border border-green-500/20 bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-300"
+          >
+            <CheckCircle2 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+            <span>{successMessage}</span>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="flex items-center gap-2 p-4 rounded-lg border border-red-500 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300">
-            <AlertCircle className="h-5 w-5" />
-            {error}
+          <div 
+            role="alert"
+            aria-live="polite"
+            className="flex items-center gap-2 p-4 rounded-lg border border-red-500/20 bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300"
+          >
+            <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -229,6 +241,8 @@ export default function ProfilePage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={isSaving}
+                  autocomplete="name"
+                  aria-describedby={error ? "full_name-error" : undefined}
                 />
               </div>
 
@@ -242,6 +256,7 @@ export default function ProfilePage() {
                   value={organization}
                   onChange={(e) => setOrganization(e.target.value)}
                   disabled={isSaving}
+                  autocomplete="organization"
                 />
               </div>
 
@@ -255,6 +270,7 @@ export default function ProfilePage() {
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   disabled={isSaving}
+                  autocomplete="photo"
                 />
                 <p className="text-xs text-muted-foreground">
                   URL to your profile picture
@@ -262,15 +278,16 @@ export default function ProfilePage() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button
                   type="submit"
                   disabled={isSaving}
                   className="flex-1"
+                  aria-label={isSaving ? "Saving profile changes" : "Save profile changes"}
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                       Saving...
                     </>
                   ) : (
@@ -282,6 +299,7 @@ export default function ProfilePage() {
                   variant="outline"
                   onClick={() => router.push('/dashboard')}
                   disabled={isSaving}
+                  aria-label="Cancel and return to dashboard"
                 >
                   Cancel
                 </Button>

@@ -46,7 +46,7 @@
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.94 0.003 85);
   --input: oklch(0.94 0.003 85);
-  --ring: oklch(0.705 0.015 286.067);
+  --ring: oklch(0.5 0.15 250);
 }
 
 /* Warm neutral oklch dark theme - WCAG AA compliant */
@@ -70,7 +70,7 @@
   --destructive-foreground: oklch(0.95 0.01 20);
   --border: oklch(100% 0 0 / 0.08);
   --input: oklch(100% 0 0 / 0.1);
-  --ring: oklch(0.5 0.01 0);
+  --ring: oklch(0.65 0.15 250);
 }
 
 @layer base {
@@ -115,6 +115,30 @@
   /* Hover scale utility */
   .hover\:scale-105:hover {
     transform: scale(1.05);
+  }
+
+  /* Enhanced focus indicators for accessibility (WCAG AA compliant) */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  /* Ensure focus indicators are visible on all interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Remove default focus outline for mouse users, keep for keyboard */
+  *:focus:not(:focus-visible) {
+    outline: none;
   }
 }
 

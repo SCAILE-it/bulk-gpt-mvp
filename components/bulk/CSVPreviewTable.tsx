@@ -60,15 +60,18 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
                   <td className="px-4 py-3 text-xs text-zinc-500 font-mono">
                     {rowIndex + 1}
                   </td>
-                  {columns.map((column) => (
-                    <td
-                      key={column}
-                      className="px-4 py-3 text-sm text-zinc-200 max-w-xs truncate"
-                      title={row[column]}
-                    >
-                      {row[column] || <span className="text-zinc-600 italic">—</span>}
-                    </td>
-                  ))}
+                  {columns.map((column) => {
+                    const value = row.data[column]
+                    return (
+                      <td
+                        key={column}
+                        className="px-4 py-3 text-sm text-zinc-200 max-w-xs truncate"
+                        title={value ?? ''}
+                      >
+                        {value || <span className="text-zinc-600 italic">—</span>}
+                      </td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>

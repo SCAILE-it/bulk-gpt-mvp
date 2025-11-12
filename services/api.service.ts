@@ -13,8 +13,6 @@
  * - Dependency Inversion: Uses interfaces, not implementations
  */
 
-import type { ParsedCSV } from '@/lib/types'
-
 // ===== INTERFACES =====
 
 export interface BatchRequest {

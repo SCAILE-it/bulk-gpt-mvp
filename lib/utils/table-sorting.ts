@@ -76,19 +76,19 @@ export function sortResults<T extends {
     if (sortConfig.column === 'status') {
       // Sort by status priority
       comparison = compareStatus(a.status, b.status)
-    } else if (columns.includes(sortConfig.column)) {
+    } else if (sortConfig.column && columns.includes(sortConfig.column)) {
       // Sort by input column
-      const aValue = a.input[sortConfig.column]
-      const bValue = b.input[sortConfig.column]
+      const aValue = a.input[sortConfig.column] ?? null
+      const bValue = b.input[sortConfig.column] ?? null
       comparison = compareStrings(aValue, bValue)
-    } else if (outputColumns.includes(sortConfig.column)) {
+    } else if (sortConfig.column && outputColumns.includes(sortConfig.column)) {
       // Sort by output column
       try {
         const aOutput = typeof a.output === 'string' ? JSON.parse(a.output) : a.output
         const bOutput = typeof b.output === 'string' ? JSON.parse(b.output) : b.output
 
-        const aValue = aOutput?.[sortConfig.column]
-        const bValue = bOutput?.[sortConfig.column]
+        const aValue = aOutput?.[sortConfig.column] ?? null
+        const bValue = bOutput?.[sortConfig.column] ?? null
 
         // Handle nested objects/arrays - convert to string for comparison
         const aStr = typeof aValue === 'object' ? JSON.stringify(aValue) : String(aValue ?? '')
@@ -97,7 +97,7 @@ export function sortResults<T extends {
         comparison = compareStrings(aStr, bStr)
       } catch {
         // If JSON parsing fails, fall back to raw output comparison
-        comparison = compareStrings(a.output, b.output)
+        comparison = compareStrings(a.output ?? null, b.output ?? null)
       }
     }
 

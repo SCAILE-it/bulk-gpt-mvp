@@ -46,10 +46,10 @@ export function OutputFieldsSection({
             {field}
             <button
               onClick={() => onRemoveField(field)}
-              className="hover:text-red-400 transition-colors"
+              className="hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-400 rounded"
               aria-label={`Remove ${field} output field`}
             >
-              <X className="h-3 w-3" />
+              <X className="h-3 w-3" aria-hidden="true" />
             </button>
           </div>
         ))}
@@ -59,12 +59,12 @@ export function OutputFieldsSection({
             onChange={(e) => onNewFieldChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddField()}
             placeholder="field..."
-            className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 transition-all duration-150 ease-out"
+            className="w-24 px-2 py-1 bg-zinc-900/70 border border-white/5 rounded text-sm text-zinc-300 font-mono focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all duration-150 ease-out"
             aria-label="New output field name"
           />
           <button
             onClick={onAddField}
-            className="p-1 hover:bg-zinc-800 rounded transition-colors"
+            className="p-1 hover:bg-zinc-800 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
             aria-label="Add new output field"
           >
             <Plus className="h-3 w-3 text-zinc-500" aria-hidden="true" />

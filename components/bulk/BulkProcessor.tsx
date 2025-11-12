@@ -833,7 +833,7 @@ export default function BulkProcessor() {
               <button
                 onClick={handleTest}
                 disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-zinc-900 border border-white/5 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 title="Test with first row (⌘T)"
                 aria-label="Test prompt with first CSV row"
               >
@@ -843,7 +843,7 @@ export default function BulkProcessor() {
               <button
                 onClick={handleProcess}
                 disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 hover:shadow-[inset_0_1px_0_rgba(96,165,250,0.2)] transition-all duration-150 ease-out rounded-md text-sm text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 title="Run all rows (⌘Enter)"
                 data-testid="run-button"
                 aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
@@ -864,7 +864,7 @@ export default function BulkProcessor() {
               results={displayResults}
               columns={csvParser.csvData?.columns || []}
               outputColumns={outputFields}
-              progress={batchProcessor.progress}
+              progress={batchProcessor.progress ?? undefined}
               onExport={handleExport}
             />
           ) : csvParser.csvData ? (

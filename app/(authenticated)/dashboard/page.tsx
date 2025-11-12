@@ -316,7 +316,7 @@ export default function DashboardPage() {
         <Card className="max-w-md">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
               <CardTitle className="text-destructive">Failed to Load Dashboard</CardTitle>
             </div>
             <CardDescription>
@@ -328,16 +328,18 @@ export default function DashboardPage() {
               onClick={() => window.location.reload()}
               variant="default"
               className="w-full"
+              aria-label="Retry loading dashboard"
             >
-              <RefreshCw className="mr-2 h-4 w-4" />
+              <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
               Retry
             </Button>
             <Button
               onClick={() => router.push('/bulk')}
               variant="outline"
               className="w-full"
+              aria-label="Go to bulk processor"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Go to Bulk Processor
             </Button>
           </CardContent>
@@ -350,63 +352,67 @@ export default function DashboardPage() {
     <div className="h-full overflow-y-auto bg-background p-6">
       <div className="container mx-auto max-w-6xl space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Activity className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
+              <Activity className="h-6 w-6 sm:h-7 sm:w-7 text-primary" aria-hidden="true" />
               Dashboard
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1.5">
               Overview of your batch processing activity
             </p>
           </div>
-          <Button onClick={() => router.push('/bulk')} size="lg">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button 
+            onClick={() => router.push('/bulk')} 
+            size="lg"
+            aria-label="Create new batch"
+          >
+            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             New Batch
           </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Batches</CardDescription>
+            <CardHeader className="pb-3">
+              <CardDescription className="text-xs font-medium">Total Batches</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalBatches}</div>
+              <div className="text-2xl font-semibold">{stats.totalBatches}</div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Completed</CardDescription>
+            <CardHeader className="pb-3">
+              <CardDescription className="text-xs font-medium">Completed</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <div className="text-2xl font-semibold text-green-600 dark:text-green-400">
                 {stats.completedBatches}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Failed</CardDescription>
+            <CardHeader className="pb-3">
+              <CardDescription className="text-xs font-medium">Failed</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              <div className="text-2xl font-semibold text-red-600 dark:text-red-400">
                 {stats.failedBatches}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Success Rate</CardDescription>
+            <CardHeader className="pb-3">
+              <CardDescription className="text-xs font-medium">Success Rate</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                {stats.successRate}%
+              <div className="text-2xl font-semibold flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-600" aria-hidden="true" />
+                <span>{stats.successRate}%</span>
               </div>
             </CardContent>
           </Card>
@@ -426,8 +432,9 @@ export default function DashboardPage() {
                   size="sm"
                   onClick={downloadCSV}
                   disabled={filteredBatches.length === 0}
+                  aria-label="Download batches as CSV"
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" aria-hidden="true" />
                   CSV
                 </Button>
                 <Button
@@ -435,40 +442,42 @@ export default function DashboardPage() {
                   size="sm"
                   onClick={downloadJSON}
                   disabled={filteredBatches.length === 0}
+                  aria-label="Download batches as JSON"
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" aria-hidden="true" />
                   JSON
                 </Button>
               </div>
             </div>
             {batches.length > 0 && (
               <div className="relative mt-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <Input
                   placeholder="Search by filename or status..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
+                  aria-label="Search batches"
                 />
               </div>
             )}
           </CardHeader>
           <CardContent>
             {batches.length === 0 ? (
-              <div className="text-center py-12">
-                <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <div className="text-center py-12" role="status" aria-live="polite">
+                <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" aria-hidden="true" />
                 <h3 className="text-lg font-semibold mb-2">No batches yet</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Get started by creating your first batch
                 </p>
-                <Button onClick={() => router.push('/bulk')}>
-                  <Plus className="mr-2 h-4 w-4" />
+                <Button onClick={() => router.push('/bulk')} aria-label="Create your first batch">
+                  <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                   Create First Batch
                 </Button>
               </div>
             ) : filteredBatches.length === 0 ? (
-              <div className="text-center py-12">
-                <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <div className="text-center py-12" role="status" aria-live="polite">
+                <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" aria-hidden="true" />
                 <h3 className="text-lg font-semibold mb-2">No results found</h3>
                 <p className="text-sm text-muted-foreground">
                   Try adjusting your search query
@@ -516,10 +525,10 @@ export default function DashboardPage() {
                             size="sm"
                             onClick={() => downloadBatchResults(batch.id, batch.csv_filename)}
                             className="h-8 w-8 p-0"
-                            title="Download results CSV"
+                            aria-label={`Download results for ${batch.csv_filename}`}
                             data-testid="download-results-button"
                           >
-                            <Download className="h-4 w-4" />
+                            <Download className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         )}
                       </TableCell>

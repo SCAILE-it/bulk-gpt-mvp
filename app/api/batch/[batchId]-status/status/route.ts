@@ -27,7 +27,7 @@ export const maxDuration = 60
  * }
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { batchId: string } }
 ): Promise<Response> {
   try {

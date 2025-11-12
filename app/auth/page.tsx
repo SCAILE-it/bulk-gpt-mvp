@@ -105,13 +105,18 @@ function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSignIn} className="space-y-4">
+            {error && (
+              <div
+                id="form-error"
+                role="alert"
+                aria-live="polite"
+                className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                {error}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -122,6 +127,9 @@ function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 required
+                autocomplete="email"
+                aria-describedby={error ? "form-error" : undefined}
+                aria-invalid={!!error}
               />
             </div>
 
@@ -135,6 +143,9 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
+                autocomplete="current-password"
+                aria-describedby={error ? "form-error" : undefined}
+                aria-invalid={!!error}
               />
             </div>
 
