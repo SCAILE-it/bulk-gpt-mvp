@@ -3,11 +3,25 @@
 @tailwind utilities;
 
 /* Completely disable all tooltip animations */
-[data-radix-tooltip-content] {
+[data-radix-tooltip-content],
+[data-radix-tooltip-content][data-state="delayed-open"],
+[data-radix-tooltip-content][data-state="instant-open"] {
   animation: none !important;
   transition: none !important;
   transform: none !important;
   opacity: 1 !important;
+  will-change: auto !important;
+}
+
+/* Override any Radix animation keyframes */
+@keyframes radix-tooltip-content-show {
+  from { opacity: 1; transform: none; }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes radix-tooltip-content-hide {
+  from { opacity: 1; transform: none; }
+  to { opacity: 1; transform: none; }
 }
 
 /* Ensure Geist fonts are base layer */

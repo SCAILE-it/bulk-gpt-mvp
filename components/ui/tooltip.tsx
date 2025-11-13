@@ -5,7 +5,11 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
-const TooltipProvider = TooltipPrimitive.Provider
+const TooltipProvider = ({ children, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => (
+  <TooltipPrimitive.Provider delayDuration={0} skipDelayDuration={0} {...props}>
+    {children}
+  </TooltipPrimitive.Provider>
+)
 
 const Tooltip = TooltipPrimitive.Root
 
@@ -27,8 +31,10 @@ const TooltipContent = React.forwardRef<
         animation: 'none !important', 
         transition: 'none !important',
         transform: 'none !important',
-        opacity: '1 !important'
+        opacity: '1 !important',
+        willChange: 'auto !important'
       }}
+      data-state="instant-open"
       {...props}
     />
   </TooltipPrimitive.Portal>
