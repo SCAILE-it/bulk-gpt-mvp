@@ -10,8 +10,9 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
 
 export async function POST(request: NextRequest) {
+  let body: { action?: string; accessToken?: string; spreadsheetId?: string; range?: string } | null = null
   try {
-    const body = await request.json()
+    body = await request.json()
     const { action, accessToken, spreadsheetId, range } = body
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
