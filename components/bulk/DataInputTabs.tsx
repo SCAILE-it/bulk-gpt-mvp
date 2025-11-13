@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 import { Upload, FileSpreadsheet } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { CSVUploadTab } from './CSVUploadTab'
-import { GoogleSheetsTab } from './GoogleSheetsTab'
+import { GoogleSheetsUrlTab } from './GoogleSheetsUrlTab'
 import type { ParsedCSV } from '@/lib/types'
 
 interface DataInputTabsProps {
@@ -78,7 +78,7 @@ export function DataInputTabs({
       </TabsContent>
 
       <TabsContent value="sheets" className="mt-3">
-        <GoogleSheetsTab
+        <GoogleSheetsUrlTab
           csvData={showSheetsPreview ? csvData : null}
           fileName={activeTab === 'sheets' ? fileName : undefined}
           isUploading={isUploading && activeTab === 'sheets'}

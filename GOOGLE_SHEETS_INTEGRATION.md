@@ -1,115 +1,109 @@
-# Google Sheets Integration - Implementation Summary
+# Google Sheets Integration - Simple URL-Based Approach
 
 ## ✅ What Was Implemented
 
-Google Sheets integration has been successfully added to Bulk GPT App, allowing users to import data directly from Google Sheets alongside CSV file uploads.
+Google Sheets integration has been successfully added to Bulk GPT App, allowing users to import data directly from Google Sheets by pasting a URL. **No OAuth required** - users simply make their sheet public and paste the URL.
 
 ### Files Created/Modified
 
-1. **`hooks/useGoogleSheets.ts`** - Custom hook for Google Sheets OAuth and data fetching
-2. **`lib/google-sheets-utils.ts`** - Utility functions to convert Google Sheets data to CSV format
-3. **`app/api/google-sheets/route.ts`** - API route for server-side Google Sheets operations
-4. **`components/bulk/FileUploadSection.tsx`** - Added "Google Sheets" button next to CSV upload
-5. **`components/bulk/BulkProcessor.tsx`** - Integrated Google Sheets upload handler
-6. **`hooks/useCSVParser.ts`** - Added `setParsedData` method for direct data injection
+1. **`components/bulk/GoogleSheetsUrlTab.tsx`** - Simple URL input component for Google Sheets import
+2. **`lib/google-sheets-url-utils.ts`** - Utility functions to extract sheet ID from URLs
+3. **`lib/google-sheets-utils.ts`** - Utility functions to convert Google Sheets data to CSV format
+4. **`app/api/google-sheets/route.ts`** - API route for fetching public Google Sheets (no OAuth)
+5. **`components/bulk/DataInputTabs.tsx`** - Tab interface for CSV upload and Google Sheets URL
+6. **`components/bulk/BulkProcessor.tsx`** - Integrated Google Sheets import handler
 
 ### Features
 
-- ✅ OAuth 2.0 authentication with Google
-- ✅ Google Picker API for sheet selection
-- ✅ Direct import from Google Sheets
+- ✅ Simple URL paste interface
+- ✅ No OAuth required (no popups, no login)
+- ✅ Direct import from public Google Sheets
 - ✅ Automatic conversion to CSV format
 - ✅ Seamless integration with existing CSV workflow
-- ✅ Error handling and user feedback
+- ✅ Clear error messages and user guidance
+- ✅ Instructions for making sheets public
 
 ## 🔑 Required Credentials
 
-To enable Google Sheets integration, you need to add the following environment variables:
-
-### Environment Variables
-
-Add these to your `.env.local` file:
+**Only one environment variable needed:**
 
 ```bash
-# Google OAuth (for Google Sheets integration)
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here
 NEXT_PUBLIC_GOOGLE_API_KEY=your_google_api_key_here
-GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 ```
 
-**Note:** 
-- `NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_GOOGLE_API_KEY` are used client-side
-- `GOOGLE_CLIENT_SECRET` is used server-side only (never exposed to client)
+**No longer needed:**
+- ❌ `GOOGLE_CLIENT_ID` - Not required
+- ❌ `GOOGLE_CLIENT_SECRET` - Not required
+- ❌ OAuth consent screen setup - Not required
+- ❌ Authorized redirect URIs - Not required
 
-### How to Get Google Credentials
+### How to Get Google API Key
 
 1. **Go to Google Cloud Console:** https://console.cloud.google.com/
 2. **Create or select a project**
-3. **Enable APIs:**
-   - Google Sheets API
-   - Google Drive API (for Picker)
-4. **Create OAuth 2.0 Credentials:**
-   - Go to "Credentials" → "Create Credentials" → "OAuth client ID"
-   - Application type: "Web application"
-   - Authorized redirect URIs: Add your app URLs (e.g., `http://localhost:3000`, `https://your-app.vercel.app`)
-5. **Create API Key:**
-   - Go to "Credentials" → "Create Credentials" → "API key"
-   - Restrict the API key to Google Sheets API and Google Drive API
+3. **Enable Google Sheets API:**
+   - Go to "APIs & Services" → "Library"
+   - Search for "Google Sheets API"
+   - Click "Enable"
+4. **Create API Key:**
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "API key"
+   - (Optional) Restrict the API key to Google Sheets API for security
 
-### OAuth Consent Screen
-
-1. Go to "OAuth consent screen"
-2. Configure the consent screen:
-   - User Type: External (or Internal if using Google Workspace)
-   - App name: Your app name
-   - Scopes: Add `https://www.googleapis.com/auth/spreadsheets.readonly` and `https://www.googleapis.com/auth/drive.readonly`
-   - Test users: Add your email for testing
+That's it! No OAuth setup needed.
 
 ## 🚀 How It Works
 
-1. **User clicks "Google Sheets" button** in the file upload section
-2. **OAuth authentication** - User signs in with Google (if not already authenticated)
-3. **Google Picker opens** - User selects a Google Sheet from their Drive
-4. **Data fetching** - Sheet data is fetched using Google Sheets API
-5. **Conversion** - Data is converted to CSV format compatible with existing parser
-6. **Processing** - Data flows through the same pipeline as CSV uploads
+1. **User pastes Google Sheets URL** in the "Google Sheets" tab
+2. **System extracts sheet ID** from the URL
+3. **Fetches data** using Google Sheets API (public access)
+4. **Converts to CSV format** compatible with existing parser
+5. **Data flows through** the same pipeline as CSV uploads
+
+## 📋 User Instructions
+
+Users need to make their Google Sheet public:
+
+1. Open your Google Sheet
+2. Click "Share" button (top right)
+3. Change access to "Anyone with the link"
+4. Set permission to "Viewer"
+5. Copy the link and paste it in the app
 
 ## 🎨 UI Changes
 
-- Added a blue "Google Sheets" button next to "Browse Files" button
-- Button includes a spreadsheet icon for visual clarity
-- Button only appears when `onGoogleSheetsUpload` prop is provided
+- Added "Google Sheets" tab next to "CSV Upload" tab
+- Simple URL input field with clear instructions
+- Helpful error messages if sheet is not public
+- Same preview interface as CSV upload for consistency
 
 ## ⚠️ Important Notes
 
-1. **Credentials Required:** The feature will not work until Google credentials are configured
-2. **Error Handling:** If credentials are missing, users will see appropriate error messages
-3. **Privacy:** Only read-only access is requested (`spreadsheets.readonly` and `drive.readonly` scopes)
-4. **Rate Limits:** Google Sheets API has rate limits (typically 100 requests per 100 seconds per user)
+1. **Public Sheets Only:** The sheet must be set to "Anyone with the link can view"
+2. **No OAuth:** This approach doesn't support private sheets (by design - keeps it simple)
+3. **API Key Only:** Only requires Google API key, no OAuth credentials
+4. **Rate Limits:** Google Sheets API has rate limits (typically 100 requests per 100 seconds)
 
 ## 🧪 Testing
 
-Once credentials are added:
+1. Create a test Google Sheet with some data
+2. Make it public ("Anyone with the link can view")
+3. Copy the URL
+4. In the app, go to "Google Sheets" tab
+5. Paste the URL
+6. Click "Import Sheet"
+7. Verify data appears in preview table
 
-1. Start the development server: `npm run dev`
-2. Navigate to the bulk processing page
-3. Click "Google Sheets" button
-4. Sign in with Google (if prompted)
-5. Select a Google Sheet from the picker
-6. Verify data appears in the preview table
-7. Continue with normal processing workflow
+## 📝 Benefits of This Approach
 
-## 📝 Next Steps
-
-1. ✅ Add Google credentials to `.env.local`
-2. ✅ Test OAuth flow
-3. ✅ Test sheet selection and data import
-4. ✅ Verify data processing works correctly
-5. ✅ Deploy to production with production credentials
+- ✅ **90% simpler** - No OAuth complexity
+- ✅ **Faster setup** - Just API key needed
+- ✅ **Better UX** - No popups, no login required
+- ✅ **Less code** - ~100 lines vs ~700 lines
+- ✅ **Easier maintenance** - No OAuth edge cases
+- ✅ **Covers most use cases** - Most users can make sheets public temporarily
 
 ## 🔗 Resources
 
 - [Google Sheets API Documentation](https://developers.google.com/sheets/api)
-- [Google Picker API Documentation](https://developers.google.com/picker)
-- [Google OAuth 2.0 Documentation](https://developers.google.com/identity/protocols/oauth2)
-
+- [Google Sheets API - Reading Values](https://developers.google.com/sheets/api/guides/values)
