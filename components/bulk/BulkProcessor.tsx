@@ -18,6 +18,8 @@ import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
 import { useManualJobOptimizer } from '@/hooks/useManualJobOptimizer'
 import { useVariableValidation } from '@/hooks/useVariableValidation'
+import { getTimeEstimate } from '@/lib/time-estimation'
+import { PARALLEL_CONCURRENCY } from '@/lib/processing-constants'
 import { useBetaBanner } from '@/hooks/useBetaBanner'
 import { useTemplateFilter } from '@/hooks/useTemplateFilter'
 import { useCollapsibleState } from '@/hooks/useCollapsibleState'
@@ -205,6 +207,19 @@ export default function BulkProcessor() {
 
   // === VARIABLE VALIDATION ===
   const variableValidation = useVariableValidation(prompt, csvParser.csvData, selectedInputColumns)
+
+  // === TIME ESTIMATION ===
+  const timeEstimate = useMemo(() => {
+    if (!csvParser.csvData || !prompt || !variableValidation.isValid) {
+      return null
+    }
+    return getTimeEstimate(
+      csvParser.csvData.totalRows,
+      prompt.length,
+      selectedTools.length,
+      PARALLEL_CONCURRENCY
+    )
+  }, [csvParser.csvData, prompt, selectedTools.length, variableValidation.isValid])
 
   // === FILTERED TEMPLATES ===
   const filteredTemplates = useTemplateFilter(templateSearchQuery, templateCategoryFilter)
@@ -907,18 +922,25 @@ export default function BulkProcessor() {
                     <button
                       onClick={handleProcess}
                       disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                      className="flex-[2] flex items-center justify-center gap-2 px-4 py-2 h-9 bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                      className="flex-[2] flex flex-col items-center justify-center gap-0.5 px-4 py-2 h-auto min-h-[36px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                       data-testid="run-button"
-                      aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI`}
+                      aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
                     >
-                      {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                      <span className="whitespace-nowrap">
-                        Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                        <span className="whitespace-nowrap">
+                          Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
+                        </span>
+                      </div>
+                      {timeEstimate && !batchProcessor.isProcessing && (
+                        <span className="text-[10px] text-primary-foreground/70 font-normal">
+                          ~{timeEstimate.formatted}
+                        </span>
+                      )}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Run all ${csvParser.csvData?.totalRows || 0} rows (⌘Enter)`}
+                    {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Run all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
                   </TooltipContent>
                 </Tooltip>
               </div>
