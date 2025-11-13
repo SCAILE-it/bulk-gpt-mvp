@@ -82,7 +82,7 @@ export function BatchStatusCard({
           <CheckCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Success</p>
-            <p className="text-lg font-semibold text-green-400 tabular-nums transition-all duration-300">{successCount}</p>
+            <p className="text-base font-semibold text-green-400 tabular-nums transition-all duration-300">{successCount}</p>
           </div>
         </div>
 
@@ -91,7 +91,7 @@ export function BatchStatusCard({
           <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Failed</p>
-            <p className="text-lg font-semibold text-red-400 tabular-nums transition-all duration-300">{errorCount}</p>
+            <p className="text-base font-semibold text-red-400 tabular-nums transition-all duration-300">{errorCount}</p>
           </div>
         </div>
 
@@ -100,7 +100,7 @@ export function BatchStatusCard({
           <Clock className="h-4 w-4 text-primary flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Pending</p>
-            <p className="text-lg font-semibold text-primary tabular-nums transition-all duration-300">{pendingCount}</p>
+            <p className="text-base font-semibold text-primary tabular-nums transition-all duration-300">{pendingCount}</p>
           </div>
         </div>
       </div>

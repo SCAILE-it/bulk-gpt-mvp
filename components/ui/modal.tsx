@@ -83,7 +83,7 @@ export function Modal({
         )}>
           <div className="flex items-center gap-3">
             {TitleIcon && <TitleIcon className={cn('h-5 w-5', titleIconColor)} />}
-            <h2 id={titleId} className="text-lg font-medium text-foreground">
+            <h2 id={titleId} className="text-base font-medium text-foreground">
               {title}
             </h2>
           </div>

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { FileText, HelpCircle, XCircle, Eye, EyeOff } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface PromptSectionProps {
   prompt: string
@@ -18,6 +19,51 @@ interface PromptSectionProps {
   }
 }
 
+// Helper function to highlight variables in text (returns HTML)
+function highlightVariables(
+  text: string,
+  availableColumns: string[],
+  missingVariables: string[]
+): string {
+  if (!text) return ''
+  
+  // Escape HTML first
+  let escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  
+  // Find all variables and highlight them
+  const variablePattern = /\{\{([^}]+)\}\}/g
+  const matches = Array.from(text.matchAll(variablePattern))
+  
+  // Sort by position (reverse order to avoid index shifting)
+  const sortedMatches = matches.sort((a, b) => (b.index || 0) - (a.index || 0))
+  
+  sortedMatches.forEach(match => {
+    const variableName = match[1].trim()
+    const isMissing = missingVariables.includes(variableName)
+    const isValid = availableColumns.includes(variableName)
+    
+    let colorClass = ''
+    if (isMissing) {
+      colorClass = 'text-red-400 bg-red-500/10'
+    } else if (isValid) {
+      colorClass = 'text-green-400 bg-green-500/10'
+    }
+    
+    if (colorClass) {
+      const highlighted = `<span class="${colorClass} font-semibold">${match[0]}</span>`
+      const start = match.index || 0
+      const end = start + match[0].length
+      escaped = escaped.slice(0, start) + highlighted + escaped.slice(end)
+    }
+  })
+  
+  // Convert newlines to <br>
+  return escaped.replace(/\n/g, '<br>')
+}
+
 export function PromptSection({ 
   prompt, 
   onPromptChange, 
@@ -27,6 +73,8 @@ export function PromptSection({
   variableValidation
 }: PromptSectionProps) {
   const [previewMode, setPreviewMode] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const highlightRef = useRef<HTMLDivElement>(null)
 
   // Filter available columns based on selectedInputColumns
   const availableColumns = useMemo(() => {
@@ -55,7 +103,90 @@ export function PromptSection({
     return filled
   }, [prompt, csvData, availableColumns])
 
+  // Highlighted HTML for edit mode
+  const highlightedPrompt = useMemo(() => {
+    if (previewMode) return ''
+    return highlightVariables(
+      prompt,
+      availableColumns,
+      variableValidation?.missing || []
+    )
+  }, [prompt, availableColumns, variableValidation?.missing, previewMode])
+
+  // Highlighted HTML for preview mode (highlight filled values)
+  const highlightedFilledPrompt = useMemo(() => {
+    if (!previewMode || !csvData || !prompt) return ''
+    
+    // In preview mode, we want to highlight the filled values
+    let result = filledPrompt
+    
+    // Find original variables in prompt
+    const variablePattern = /\{\{([^}]+)\}\}/g
+    const matches = Array.from(prompt.matchAll(variablePattern))
+    
+    // Replace filled values with highlighted versions
+    matches.forEach(match => {
+      const variableName = match[1].trim()
+      const isMissing = (variableValidation?.missing || []).includes(variableName)
+      const isValid = availableColumns.includes(variableName)
+      
+      if (isValid && csvData.rows[0]) {
+        const value = csvData.rows[0].data[variableName] || ''
+        if (value) {
+          // Escape the value for HTML
+          const escapedValue = value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+          const colorClass = 'text-green-400 bg-green-500/10'
+          const highlighted = `<span class="${colorClass} font-semibold">${escapedValue}</span>`
+          // Replace the first occurrence
+          result = result.replace(value, highlighted)
+        }
+      } else if (isMissing) {
+        // Keep the variable placeholder highlighted in red
+        const escapedVar = match[0]
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+        const colorClass = 'text-red-400 bg-red-500/10'
+        const highlighted = `<span class="${colorClass} font-semibold">${escapedVar}</span>`
+        result = result.replace(match[0], highlighted)
+      }
+    })
+    
+    // Convert newlines to <br>
+    return result.replace(/\n/g, '<br>')
+  }, [previewMode, filledPrompt, prompt, csvData, availableColumns, variableValidation?.missing])
+
   const hasPreview = csvData && csvData.rows.length > 0 && prompt && filledPrompt !== prompt
+
+  // Sync highlight overlay with textarea scroll and content
+  useEffect(() => {
+    if (!textareaRef.current || !highlightRef.current) return
+    
+    const textarea = textareaRef.current
+    const highlight = highlightRef.current
+    
+    // Sync scroll
+    const syncScroll = () => {
+      highlight.scrollTop = textarea.scrollTop
+      highlight.scrollLeft = textarea.scrollLeft
+    }
+    
+    textarea.addEventListener('scroll', syncScroll)
+    
+    // Update highlight content
+    if (previewMode) {
+      highlight.innerHTML = highlightedFilledPrompt || filledPrompt.replace(/\n/g, '<br>')
+    } else {
+      highlight.innerHTML = highlightedPrompt || prompt.replace(/\n/g, '<br>')
+    }
+    
+    return () => {
+      textarea.removeEventListener('scroll', syncScroll)
+    }
+  }, [prompt, filledPrompt, highlightedPrompt, highlightedFilledPrompt, previewMode])
 
   return (
     <div className="space-y-3">
@@ -79,9 +210,22 @@ export function PromptSection({
         </button>
       </div>
 
-      {/* Textarea with Preview Mode */}
+      {/* Textarea with syntax highlighting overlay */}
       <div className="relative">
+        {/* Highlight overlay */}
+        <div
+          ref={highlightRef}
+          className={cn(
+            "absolute inset-0 w-full min-h-[120px] max-h-[400px] bg-secondary/70 border border-transparent text-foreground font-mono resize-none overflow-hidden pointer-events-none",
+            "px-3 py-2 rounded-md whitespace-pre-wrap break-words",
+            previewMode && "opacity-90"
+          )}
+          aria-hidden="true"
+        />
+        
+        {/* Actual textarea */}
         <Textarea
+          ref={textareaRef}
           id="prompt"
           value={previewMode ? filledPrompt : prompt}
           onChange={(e) => {
@@ -90,16 +234,22 @@ export function PromptSection({
             }
           }}
           readOnly={previewMode}
-          className={`w-full min-h-[120px] max-h-[400px] bg-secondary/70 border border-border text-foreground font-mono resize-y focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-border ${
-            previewMode ? 'opacity-90 cursor-default' : ''
-          }`}
+          className={cn(
+            "w-full min-h-[120px] max-h-[400px] bg-transparent border border-border text-transparent font-mono resize-y",
+            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-border",
+            "caret-foreground",
+            previewMode && "opacity-90 cursor-default"
+          )}
           placeholder="Write a bio for {{name}} at {{company}}"
           data-testid="prompt-textarea"
+          style={{
+            color: 'transparent',
+          }}
         />
         
         {/* Preview Mode Toggle */}
         {hasPreview && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 z-10">
             <Button
               type="button"
               variant="ghost"
@@ -129,7 +279,7 @@ export function PromptSection({
         {csvData && (
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-muted-foreground text-[10px] font-medium">Variables:</span>
+              <span className="text-muted-foreground text-xs font-medium">Variables:</span>
               {/* Show available columns */}
               {availableColumns.map(col => {
                 const isUsed = promptVariables.includes(col)
@@ -137,11 +287,12 @@ export function PromptSection({
                 return (
                   <span
                     key={col}
-                    className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${
+                    className={cn(
+                      "font-mono text-xs px-1.5 py-0.5 rounded",
                       isUsed
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                         : 'bg-muted/50 text-muted-foreground border border-border/30'
-                    }`}
+                    )}
                     title={isUsed ? 'Variable used in prompt' : 'Available variable'}
                   >
                     {`{{${col}}}`}
@@ -152,7 +303,7 @@ export function PromptSection({
               {variableValidation?.missing.map(v => (
                 <span
                   key={v}
-                  className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30"
+                  className="font-mono text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30"
                   title="Variable used in prompt but column is deselected"
                 >
                   {`{{${v}}}`}
@@ -161,12 +312,13 @@ export function PromptSection({
             </div>
           </div>
         )}
-        <p className={`flex-shrink-0 ${
+        <p className={cn(
+          "flex-shrink-0 text-xs",
           prompt.length === 0 ? 'text-muted-foreground' :
           prompt.length < 20 ? 'text-orange-500' :
           prompt.length > 2000 ? 'text-yellow-500' :
           'text-muted-foreground'
-        }`}>
+        )}>
           {prompt.length} characters
           {prompt.length > 0 && prompt.length < 20 && ' (too short)'}
           {prompt.length > 2000 && ' (may be too long)'}

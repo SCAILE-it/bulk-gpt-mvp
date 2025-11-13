@@ -141,13 +141,13 @@ export function UsageDisplay() {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-xl font-semibold text-foreground">
+            <div className="text-base font-semibold text-foreground">
               {usage.batchesThisMonth.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground">Batches</div>
           </div>
           <div>
-            <div className="text-xl font-semibold text-foreground">
+            <div className="text-base font-semibold text-foreground">
               {usage.rowsThisMonth.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground">Rows</div>

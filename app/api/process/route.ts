@@ -112,7 +112,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     // GTM BACKEND ROUTING - Process with enrichment tools if selected
     // ========================================================================
     if (tools && tools.length > 0) {
-      console.log(`[GTM] Tools selected (${tools.length}): ${tools.join(', ')}`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[GTM] Tools selected (${tools.length}): ${tools.join(', ')}`)
+      }
 
       try {
         // Get user session token for GTM authentication
@@ -122,10 +124,14 @@ export async function POST(request: NextRequest): Promise<Response> {
         const authToken = session?.access_token || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
         if (!authToken) {
-          console.warn('[GTM] No auth token available, falling back to Modal')
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[GTM] No auth token available, falling back to Modal')
+          }
           // Fall through to Modal processor below
         } else {
-          console.log('[GTM] Calling GTM backend with auth token')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[GTM] Calling GTM backend with auth token')
+          }
 
           // Create GTM client with authentication
           const gtmClient = new GTMAPIClient({ authToken })
@@ -136,11 +142,13 @@ export async function POST(request: NextRequest): Promise<Response> {
             tools: tools,
           })
 
-          console.log('[GTM] Batch enrichment successful:', {
-            totalRows: gtmResponse.totalRows,
-            successfulRows: gtmResponse.successfulRows,
-            failedRows: gtmResponse.failedRows,
-          })
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[GTM] Batch enrichment successful:', {
+              totalRows: gtmResponse.totalRows,
+              successfulRows: gtmResponse.successfulRows,
+              failedRows: gtmResponse.failedRows,
+            })
+          }
 
           // Create batch record in database
           const batchId = gtmResponse.batchId
@@ -281,9 +289,11 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     // No HTTP call to Modal - Modal will poll database for pending batches
-    console.log('[POLLING] Batch created and marked as pending')
-    console.log('[POLLING] Modal poller will pick up batch within 10 seconds')
-    console.log(`[POLLING] Batch ID: ${batchId}, Rows: ${rows.length}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[POLLING] Batch created and marked as pending')
+      console.log('[POLLING] Modal poller will pick up batch within 10 seconds')
+      console.log(`[POLLING] Batch ID: ${batchId}, Rows: ${rows.length}`)
+    }
 
     // Return immediately with batch ID
     return NextResponse.json(

@@ -93,7 +93,7 @@ const CollapsibleSection = React.forwardRef<
               <div className={cn('flex items-center gap-1.5 flex-shrink-0', statusInfo.bg, 'px-1.5 py-0.5 rounded')}>
                 <StatusIcon className={cn('h-3 w-3', statusInfo.color)} />
                 {statusMessage && (
-                  <span className={cn('text-[10px] font-medium', statusInfo.color)}>{statusMessage}</span>
+                  <span className={cn('text-xs font-medium', statusInfo.color)}>{statusMessage}</span>
                 )}
               </div>
             )}

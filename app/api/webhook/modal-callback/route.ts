@@ -20,12 +20,16 @@ export async function POST(request: NextRequest): Promise<Response> {
     // TODO: Add webhook secret validation once Modal sends x-webhook-secret header
     // See modal-processor/main.py fire_webhook() function for Phase 2 implementation
 
-    console.log('\n[WEBHOOK] ========== Modal Callback Received ==========')
-    console.log(`[WEBHOOK] Timestamp: ${new Date().toISOString()}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n[WEBHOOK] ========== Modal Callback Received ==========')
+      console.log(`[WEBHOOK] Timestamp: ${new Date().toISOString()}`)
+    }
 
     // Parse webhook payload
     const payload = await request.json()
-    console.log('[WEBHOOK] Payload keys:', Object.keys(payload))
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[WEBHOOK] Payload keys:', Object.keys(payload))
+    }
 
     const { batch_id, results, status, total_rows, successful, failed } = payload
 
@@ -37,10 +41,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    console.log(`[WEBHOOK] Batch ID: ${batch_id}`)
-    console.log(`[WEBHOOK] Status: ${status}`)
-    console.log(`[WEBHOOK] Total rows: ${total_rows}`)
-    console.log(`[WEBHOOK] Results count: ${results?.length || 0}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WEBHOOK] Batch ID: ${batch_id}`)
+      console.log(`[WEBHOOK] Status: ${status}`)
+      console.log(`[WEBHOOK] Total rows: ${total_rows}`)
+      console.log(`[WEBHOOK] Results count: ${results?.length || 0}`)
+    }
 
     // Verify batch exists
     const { data: batch, error: batchError } = await supabaseAdmin
@@ -57,15 +63,23 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    console.log(`[WEBHOOK] Batch found, user_id: ${batch.user_id}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WEBHOOK] Batch found, user_id: ${batch.user_id}`)
+    }
 
     // Transform and store results
     if (results && Array.isArray(results)) {
-      console.log(`[WEBHOOK] Transforming ${results.length} results...`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[WEBHOOK] Transforming ${results.length} results...`)
+      }
       await transformAndStoreBatchResults(batch_id, results)
-      console.log('[WEBHOOK] Results stored successfully')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[WEBHOOK] Results stored successfully')
+      }
     } else {
-      console.warn('[WEBHOOK] No results provided or invalid format')
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[WEBHOOK] No results provided or invalid format')
+      }
     }
 
     // Update batch status
@@ -74,7 +88,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       processed_rows: total_rows || batch.total_rows,  // Note: 'processed_rows', not 'completed_rows'
     }
 
-    console.log('[WEBHOOK] Updating batch status:', updateData.status)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[WEBHOOK] Updating batch status:', updateData.status)
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from('batches')
@@ -88,9 +104,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const duration = Date.now() - startTime
 
-    console.log(`[WEBHOOK] ========== Webhook Processed Successfully ==========`)
-    console.log(`[WEBHOOK] Duration: ${duration}ms`)
-    console.log('')
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WEBHOOK] ========== Webhook Processed Successfully ==========`)
+      console.log(`[WEBHOOK] Duration: ${duration}ms`)
+      console.log('')
+    }
 
     devLog.log(`Modal webhook received for batch ${batch_id}: ${status}`, {
       totalRows: total_rows,
@@ -151,7 +169,9 @@ async function transformAndStoreBatchResults(
   v2Results: unknown[]
 ): Promise<void> {
   try {
-    console.log(`[WEBHOOK] Transforming ${v2Results.length} results for batch ${batchId}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WEBHOOK] Transforming ${v2Results.length} results for batch ${batchId}`)
+    }
 
     const batchResults = v2Results.map((result, index) => {
       const v2Result = result as {
@@ -216,7 +236,9 @@ async function transformAndStoreBatchResults(
       }
     })
 
-    console.log(`[WEBHOOK] Inserting ${batchResults.length} batch_results...`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WEBHOOK] Inserting ${batchResults.length} batch_results...`)
+    }
 
     // Insert batch_results in bulk
     const { error: insertError } = await supabaseAdmin
@@ -231,7 +253,9 @@ async function transformAndStoreBatchResults(
     const successCount = batchResults.filter(r => r.status === 'success').length
     const errorCount = batchResults.filter(r => r.status === 'error').length
 
-    console.log(`[WEBHOOK] Stored ${batchResults.length} results (${successCount} success, ${errorCount} errors)`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WEBHOOK] Stored ${batchResults.length} results (${successCount} success, ${errorCount} errors)`)
+    }
 
     devLog.log(`Stored ${batchResults.length} results for batch ${batchId}:`, {
       success: successCount,

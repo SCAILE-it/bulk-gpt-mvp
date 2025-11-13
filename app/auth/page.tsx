@@ -69,7 +69,7 @@ function AuthPageContent() {
           <div className="mx-auto mb-4 flex justify-center">
             <Logo size="lg" showText={false} />
           </div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground mb-1">{getTitle()}</h1>
+          <h1 className="text-base font-semibold tracking-tight text-foreground mb-1">{getTitle()}</h1>
           <p className="text-sm text-muted-foreground">
             {getDescription()}
           </p>

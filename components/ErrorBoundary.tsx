@@ -84,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Error Message */}
               <div className="text-center space-y-2">
-                <h2 className="text-lg font-medium text-foreground">
+                <h2 className="text-base font-medium text-foreground">
                   Something went wrong
                 </h2>
                 <p className="text-sm text-muted-foreground">

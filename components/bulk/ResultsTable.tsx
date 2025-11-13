@@ -127,7 +127,7 @@ export function ResultsTable({
                     <div className="flex items-center gap-1.5">
                       <Sparkles className="h-3 w-3 text-primary/70 flex-shrink-0" />
                       <span>{col}</span>
-                      <span className="text-[10px] text-primary/60 font-normal ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-xs text-primary/60 font-normal ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
                         AI
                       </span>
                     </div>

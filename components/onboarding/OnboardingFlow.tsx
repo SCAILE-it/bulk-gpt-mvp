@@ -89,7 +89,7 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
             <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
               <CurrentIcon className="h-8 w-8 text-primary" aria-hidden="true" />
             </div>
-            <h2 className="text-2xl font-semibold text-foreground">
+            <h2 className="text-base font-semibold text-foreground">
               {currentStep.title}
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto">

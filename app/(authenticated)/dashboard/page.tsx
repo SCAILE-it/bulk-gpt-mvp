@@ -367,26 +367,26 @@ export default function DashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="bg-secondary/40 border border-border rounded-lg p-4">
             <div className="text-xs font-medium text-muted-foreground mb-2">Total Batches</div>
-            <div className="text-xl font-semibold text-foreground">{stats.totalBatches}</div>
+            <div className="text-base font-semibold text-foreground">{stats.totalBatches}</div>
           </div>
 
           <div className="bg-secondary/40 border border-border rounded-lg p-4">
             <div className="text-xs font-medium text-muted-foreground mb-2">Completed</div>
-            <div className="text-xl font-semibold text-green-400">
+            <div className="text-base font-semibold text-green-400">
               {stats.completedBatches}
             </div>
           </div>
 
           <div className="bg-secondary/40 border border-border rounded-lg p-4">
             <div className="text-xs font-medium text-muted-foreground mb-2">Failed</div>
-            <div className="text-xl font-semibold text-red-400">
+            <div className="text-base font-semibold text-red-400">
               {stats.failedBatches}
             </div>
           </div>
 
           <div className="bg-secondary/40 border border-border rounded-lg p-4">
             <div className="text-xs font-medium text-muted-foreground mb-2">Success Rate</div>
-            <div className="text-xl font-semibold flex items-center gap-2 text-foreground">
+            <div className="text-base font-semibold flex items-center gap-2 text-foreground">
               <TrendingUp className="h-4 w-4 text-green-400" aria-hidden="true" />
               <span>{stats.successRate}%</span>
             </div>

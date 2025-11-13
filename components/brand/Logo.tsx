@@ -19,7 +19,7 @@ export function Logo({ className = '', showText = true, size = 'md' }: LogoProps
   const textSizeClasses = {
     sm: 'text-sm',
     md: 'text-base',
-    lg: 'text-lg',
+    lg: 'text-base',
   }
 
   return (

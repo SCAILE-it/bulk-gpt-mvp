@@ -259,7 +259,9 @@ export default function BulkProcessor() {
         }
       } catch (err) {
         // Silent failure - tokens will just not show
-        console.debug('Failed to fetch token totals:', err)
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Failed to fetch token totals:', err)
+        }
       }
     }
 
@@ -660,7 +662,9 @@ export default function BulkProcessor() {
           }
         }
       } catch (statusErr) {
-        console.debug('Status API fetch failed, trying database:', statusErr)
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Status API fetch failed, trying database:', statusErr)
+        }
       }
 
       // Fallback to direct database fetch if status API didn't work
@@ -1428,8 +1432,8 @@ export default function BulkProcessor() {
         </p>
       </Modal>
 
-      {/* Debug Logger - Only show in development mode or when there are errors */}
-      <DebugLogger />
+      {/* Debug Logger - Only show in development mode */}
+      {process.env.NODE_ENV === 'development' && <DebugLogger />}
     </div>
   )
 }
