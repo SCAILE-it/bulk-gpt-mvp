@@ -25,6 +25,7 @@ import { PARALLEL_CONCURRENCY } from '@/lib/processing-constants'
 import { useBetaBanner } from '@/hooks/useBetaBanner'
 import { useTemplateFilter } from '@/hooks/useTemplateFilter'
 import { useCollapsibleState } from '@/hooks/useCollapsibleState'
+import { useJobContext } from '@/hooks/useJobContext'
 import { PromptSection } from './PromptSection'
 import { JobPreview } from './JobPreview'
 import { ResultsTable } from './ResultsTable'
@@ -61,6 +62,10 @@ export default function BulkProcessor() {
 
   // === DEBUG LOGGING ===
   const debugLog = useDebugLogger()
+
+  // === JOB CONTEXT PERSISTENCE ===
+  const { saveContext, restoreContext } = useJobContext()
+  const [hasRestoredContext, setHasRestoredContext] = useState(false)
 
   // === CONFIG STATE ===
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
@@ -115,21 +120,70 @@ export default function BulkProcessor() {
 
   // Sections stay open/closed based on user preference (no auto-collapse/expand)
 
-  // Initialize selected input columns when CSV is loaded
+  // Restore job context on mount (only once)
   useEffect(() => {
-    if (csvParser.csvData) {
-      // If no columns selected or CSV columns changed, reset to all columns
-      const selectedSet = new Set(selectedInputColumns)
-      const columnsMatch = csvParser.csvData.columns.length === selectedInputColumns.length &&
-        csvParser.csvData.columns.every(col => selectedSet.has(col))
+    if (hasRestoredContext) return
+
+    const csvFilename = fileUpload.file?.name
+    const csvColumnCount = csvParser.csvData?.columns.length
+    const restored = restoreContext(csvFilename, csvColumnCount)
+
+    if (Object.keys(restored).length > 0) {
+      // Restore all context
+      if (restored.prompt) setPrompt(restored.prompt)
+      if (restored.outputFields) setOutputFields(restored.outputFields)
+      if (restored.selectedTools) setSelectedTools(restored.selectedTools)
+      if (restored.optimizeInput !== undefined) setOptimizeInput(restored.optimizeInput)
+      if (restored.optimizeTask !== undefined) setOptimizeTask(restored.optimizeTask)
+      if (restored.optimizeOutput !== undefined) setOptimizeOutput(restored.optimizeOutput)
       
-      if (selectedInputColumns.length === 0 || !columnsMatch) {
-        // Default: all columns selected
-        setSelectedInputColumns([...csvParser.csvData.columns])
+      // Only restore selectedInputColumns if CSV matches
+      if (restored.selectedInputColumns && csvParser.csvData) {
+        // Validate that restored columns exist in current CSV
+        const validColumns = restored.selectedInputColumns.filter(col =>
+          csvParser.csvData!.columns.includes(col)
+        )
+        if (validColumns.length > 0) {
+          setSelectedInputColumns(validColumns)
+        }
+        // If no valid columns, let existing logic handle it (defaults to all columns)
       }
     }
+
+    setHasRestoredContext(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [csvParser.csvData?.columns.join(',')]) // Only depend on column names, not the whole object
+  }, []) // Only run once on mount
+
+  // Re-restore selectedInputColumns when CSV loads after context restoration
+  useEffect(() => {
+    if (!hasRestoredContext || !csvParser.csvData) return
+
+    const csvFilename = fileUpload.file?.name
+    const csvColumnCount = csvParser.csvData.columns.length
+    const restored = restoreContext(csvFilename, csvColumnCount)
+
+    // If CSV matches saved context, restore selectedInputColumns
+    if (restored.selectedInputColumns && csvFilename && csvColumnCount) {
+      const validColumns = restored.selectedInputColumns.filter(col =>
+        csvParser.csvData!.columns.includes(col)
+      )
+      if (validColumns.length > 0) {
+        setSelectedInputColumns(validColumns)
+        return // Don't run default logic below
+      }
+    }
+
+    // Default: all columns selected (existing logic)
+    const selectedSet = new Set(selectedInputColumns)
+    const columnsMatch = csvParser.csvData.columns.length === selectedInputColumns.length &&
+      csvParser.csvData.columns.every(col => selectedSet.has(col))
+    
+    if (selectedInputColumns.length === 0 || !columnsMatch) {
+      setSelectedInputColumns([...csvParser.csvData.columns])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [csvParser.csvData?.columns.join(','), hasRestoredContext, fileUpload.file?.name])
+
 
   // Remove auto-collapse/expand - let user control sections manually
   // Sections stay open/closed based on user preference
@@ -277,6 +331,39 @@ export default function BulkProcessor() {
     )
   }, [csvParser.csvData, prompt, selectedTools.length, variableValidation.isValid])
 
+  // Auto-save job context when state changes (debounced)
+  useEffect(() => {
+    if (!hasRestoredContext) return // Don't save during initial restoration
+
+    const timeoutId = setTimeout(() => {
+      saveContext({
+        prompt,
+        outputFields,
+        selectedTools,
+        selectedInputColumns,
+        optimizeInput,
+        optimizeTask,
+        optimizeOutput,
+        csvFilename: fileUpload.file?.name,
+        csvColumnCount: csvParser.csvData?.columns.length,
+      })
+    }, 500) // Debounce 500ms
+
+    return () => clearTimeout(timeoutId)
+  }, [
+    hasRestoredContext,
+    prompt,
+    outputFields,
+    selectedTools,
+    selectedInputColumns,
+    optimizeInput,
+    optimizeTask,
+    optimizeOutput,
+    fileUpload.file?.name,
+    csvParser.csvData?.columns.length,
+    saveContext,
+  ])
+
   // === BATCH COMPLETION HANDLER ===
   // Clear test state when batch completes (for unified architecture)
   useEffect(() => {
@@ -321,9 +408,12 @@ export default function BulkProcessor() {
       // Parse CSV immediately (don't check state - it hasn't updated yet!)
       const parsed = await csvParser.parseFile(uploadedFile)
 
-      // Add to recent if parse succeeded
-      if (parsed) {
-        fileUpload.addToRecent(uploadedFile, parsed.totalRows)
+      // Save CSV filename to context when file is uploaded
+      if (parsed && hasRestoredContext) {
+        saveContext({
+          csvFilename: uploadedFile.name,
+          csvColumnCount: parsed.columns.length,
+        })
       }
     } catch (err) {
       // Errors are already handled by the hooks

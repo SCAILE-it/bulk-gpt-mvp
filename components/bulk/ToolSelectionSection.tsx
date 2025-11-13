@@ -1,14 +1,14 @@
 /**
  * ABOUTME: Tool selection section for bulk processor
  * ABOUTME: Allows users to select which GTM tools the AI can use during batch processing
- * ABOUTME: Shows 12 core tools by default, with 31 advanced tools in collapsible section
+ * ABOUTME: Shows 6 essential tools by default, with 6 more core and 31 advanced tools in collapsible sections
  */
 
 'use client'
 
 import { useState, useMemo } from 'react'
 import { Wrench, ChevronDown, Search, X } from 'lucide-react'
-import { type GTMTool, CORE_GTM_TOOLS, ADVANCED_GTM_TOOLS } from '@/lib/types/gtm-types'
+import { type GTMTool, ESSENTIAL_GTM_TOOLS, MORE_CORE_GTM_TOOLS, ADVANCED_GTM_TOOLS } from '@/lib/types/gtm-types'
 import {
   Tooltip,
   TooltipContent,
@@ -30,19 +30,25 @@ export function ToolSelectionSection({
   selectedTools,
   onToggleTool
 }: ToolSelectionSectionProps) {
+  const [showMoreCore, setShowMoreCore] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
   // Sort tools alphabetically and filter by search
-  const coreTools = useMemo(() => {
-    return searchTools(CORE_GTM_TOOLS, searchQuery)
+  const essentialTools = useMemo(() => {
+    return searchTools(ESSENTIAL_GTM_TOOLS, searchQuery)
+  }, [searchQuery])
+
+  const moreCoreTools = useMemo(() => {
+    return searchTools(MORE_CORE_GTM_TOOLS, searchQuery)
   }, [searchQuery])
 
   const advancedTools = useMemo(() => {
     return searchTools(ADVANCED_GTM_TOOLS, searchQuery)
   }, [searchQuery])
 
-  // Auto-expand advanced section when searching
+  // Auto-expand sections when searching
+  const shouldShowMoreCore = showMoreCore || searchQuery.trim().length > 0
   const shouldShowAdvanced = showAdvanced || searchQuery.trim().length > 0
 
   // Helper to render tool badge
@@ -108,19 +114,44 @@ export function ToolSelectionSection({
           )}
         </div>
 
-        {/* Core Tools (Always Visible) */}
-        {coreTools.length > 0 && (
+        {/* Essential Tools (Always Visible) */}
+        {essentialTools.length > 0 && (
           <div className="space-y-3">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Essential Tools {searchQuery && <span className="normal-case font-normal">({coreTools.length})</span>}
+              Essential Tools {searchQuery && <span className="normal-case font-normal">({essentialTools.length})</span>}
             </div>
             <div className="flex flex-wrap gap-2">
-              {coreTools.map(renderToolBadge)}
+              {essentialTools.map(renderToolBadge)}
             </div>
           </div>
         )}
 
-        {/* Advanced Tools (Collapsible) */}
+        {/* More Core Tools (Collapsible, starts collapsed) */}
+        {moreCoreTools.length > 0 && (
+          <div className="space-y-3">
+            <button
+              onClick={() => setShowMoreCore(!showMoreCore)}
+              className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+            >
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  shouldShowMoreCore ? 'rotate-180' : ''
+                }`}
+              />
+              <span>
+                More Core Tools ({searchQuery ? `${moreCoreTools.length} found` : MORE_CORE_GTM_TOOLS.length})
+              </span>
+            </button>
+
+            {shouldShowMoreCore && (
+              <div className="flex flex-wrap gap-2">
+                {moreCoreTools.map(renderToolBadge)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Advanced Tools (Collapsible, starts collapsed) */}
         {advancedTools.length > 0 && (
           <div className="space-y-3">
             <button
@@ -146,7 +177,7 @@ export function ToolSelectionSection({
         )}
 
         {/* No results message */}
-        {searchQuery && coreTools.length === 0 && advancedTools.length === 0 && (
+        {searchQuery && essentialTools.length === 0 && moreCoreTools.length === 0 && advancedTools.length === 0 && (
           <div className="text-center py-4 text-xs text-muted-foreground">
             No tools found matching &quot;{searchQuery}&quot;
           </div>

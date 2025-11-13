@@ -46,11 +46,10 @@ export interface GTMTool {
 // ============================================================================
 
 /**
- * Core tools - most commonly used (12 tools)
- * Always visible in UI
+ * Essential tools - most commonly used (6 tools)
+ * Always visible in UI, shown by default
  */
-export const CORE_GTM_TOOLS: GTMTool[] = [
-  // Email & Contact (3)
+export const ESSENTIAL_GTM_TOOLS: GTMTool[] = [
   {
     name: 'email-validate',
     displayName: 'Email Validation',
@@ -62,16 +61,6 @@ export const CORE_GTM_TOOLS: GTMTool[] = [
     useCases: ['Clean email lists', 'Verify contact data']
   },
   {
-    name: 'email-intel',
-    displayName: 'Email Intelligence',
-    description: 'Find social profiles and platforms for an email',
-    category: 'enrichment',
-    group: 'core',
-    endpoint: '/enrichment/email-intel',
-    exampleInputs: ['email'],
-    useCases: ['Social media discovery', 'Profile enrichment']
-  },
-  {
     name: 'phone-validation',
     displayName: 'Phone Validation',
     description: 'Verify and format phone numbers',
@@ -81,8 +70,6 @@ export const CORE_GTM_TOOLS: GTMTool[] = [
     exampleInputs: ['phoneNumber'],
     useCases: ['Clean phone lists', 'International formatting']
   },
-
-  // Company Research (3)
   {
     name: 'company-data',
     displayName: 'Company Data',
@@ -104,18 +91,6 @@ export const CORE_GTM_TOOLS: GTMTool[] = [
     useCases: ['Competitive analysis', 'Lead qualification']
   },
   {
-    name: 'whois',
-    displayName: 'WHOIS Lookup',
-    description: 'Get domain registration information',
-    category: 'enrichment',
-    group: 'core',
-    endpoint: '/enrichment/whois',
-    exampleInputs: ['domain'],
-    useCases: ['Domain research', 'Ownership verification']
-  },
-
-  // AI Generation (3)
-  {
     name: 'web-search',
     displayName: 'Web Search',
     description: 'AI-powered web research with citations',
@@ -135,6 +110,33 @@ export const CORE_GTM_TOOLS: GTMTool[] = [
     exampleInputs: ['template', 'research_topic'],
     useCases: ['Content creation', 'SEO writing']
   },
+]
+
+/**
+ * More core tools - additional commonly used tools (6 tools)
+ * Shown in collapsible section, starts collapsed
+ */
+export const MORE_CORE_GTM_TOOLS: GTMTool[] = [
+  {
+    name: 'email-intel',
+    displayName: 'Email Intelligence',
+    description: 'Find social profiles and platforms for an email',
+    category: 'enrichment',
+    group: 'core',
+    endpoint: '/enrichment/email-intel',
+    exampleInputs: ['email'],
+    useCases: ['Social media discovery', 'Profile enrichment']
+  },
+  {
+    name: 'whois',
+    displayName: 'WHOIS Lookup',
+    description: 'Get domain registration information',
+    category: 'enrichment',
+    group: 'core',
+    endpoint: '/enrichment/whois',
+    exampleInputs: ['domain'],
+    useCases: ['Domain research', 'Ownership verification']
+  },
   {
     name: 'sequence-builder',
     displayName: 'Email Sequence Builder',
@@ -145,8 +147,6 @@ export const CORE_GTM_TOOLS: GTMTool[] = [
     exampleInputs: ['company', 'persona', 'value_prop'],
     useCases: ['Outbound campaigns', 'Nurture sequences']
   },
-
-  // Analysis & Enrichment (3)
   {
     name: 'batch-enrich-leads',
     displayName: 'Batch Lead Enrichment',
@@ -177,6 +177,15 @@ export const CORE_GTM_TOOLS: GTMTool[] = [
     exampleInputs: ['url', 'prompt'],
     useCases: ['Content analysis', 'Web scraping']
   },
+]
+
+/**
+ * @deprecated Use ESSENTIAL_GTM_TOOLS and MORE_CORE_GTM_TOOLS instead
+ * Kept for backward compatibility
+ */
+export const CORE_GTM_TOOLS: GTMTool[] = [
+  ...ESSENTIAL_GTM_TOOLS,
+  ...MORE_CORE_GTM_TOOLS,
 ]
 
 /**
