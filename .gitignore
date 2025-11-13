@@ -48,3 +48,4 @@ next-env.d.ts
 
 
 playwright/.auth/
+.env.local
