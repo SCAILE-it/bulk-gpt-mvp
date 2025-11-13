@@ -126,7 +126,7 @@ export function BatchStatusCard({
           </div>
           {estimatedSeconds && estimatedSeconds > 0 && (
             <span className="text-muted-foreground">
-              ~{estimatedSeconds}s remaining
+              ~{Math.round(estimatedSeconds)}s remaining
             </span>
           )}
         </div>

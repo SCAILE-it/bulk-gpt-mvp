@@ -1075,7 +1075,7 @@ export default function BulkProcessor() {
           )}
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
+          <div className="flex-shrink-0 p-4 sm:p-6 pb-4 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
             <TooltipProvider>
               <div className="flex gap-2.5 items-stretch max-w-4xl mx-auto">
                 <Tooltip>
