@@ -80,6 +80,7 @@ export function ResultsTable({
           estimatedSeconds={isTesting ? testEstimatedSeconds : estimatedSeconds}
           isTesting={isTesting}
           testStartTime={testStartTime}
+          processingStartTime={processingStartTime}
           totalInputTokens={totalInputTokens}
           totalOutputTokens={totalOutputTokens}
         />

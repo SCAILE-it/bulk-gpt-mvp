@@ -214,6 +214,7 @@ export default function BulkProcessor() {
   // === PROCESSING STATE ===
   const [isTesting, setIsTesting] = useState(false)
   const [testStartTime, setTestStartTime] = useState<number | undefined>(undefined)
+  const [processingStartTime, setProcessingStartTime] = useState<number | undefined>(undefined)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -383,6 +384,18 @@ export default function BulkProcessor() {
       setTestStartTime(undefined)
     }
   }, [batchProcessor.isProcessing, isTesting])
+
+  // === PROCESSING START TIME TRACKING ===
+  // Track when processing starts for progress bar animation
+  useEffect(() => {
+    if (batchProcessor.isProcessing && !processingStartTime) {
+      // Processing just started, set start time
+      setProcessingStartTime(Date.now())
+    } else if (!batchProcessor.isProcessing && processingStartTime) {
+      // Processing stopped, clear start time
+      setProcessingStartTime(undefined)
+    }
+  }, [batchProcessor.isProcessing, processingStartTime])
 
   // === FILTERED TEMPLATES ===
   const filteredTemplates = useTemplateFilter(templateSearchQuery, templateCategoryFilter)
@@ -1149,7 +1162,7 @@ export default function BulkProcessor() {
               columns={selectedInputColumns.length > 0 ? selectedInputColumns : (csvParser.csvData?.columns || [])}
               outputColumns={outputFields}
               progress={batchProcessor.progress ?? undefined}
-              processingStartTime={(batchProcessor.isProcessing || isTesting) ? Date.now() : undefined}
+              processingStartTime={processingStartTime}
               onExport={handleExport}
               isTesting={isTesting}
               testStartTime={testStartTime}

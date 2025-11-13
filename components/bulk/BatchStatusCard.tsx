@@ -20,6 +20,7 @@ interface BatchStatusCardProps {
   estimatedSeconds?: number | null
   isTesting?: boolean
   testStartTime?: number
+  processingStartTime?: number
   totalInputTokens?: number
   totalOutputTokens?: number
 }
@@ -31,6 +32,7 @@ export function BatchStatusCard({
   estimatedSeconds,
   isTesting = false,
   testStartTime,
+  processingStartTime,
   totalInputTokens,
   totalOutputTokens
 }: BatchStatusCardProps) {
@@ -121,32 +123,14 @@ export function BatchStatusCard({
           )}
         </div>
 
-        {/* Enhanced Progress Bar */}
-        <div className="relative w-full h-2 bg-secondary rounded-full overflow-hidden border border-border">
-          {/* Success segment */}
-          <div
-            className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-500 ease-linear"
-            style={{ width: `${(successCount / progress.total) * 100}%` }}
-          />
-          {/* Error segment */}
-          <div
-            className="absolute top-0 h-full bg-red-500 transition-all duration-500 ease-linear"
-            style={{
-              left: `${(successCount / progress.total) * 100}%`,
-              width: `${(errorCount / progress.total) * 100}%`
-            }}
-          />
-          {/* Processing indicator (blue, no pulse) */}
-          {pendingCount > 0 && (
-            <div
-              className="absolute top-0 h-full bg-primary/40 transition-all duration-500 ease-linear"
-              style={{
-                left: `${((successCount + errorCount) / progress.total) * 100}%`,
-                width: `${(pendingCount / progress.total) * 100}%`
-              }}
-            />
-          )}
-        </div>
+        {/* Use same ProgressBar component as AI optimization */}
+        <ProgressBar
+          isActive={actualCompleted < progress.total}
+          estimatedDuration={estimatedSeconds ? estimatedSeconds * 1000 : 60000}
+          startTime={processingStartTime}
+          actualProgress={actualCompleted > 0 ? progressPercentage : undefined}
+          height="md"
+        />
 
         {/* Percentage */}
         <div className="text-right">
