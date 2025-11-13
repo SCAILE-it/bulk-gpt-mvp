@@ -173,12 +173,7 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
       )}
 
       {/* Upload feedback */}
-      {errorMessage && (
-        <div className="flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
-          <XCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-red-400">{errorMessage}</p>
-        </div>
-      )}
+      {/* Errors are displayed at the top level in BulkProcessor, not here */}
     </div>
   )
 })
