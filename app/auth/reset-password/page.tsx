@@ -170,7 +170,7 @@ function ResetPasswordForm() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
                   required
-                  autoComplete="new-password"
+                  autocomplete="new-password"
                   aria-describedby={error ? 'form-error' : undefined}
                   aria-invalid={!!error}
                   className="pr-10"

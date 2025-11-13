@@ -68,7 +68,6 @@ export function DataInputTabs({
 
       <TabsContent value="csv" className="mt-3">
         <CSVUploadTab
-          ref={csvInputRef}
           csvData={showCSVPreview ? csvData : null}
           fileName={activeTab === 'csv' ? fileName : undefined}
           isUploading={isUploading && activeTab === 'csv'}

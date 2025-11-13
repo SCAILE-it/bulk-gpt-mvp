@@ -19,12 +19,7 @@ interface GoogleSheetsTabProps {
   onInputColumnsChange?: (columns: string[]) => void
 }
 
-declare global {
-  interface Window {
-    gapi?: any
-    google?: any
-  }
-}
+// Window.gapi and Window.google types are declared in hooks/useGoogleSheets.ts
 
 export function GoogleSheetsTab({
   csvData,

@@ -3,7 +3,7 @@
  * Handles OAuth authentication and Google Sheets data fetching
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { logError } from '@/lib/errors'
 
 declare global {

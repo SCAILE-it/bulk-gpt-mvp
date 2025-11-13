@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle,
@@ -421,7 +421,7 @@ export default function BulkProcessor() {
     } finally {
       setIsUploading(false)
     }
-  }, [csvParser, fileUpload])
+  }, [csvParser, fileUpload, hasRestoredContext, saveContext])
 
   // === GOOGLE SHEETS DATA LOADED ===
   const handleGoogleSheetsDataLoaded = useCallback((parsedCSV: ParsedCSV) => {
