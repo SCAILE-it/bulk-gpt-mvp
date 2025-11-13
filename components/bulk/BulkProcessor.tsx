@@ -112,6 +112,19 @@ export default function BulkProcessor() {
     defaultOpen: true // Always expanded when visible
   })
 
+  // Force Task and Output to start closed on mount (override any localStorage persistence)
+  useEffect(() => {
+    // Always close Task and Output on initial mount to ensure clean state
+    // User can manually open them if needed
+    if (promptSection.isOpen) {
+      promptSection.setIsOpen(false)
+    }
+    if (outputSettingsSection.isOpen) {
+      outputSettingsSection.setIsOpen(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
+
   // Sections stay open/closed based on user preference (no auto-collapse/expand)
 
   // Initialize selected input columns when CSV is loaded
