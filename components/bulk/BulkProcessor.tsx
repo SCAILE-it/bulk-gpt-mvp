@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import {
-  Upload, FileText, Play, CheckCircle, XCircle,
+  Upload, FileText, Play, CheckCircle,
   Loader2, X, ChevronDown, HelpCircle,
   Search, Filter, AlertTriangle, Sparkles
 } from 'lucide-react'
@@ -110,10 +110,7 @@ export default function BulkProcessor() {
     defaultOpen: true // Always expanded when visible
   })
 
-  // Progressive disclosure: Auto-collapse/expand sections based on completion
-  // Track previous states to only trigger on transitions (not continuously)
-  const prevHasCSV = useRef(false)
-  const prevHasPrompt = useRef(false)
+  // Sections stay open/closed based on user preference (no auto-collapse/expand)
 
   // Initialize selected input columns when CSV is loaded
   useEffect(() => {
@@ -131,46 +128,8 @@ export default function BulkProcessor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [csvParser.csvData?.columns.join(',')]) // Only depend on column names, not the whole object
 
-  useEffect(() => {
-    // Step 1: When CSV is uploaded, collapse Input and expand Task
-    const hasCSV = !!csvParser.csvData
-    const wasCSV = prevHasCSV.current
-    
-    // Only trigger on transition from no CSV to CSV
-    if (hasCSV && !wasCSV) {
-      // Collapse Input section
-      if (dataInputSection.isOpen) {
-        dataInputSection.setIsOpen(false)
-      }
-      // Expand Task section
-      if (!promptSection.isOpen) {
-        promptSection.setIsOpen(true)
-      }
-    }
-    
-    prevHasCSV.current = hasCSV
-  }, [csvParser.csvData, dataInputSection, promptSection])
-
-  useEffect(() => {
-    // Step 2: When prompt is entered, collapse Task and expand Output
-    const hasPrompt = !!(prompt && prompt.trim())
-    const hasCSV = !!csvParser.csvData
-    const wasPrompt = prevHasPrompt.current
-    
-    // Only trigger on transition from no prompt to prompt (and CSV must exist)
-    if (hasPrompt && hasCSV && !wasPrompt) {
-      // Collapse Task section
-      if (promptSection.isOpen) {
-        promptSection.setIsOpen(false)
-      }
-      // Expand Output section
-      if (!outputSettingsSection.isOpen) {
-        outputSettingsSection.setIsOpen(true)
-      }
-    }
-    
-    prevHasPrompt.current = hasPrompt
-  }, [prompt, csvParser.csvData, promptSection, outputSettingsSection])
+  // Remove auto-collapse/expand - let user control sections manually
+  // Sections stay open/closed based on user preference
 
   // === ONBOARDING STATE ===
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -245,7 +204,7 @@ export default function BulkProcessor() {
   // Recent files feature removed - users can re-upload files if needed
 
   // === VARIABLE VALIDATION ===
-  const variableValidation = useVariableValidation(prompt, csvParser.csvData)
+  const variableValidation = useVariableValidation(prompt, csvParser.csvData, selectedInputColumns)
 
   // === FILTERED TEMPLATES ===
   const filteredTemplates = useTemplateFilter(templateSearchQuery, templateCategoryFilter)
@@ -723,16 +682,7 @@ export default function BulkProcessor() {
               </div>
             )}
 
-            {/* VALIDATION MESSAGES - Only show errors, hide success messages to reduce noise */}
-
-            {!variableValidation.isValid && variableValidation.missing.length > 0 && (
-              <div className="flex items-start gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-md">
-                <XCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-orange-400">
-                  Missing variables: {variableValidation.missing.map(v => v.replace(/[{}]/g, '')).join(', ')}
-                </p>
-              </div>
-            )}
+            {/* Validation messages moved to Task section */}
 
             {/* Unused columns warning - Hidden to reduce noise */}
 
@@ -746,6 +696,8 @@ export default function BulkProcessor() {
               className="border border-border/30 rounded-md bg-background/30"
               triggerClassName="hover:bg-accent/20"
               contentClassName="px-0 pb-0"
+              status={csvParser.csvData ? 'ready' : undefined}
+              statusMessage={csvParser.csvData ? 'Ready' : undefined}
             >
               <FileUploadSection
                 ref={fileInputRef}
@@ -767,12 +719,26 @@ export default function BulkProcessor() {
               className="border border-border/30 rounded-md bg-background/30"
               triggerClassName="hover:bg-accent/20"
               contentClassName="px-0 pb-0"
+              status={
+                !csvParser.csvData ? undefined :
+                !prompt.trim() ? undefined :
+                !variableValidation.isValid ? 'error' :
+                'ready'
+              }
+              statusMessage={
+                !csvParser.csvData ? undefined :
+                !prompt.trim() ? undefined :
+                !variableValidation.isValid ? 'Missing variables' :
+                'Ready'
+              }
             >
               <PromptSection
                 prompt={prompt}
                 onPromptChange={setPrompt}
                 csvData={csvParser.csvData}
                 onOpenTemplates={() => setShowTemplateModal(true)}
+                selectedInputColumns={selectedInputColumns}
+                variableValidation={variableValidation}
               />
             </CollapsibleSection>
 
@@ -784,6 +750,16 @@ export default function BulkProcessor() {
               className="border border-border/30 rounded-md bg-background/30"
               triggerClassName="hover:bg-accent/20"
               contentClassName="space-y-3"
+              status={
+                !csvParser.csvData || !prompt.trim() ? undefined :
+                outputFields.length === 0 ? 'warning' :
+                'ready'
+              }
+              statusMessage={
+                !csvParser.csvData || !prompt.trim() ? undefined :
+                outputFields.length === 0 ? 'No output fields' :
+                'Ready'
+              }
             >
               {/* JSON MODE TOGGLE */}
               <div className="flex items-center justify-between py-1">

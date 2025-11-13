@@ -7,7 +7,7 @@
 
 import * as React from 'react'
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -29,6 +29,10 @@ interface CollapsibleSectionProps {
   className?: string
   triggerClassName?: string
   contentClassName?: string
+  /** Status indicator (e.g., 'ready', 'error', 'complete') */
+  status?: 'ready' | 'error' | 'complete' | 'warning'
+  /** Status message to display */
+  statusMessage?: string
 }
 
 const CollapsibleSection = React.forwardRef<
@@ -45,6 +49,8 @@ const CollapsibleSection = React.forwardRef<
       className,
       triggerClassName,
       contentClassName,
+      status,
+      statusMessage,
       ...props
     },
     ref
@@ -56,6 +62,16 @@ const CollapsibleSection = React.forwardRef<
     const isControlled = controlledOpen !== undefined
     const isOpen = isControlled ? controlledOpen : uncontrolledOpen
     const setIsOpen = isControlled ? onOpenChange : setUncontrolledOpen
+
+    // Status icon and color
+    const statusConfig = {
+      ready: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
+      complete: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
+      error: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
+      warning: { icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    }
+    const statusInfo = status ? statusConfig[status] : null
+    const StatusIcon = statusInfo?.icon
 
     return (
       <Collapsible
@@ -71,7 +87,17 @@ const CollapsibleSection = React.forwardRef<
             triggerClassName
           )}
         >
-          {title}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="truncate">{title}</span>
+            {status && StatusIcon && (
+              <div className={cn('flex items-center gap-1.5 flex-shrink-0', statusInfo.bg, 'px-1.5 py-0.5 rounded')}>
+                <StatusIcon className={cn('h-3 w-3', statusInfo.color)} />
+                {statusMessage && (
+                  <span className={cn('text-[10px] font-medium', statusInfo.color)}>{statusMessage}</span>
+                )}
+              </div>
+            )}
+          </div>
           <ChevronDown
             className={cn(
               'h-4 w-4 text-muted-foreground transition-transform duration-200 flex-shrink-0',

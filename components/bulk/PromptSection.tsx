@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { FileText, HelpCircle } from 'lucide-react'
+import { FileText, HelpCircle, XCircle } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -10,22 +10,49 @@ interface PromptSectionProps {
   onPromptChange: (value: string) => void
   csvData: ParsedCSV | null
   onOpenTemplates: () => void
+  selectedInputColumns?: string[]
+  variableValidation?: {
+    missing: string[]
+    isValid: boolean
+  }
 }
 
-export function PromptSection({ prompt, onPromptChange, csvData, onOpenTemplates }: PromptSectionProps) {
+export function PromptSection({ 
+  prompt, 
+  onPromptChange, 
+  csvData, 
+  onOpenTemplates,
+  selectedInputColumns = [],
+  variableValidation
+}: PromptSectionProps) {
   const [showPreview, setShowPreview] = useState(false)
 
-  // Fill variables with first row data
+  // Filter available columns based on selectedInputColumns
+  const availableColumns = useMemo(() => {
+    if (!csvData) return []
+    if (selectedInputColumns.length === 0) return csvData.columns
+    return csvData.columns.filter(col => selectedInputColumns.includes(col))
+  }, [csvData, selectedInputColumns])
+
+  // Extract variables from prompt
+  const promptVariables = useMemo(() => {
+    if (!prompt) return []
+    const variablePattern = /\{\{([^}]+)\}\}/g
+    const matches = Array.from(prompt.matchAll(variablePattern))
+    return Array.from(new Set(matches.map(m => m[1].trim())))
+  }, [prompt])
+
+  // Fill variables with first row data (only from selected columns)
   const filledPrompt = useMemo(() => {
     if (!csvData || !prompt || csvData.rows.length === 0) return prompt
     
     let filled = prompt
-    csvData.columns.forEach(col => {
+    availableColumns.forEach(col => {
       const value = csvData.rows[0].data[col] || ''
       filled = filled.replace(new RegExp(`\\{\\{${col}\\}\\}`, 'g'), value)
     })
     return filled
-  }, [prompt, csvData])
+  }, [prompt, csvData, availableColumns])
 
   return (
     <div className="space-y-3">
@@ -88,9 +115,37 @@ export function PromptSection({ prompt, onPromptChange, csvData, onOpenTemplates
 
       <div className="flex items-center justify-between text-xs">
         {csvData && (
-          <p className="text-foreground">
-            Variables: {csvData.columns.map(h => `{{${h}}}`).join(', ')}
-          </p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-muted-foreground">Variables:</span>
+            {/* Show available columns */}
+            {availableColumns.map(col => {
+              const isUsed = promptVariables.includes(col)
+              
+              return (
+                <span
+                  key={col}
+                  className={`font-mono text-[10px] px-1 py-0.5 rounded ${
+                    isUsed
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                      : 'bg-muted/50 text-muted-foreground border border-border/30'
+                  }`}
+                  title={isUsed ? 'Variable used in prompt' : 'Available variable'}
+                >
+                  {`{{${col}}}`}
+                </span>
+              )
+            })}
+            {/* Show missing variables (used in prompt but not in available columns) */}
+            {variableValidation?.missing.map(v => (
+              <span
+                key={v}
+                className="font-mono text-[10px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30"
+                title="Variable used in prompt but column is deselected"
+              >
+                {`{{${v}}}`}
+              </span>
+            ))}
+          </div>
         )}
         <p className={`${
           prompt.length === 0 ? 'text-muted-foreground' :
@@ -103,6 +158,16 @@ export function PromptSection({ prompt, onPromptChange, csvData, onOpenTemplates
           {prompt.length > 2000 && ' (may be too long)'}
         </p>
       </div>
+
+      {/* Error messages in Task section */}
+      {variableValidation && !variableValidation.isValid && variableValidation.missing.length > 0 && (
+        <div className="flex items-start gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded-md">
+          <XCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-red-400">
+            Missing variables: {variableValidation.missing.map(v => `{{${v}}}`).join(', ')}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -33,7 +33,8 @@ export interface VariableValidationResult {
  */
 export function useVariableValidation(
   prompt: string,
-  csvData: ParsedCSV | null
+  csvData: ParsedCSV | null,
+  selectedInputColumns?: string[]
 ): VariableValidationResult {
   return useMemo(() => {
     if (!csvData || !prompt) {
@@ -48,15 +49,19 @@ export function useVariableValidation(
       promptVars.add(match[1].trim())
     }
 
-    // Compare with CSV columns
-    const csvCols = new Set(csvData.columns)
-    const missing = Array.from(promptVars).filter(v => !csvCols.has(v))
-    const unused = Array.from(csvCols).filter(c => !promptVars.has(c))
+    // Use selectedInputColumns if provided, otherwise use all CSV columns
+    const availableCols = selectedInputColumns && selectedInputColumns.length > 0
+      ? new Set(selectedInputColumns)
+      : new Set(csvData.columns)
+    
+    // Compare with available columns
+    const missing = Array.from(promptVars).filter(v => !availableCols.has(v))
+    const unused = Array.from(availableCols).filter(c => !promptVars.has(c))
 
     return {
       missing,
       unused,
       isValid: promptVars.size > 0 && missing.length === 0 // Require at least one variable AND all variables must exist in CSV
     }
-  }, [csvData, prompt])
+  }, [csvData, prompt, selectedInputColumns])
 }
