@@ -658,7 +658,7 @@ export default function BulkProcessor() {
             results = statusData.results.map((r: StatusResult) => ({
               input_data: r.input || {},
               output_data: r.output || '',
-              status: r.status === 'success' ? 'success' : r.status === 'error' ? 'error' : r.status,
+              status: r.status === 'success' ? 'success' : r.status === 'error' ? 'error' : (r.status || 'unknown'),
               error_message: r.error || '',
               input_tokens: 0,
               output_tokens: 0
