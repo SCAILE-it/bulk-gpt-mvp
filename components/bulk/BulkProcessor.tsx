@@ -71,7 +71,7 @@ export default function BulkProcessor() {
   const [outputFields, setOutputFields] = useState<string[]>(['bio'])
   const [newField, setNewField] = useState('')
   const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
-  const [useJsonMode, setUseJsonMode] = useState(true) // JSON schema toggle
+  // JSON mode is always enabled - no toggle needed for better output quality
   const [selectedTools, setSelectedTools] = useState<string[]>([]) // GTM tools to enable
   const [selectedInputColumns, setSelectedInputColumns] = useState<string[]>([]) // Input columns to include in output
   const [optimizeInput, setOptimizeInput] = useState(true)
@@ -345,7 +345,7 @@ export default function BulkProcessor() {
           rows: [csvParser.csvData.rows[0].data], // Only first row
           prompt,
           context: '',
-          outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
+          outputColumns: outputFields, // Always use JSON mode for structured output
           tools: selectedTools.length > 0 ? selectedTools : undefined,
           testMode: true, // Enable test mode to bypass batch limit
         }),
@@ -520,7 +520,7 @@ export default function BulkProcessor() {
     } finally {
       setIsTesting(false)
     }
-  }, [csvParser.csvData, prompt, outputFields, variableValidation, debugLog, useJsonMode, selectedTools])
+  }, [csvParser.csvData, prompt, outputFields, variableValidation, debugLog, selectedTools])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
@@ -543,7 +543,7 @@ export default function BulkProcessor() {
       outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
       tools: selectedTools.length > 0 ? selectedTools : undefined,
     })
-  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, useJsonMode, selectedTools])
+  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools])
 
   // === EXPORT ===
   const handleExport = useCallback(async () => {
@@ -850,43 +850,22 @@ export default function BulkProcessor() {
                 'Ready'
               }
             >
-              {/* JSON MODE TOGGLE */}
-              <div className="flex items-center justify-between py-1">
-                <span className="text-xs text-muted-foreground">JSON Mode</span>
-                <button
-                  onClick={() => setUseJsonMode(!useJsonMode)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    useJsonMode ? 'bg-primary' : 'bg-accent'
-                  }`}
-                  aria-label={useJsonMode ? 'Switch to free-form text mode' : 'Switch to JSON mode'}
-                  title={useJsonMode ? 'JSON mode (structured output)' : 'Free-form mode (unstructured text)'}
-                >
-                  <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                      useJsonMode ? 'translate-x-5' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+              {/* OUTPUT COLUMNS - JSON mode always enabled for structured output */}
+              <div className="space-y-3">
+                <OutputFieldsSection
+                  outputFields={outputFields}
+                  newField={newField}
+                  onNewFieldChange={setNewField}
+                  onAddField={addOutputField}
+                  onRemoveField={removeOutputField}
+                />
+
+                {/* TOOL SELECTION */}
+                <ToolSelectionSection
+                  selectedTools={selectedTools}
+                  onToggleTool={toggleTool}
+                />
               </div>
-
-              {/* OUTPUT COLUMNS - Disabled when JSON mode is OFF */}
-              {useJsonMode && (
-                <div className="space-y-3 pt-2 border-t border-border/30">
-                  <OutputFieldsSection
-                    outputFields={outputFields}
-                    newField={newField}
-                    onNewFieldChange={setNewField}
-                    onAddField={addOutputField}
-                    onRemoveField={removeOutputField}
-                  />
-
-                  {/* TOOL SELECTION - Always visible when JSON mode is enabled */}
-                  <ToolSelectionSection
-                    selectedTools={selectedTools}
-                    onToggleTool={toggleTool}
-                  />
-                </div>
-              )}
 
             </CollapsibleSection>
 
