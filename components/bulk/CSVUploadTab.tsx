@@ -148,24 +148,11 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
               <p className="text-xs text-muted-foreground">Uploading...</p>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-3 w-full">
+            <div className="flex flex-col items-center gap-2 w-full">
               <Upload className={`h-5 w-5 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
               <p className="text-xs text-muted-foreground">
                 {isDragActive ? 'Drop CSV file here' : 'Drop CSV file or click to browse'}
               </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full max-w-xs"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  localRef.current?.click()
-                }}
-                aria-label="Browse for CSV file to upload"
-              >
-                <Upload className="h-3.5 w-3.5" />
-                Browse Files
-              </Button>
             </div>
           )}
         </div>
