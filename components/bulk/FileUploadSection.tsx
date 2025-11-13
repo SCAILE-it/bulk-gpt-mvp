@@ -11,7 +11,6 @@ import type { ParsedCSV } from '@/lib/types'
 interface FileUploadSectionProps {
   csvData: ParsedCSV | null
   fileName?: string
-  errors: (string | null)[]
   isUploading: boolean
   onFileUpload: (file: File) => void
   selectedInputColumns?: string[]
@@ -21,7 +20,6 @@ interface FileUploadSectionProps {
 export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionProps>(function FileUploadSection({
   csvData,
   fileName,
-  errors,
   isUploading,
   onFileUpload,
   selectedInputColumns,

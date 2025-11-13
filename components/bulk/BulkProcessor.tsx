@@ -863,7 +863,6 @@ export default function BulkProcessor() {
                 ref={fileInputRef}
                 csvData={csvParser.csvData}
                 fileName={fileUpload.file?.name}
-                errors={[fileUpload.error, csvParser.error, batchProcessor.error, error]}
                 isUploading={isUploading}
                 onFileUpload={handleFileUpload}
                 selectedInputColumns={selectedInputColumns}
