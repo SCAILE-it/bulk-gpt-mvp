@@ -8,6 +8,7 @@ interface JobPreviewProps {
   setOptimizedPrompt: (prompt: string) => void
   outputColumns?: OutputColumn[]
   suggestedInputColumns?: string[]
+  suggestedTools?: string[]
   reasoning: string | null
   isOptimizing: boolean
   onAccept: () => void
@@ -23,6 +24,7 @@ export function JobPreview({
   setOptimizedPrompt,
   outputColumns = [],
   suggestedInputColumns = [],
+  suggestedTools = [],
   reasoning,
   isOptimizing,
   onAccept,
@@ -30,17 +32,29 @@ export function JobPreview({
 }: JobPreviewProps) {
   if (isOptimizing) {
     return (
-      <div data-testid="job-preview" className="mt-3 p-3 rounded-md bg-primary/10 border border-primary/20">
+      <div data-testid="job-preview" className="mt-3 p-3 rounded-md bg-primary/10 border border-primary/20 space-y-3">
         <div className="flex items-center gap-2 text-xs text-primary/90">
           <Sparkles className="h-3 w-3 animate-pulse" />
           <span>AI is analyzing your job and generating optimizations...</span>
+        </div>
+        {/* Progress bar with shimmer effect */}
+        <div className="w-full h-1.5 bg-primary/20 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary rounded-full relative"
+            style={{ 
+              width: '100%',
+              background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 50%, hsl(var(--primary)) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'progress-shimmer 1.5s linear infinite'
+            }}
+          />
         </div>
       </div>
     )
   }
 
-  // Show preview if any optimization exists
-  if (!optimizedPrompt && outputColumns.length === 0 && suggestedInputColumns.length === 0) {
+  // Show preview if any optimization exists or if tools section should be shown
+  if (!optimizedPrompt && outputColumns.length === 0 && suggestedInputColumns.length === 0 && suggestedTools.length === 0) {
     return null
   }
 
@@ -102,10 +116,10 @@ export function JobPreview({
         </div>
       )}
 
-      {/* Output Columns */}
+      {/* Suggested Output Columns */}
       {outputColumns.length > 0 && (
         <div className="space-y-1">
-          <p className="text-xs text-primary/90 font-medium">Detected Output Columns:</p>
+          <p className="text-xs text-primary/90 font-medium">Suggested Output Columns:</p>
           <div className="flex flex-wrap gap-2">
             {outputColumns.map((column, index) => (
               <div
@@ -120,6 +134,26 @@ export function JobPreview({
           </div>
         </div>
       )}
+
+      {/* Suggested Tools - Always show, even if empty */}
+      <div className="space-y-1">
+        <p className="text-xs text-primary/90 font-medium">Suggested Tools:</p>
+        {suggestedTools.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {suggestedTools.map((tool, index) => (
+              <div
+                key={index}
+                data-testid="suggested-tool"
+                className="text-xs bg-primary/20 text-primary/80 px-2 py-1 rounded border border-primary/30"
+              >
+                {tool}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground/60 italic">No tools suggested</p>
+        )}
+      </div>
 
       {/* Reasoning */}
       {reasoning && (

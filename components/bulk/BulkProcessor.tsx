@@ -802,12 +802,13 @@ export default function BulkProcessor() {
             </CollapsibleSection>
 
             {/* AI-OPTIMIZED JOB PREVIEW */}
-            {(optimizedPrompt || outputColumns.length > 0 || suggestedInputColumns.length > 0 || isOptimizing) && (
+            {(optimizedPrompt || outputColumns.length > 0 || suggestedInputColumns.length > 0 || suggestedTools.length > 0 || isOptimizing) && (
               <JobPreview
                 optimizedPrompt={optimizedPrompt || undefined}
                 setOptimizedPrompt={setOptimizedPrompt}
                 outputColumns={outputColumns}
                 suggestedInputColumns={suggestedInputColumns}
+                suggestedTools={suggestedTools}
                 reasoning={reasoning}
                 isOptimizing={isOptimizing}
                 onAccept={handleAcceptOptimization}
