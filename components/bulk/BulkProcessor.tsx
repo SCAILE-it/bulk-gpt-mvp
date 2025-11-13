@@ -376,8 +376,9 @@ export default function BulkProcessor() {
 
       const testBatchId = data.batchId
 
-      // Step 2: Poll for completion (max 90 seconds)
-      const maxAttempts = 45 // 45 attempts * 2 seconds = 90 seconds
+      // Step 2: Poll for completion (max 120 seconds to match actual processing time)
+      // Increased timeout since batches can take longer than 90 seconds
+      const maxAttempts = 60 // 60 attempts * 2 seconds = 120 seconds
       const pollInterval = 2000 // 2 seconds
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -388,8 +389,8 @@ export default function BulkProcessor() {
 
         const statusData = await statusResponse.json()
 
-        // Check if completed
-        if (statusData.status === 'completed') {
+        // Check if completed (including completed_with_errors which is still a valid completion)
+        if (statusData.status === 'completed' || statusData.status === 'completed_with_errors') {
           // Fetch the result
           const supabase = createClient()
           if (!supabase) {
@@ -412,11 +413,28 @@ export default function BulkProcessor() {
             ? JSON.parse(firstResult.input_data)
             : firstResult.input_data
 
+          // Parse output_data properly - handle JSON objects and strings
+          // This should match the export logic for consistency
           let outputValue: string
           if (firstResult.output_data) {
-            outputValue = typeof firstResult.output_data === 'string'
-              ? firstResult.output_data
-              : JSON.stringify(firstResult.output_data, null, 2)
+            if (typeof firstResult.output_data === 'string') {
+              // Try to parse as JSON first
+              try {
+                const parsed = JSON.parse(firstResult.output_data)
+                // If it's an object, stringify it nicely; otherwise use as-is
+                outputValue = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+                  ? JSON.stringify(parsed, null, 2)
+                  : String(parsed)
+              } catch {
+                // Not JSON, use as string
+                outputValue = firstResult.output_data
+              }
+            } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
+              // Already an object, stringify it
+              outputValue = JSON.stringify(firstResult.output_data, null, 2)
+            } else {
+              outputValue = String(firstResult.output_data)
+            }
           } else {
             outputValue = ''
           }
@@ -437,8 +455,64 @@ export default function BulkProcessor() {
         }
       }
 
-      // Timeout
-      throw new Error('Test timed out after 90 seconds. The API may be slow or overloaded. Try again in a moment.')
+      // Timeout - check if batch actually completed but status check failed
+      // Try one final check to see if batch completed
+      const finalStatusResponse = await fetch(`/api/batch/${testBatchId}/status`)
+      if (finalStatusResponse.ok) {
+        const finalStatusData = await finalStatusResponse.json()
+        if (finalStatusData.status === 'completed' || finalStatusData.status === 'completed_with_errors') {
+          // Batch actually completed, fetch result
+          const supabase = createClient()
+          if (supabase) {
+            const { data: finalResults } = await supabase
+              .from('batch_results')
+              .select('input_data, output_data, status, error_message')
+              .eq('batch_id', testBatchId)
+              .order('id', { ascending: true })
+              .limit(1)
+            
+            if (finalResults && finalResults.length > 0) {
+              const firstResult = finalResults[0]
+              const inputData = typeof firstResult.input_data === 'string'
+                ? JSON.parse(firstResult.input_data)
+                : firstResult.input_data
+
+              let outputValue: string
+              if (firstResult.output_data) {
+                if (typeof firstResult.output_data === 'string') {
+                  try {
+                    const parsed = JSON.parse(firstResult.output_data)
+                    outputValue = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+                      ? JSON.stringify(parsed, null, 2)
+                      : String(parsed)
+                  } catch {
+                    outputValue = firstResult.output_data
+                  }
+                } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
+                  outputValue = JSON.stringify(firstResult.output_data, null, 2)
+                } else {
+                  outputValue = String(firstResult.output_data)
+                }
+              } else {
+                outputValue = ''
+              }
+
+              const testResult: Result = {
+                id: 'test-result',
+                input: inputData,
+                output: outputValue,
+                status: firstResult.status === 'success' ? 'completed' : 'failed',
+                error: firstResult.error_message || undefined
+              }
+              setTestResults([testResult])
+              setIsTesting(false)
+              return
+            }
+          }
+        }
+      }
+      
+      throw new Error('Test timed out after 120 seconds. The API may be slow or overloaded. Check the Executions page to see if the batch completed.')
 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'

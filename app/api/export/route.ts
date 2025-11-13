@@ -89,8 +89,19 @@ export async function POST(request: NextRequest): Promise<Response> {
         if (outputObj) {
           Object.entries(outputObj).forEach(([key, value]) => {
             // Use the key as-is (e.g., "summary", "skills", etc.)
-            // Convert non-string values to JSON strings for CSV compatibility
-            flat[key] = typeof value === 'string' ? value : JSON.stringify(value)
+            // Convert non-string values to strings for CSV compatibility
+            // For arrays/objects, stringify; for primitives, convert to string
+            if (value === null || value === undefined) {
+              flat[key] = ''
+            } else if (typeof value === 'string') {
+              flat[key] = value
+            } else if (typeof value === 'object') {
+              // Arrays or nested objects - stringify
+              flat[key] = JSON.stringify(value)
+            } else {
+              // Numbers, booleans, etc. - convert to string
+              flat[key] = String(value)
+            }
           })
         }
       }
