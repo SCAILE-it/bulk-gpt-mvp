@@ -1013,128 +1013,14 @@ export default function BulkProcessor() {
               onExport={handleExport}
             />
           ) : (
-            // Preview state - show example results
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-medium text-muted-foreground">Results Preview</h3>
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/60 bg-muted/50 rounded">Example</span>
-                </div>
-                
-                {/* Example Results Table */}
-                <div className="border border-border/30 rounded-md overflow-hidden bg-background/30">
-                  <div className="border-b border-border/30 bg-secondary/10 px-3 py-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground/80">Results</span>
-                      <span className="text-[10px] text-muted-foreground/50">3 rows</span>
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead className="bg-secondary/10 border-b border-border/30">
-                        <tr>
-                          <th className="px-3 py-1.5 text-left w-6"></th>
-                          {csvParser.csvData ? (
-                            <>
-                              {csvParser.csvData.columns.slice(0, 3).map((col) => (
-                                <th key={col} className="px-3 py-1.5 text-left text-[10px] font-medium text-muted-foreground/70">
-                                  {col}
-                                </th>
-                              ))}
-                              {outputFields.length > 0 ? (
-                                outputFields.slice(0, 2).map((field) => (
-                                  <th key={field} className="px-3 py-1.5 text-left text-[10px] font-medium text-muted-foreground/70">
-                                    {field}
-                                  </th>
-                                ))
-                              ) : (
-                                <th className="px-3 py-1.5 text-left text-[10px] font-medium text-muted-foreground/70">
-                                  output
-                                </th>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <th className="px-3 py-1.5 text-left text-[10px] font-medium text-muted-foreground/70">name</th>
-                              <th className="px-3 py-1.5 text-left text-[10px] font-medium text-muted-foreground/70">company</th>
-                              <th className="px-3 py-1.5 text-left text-[10px] font-medium text-muted-foreground/70">bio</th>
-                            </>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(() => {
-                          // Generate varied example data for 3 rows
-                          const exampleInputs = [
-                            ['Alice Johnson', 'TechCorp', 'San Francisco'],
-                            ['Bob Smith', 'DataCo', 'New York'],
-                            ['Carol White', 'StartupXYZ', 'Austin']
-                          ]
-                          
-                          const exampleOutputs = outputFields.length > 0 ? [
-                            ['Senior data analyst specializing in machine learning and cloud infrastructure', '10+ years'],
-                            ['Product manager with expertise in agile methodologies and user research', '8 years'],
-                            ['Full-stack engineer focused on React and Node.js development', '5 years']
-                          ] : [
-                            ['Senior data analyst specializing in machine learning and cloud infrastructure'],
-                            ['Product manager with expertise in agile methodologies and user research'],
-                            ['Full-stack engineer focused on React and Node.js development']
-                          ]
-                          
-                          return [1, 2, 3].map((row) => {
-                            const inputData = exampleInputs[row - 1] || exampleInputs[0]
-                            const outputData = exampleOutputs[row - 1] || exampleOutputs[0]
-                            
-                            return (
-                              <tr key={row} className="border-b border-border/20 last:border-0 hover:bg-background/20 transition-colors">
-                                <td className="px-3 py-2">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/20" />
-                                </td>
-                                {csvParser.csvData ? (
-                                  <>
-                                    {csvParser.csvData.columns.slice(0, 3).map((col, idx) => (
-                                      <td key={col} className="px-3 py-2 text-muted-foreground/50 font-mono text-[10px]">
-                                        {inputData[idx] || `sample-${row}-${idx}`}
-                                      </td>
-                                    ))}
-                                    {outputFields.length > 0 ? (
-                                      outputFields.slice(0, 2).map((field, idx) => (
-                                        <td key={field} className="px-3 py-2 text-foreground/50 text-[10px]">
-                                          <div className="line-clamp-1">
-                                            {outputData[idx] || 'Generated content...'}
-                                          </div>
-                                        </td>
-                                      ))
-                                    ) : (
-                                      <td className="px-3 py-2 text-foreground/50 text-[10px]">
-                                        <div className="line-clamp-1">{outputData[0] || 'AI-generated output...'}</div>
-                                      </td>
-                                    )}
-                                  </>
-                                ) : (
-                                  <>
-                                    <td className="px-3 py-2 text-muted-foreground/50 font-mono text-[10px]">{inputData[0]}</td>
-                                    <td className="px-3 py-2 text-muted-foreground/50 font-mono text-[10px]">{inputData[1]}</td>
-                                    <td className="px-3 py-2 text-foreground/50 text-[10px]">
-                                      <div className="line-clamp-1">{outputData[0]}</div>
-                                    </td>
-                                  </>
-                                )}
-                              </tr>
-                            )
-                          })
-                        })()}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Helper text */}
-                <div className="pt-3 border-t border-border/20">
-                  <p className="text-[10px] text-muted-foreground/60 text-center">
-                    {csvParser.csvData ? 'Run a test or process all rows to see real results' : 'Upload CSV and configure prompt to see results'}
-                  </p>
-                </div>
+            // Empty state - minimal and clean
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center space-y-2 max-w-xs">
+                <p className="text-sm text-muted-foreground">
+                  {csvParser.csvData 
+                    ? 'Run a test or process all rows to see results'
+                    : 'Upload CSV and configure prompt to see results'}
+                </p>
               </div>
             </div>
           )}

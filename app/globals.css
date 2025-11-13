@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Completely disable all tooltip animations */
+[data-radix-tooltip-content] {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
 /* Ensure Geist fonts are base layer */
 @layer base {
   body {
