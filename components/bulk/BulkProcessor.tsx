@@ -93,37 +93,21 @@ export default function BulkProcessor() {
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null)
 
   // === COLLAPSIBLE SECTIONS STATE ===
-  // Sections start collapsed, but auto-expand based on active state
   // Progressive disclosure: Input open by default, Task/Output closed
+  // Only Input persists state - Task/Output always start closed for clean UX
   const dataInputSection = useCollapsibleState({
-    storageKey: 'bulk-processor-data-input-v2',
+    storageKey: 'bulk-processor-data-input',
     defaultOpen: true // Only Input open by default
   })
-  const promptSection = useCollapsibleState({
-    storageKey: 'bulk-processor-prompt-v2',
-    defaultOpen: false // Task closed by default - opens when Input is complete
-  })
-  const outputSettingsSection = useCollapsibleState({
-    storageKey: 'bulk-processor-output-settings-v2',
-    defaultOpen: false // Output closed by default - opens when Task is complete
-  })
+  
+  // Task and Output don't persist state - always start closed
+  const [promptSectionOpen, setPromptSectionOpen] = useState(false)
+  const [outputSettingsSectionOpen, setOutputSettingsSectionOpen] = useState(false)
+  
   const aiAssistantSection = useCollapsibleState({
     storageKey: 'bulk-processor-ai-assistant',
     defaultOpen: true // Always expanded when visible
   })
-
-  // Force Task and Output to start closed on mount (override any localStorage persistence)
-  useEffect(() => {
-    // Always close Task and Output on initial mount to ensure clean state
-    // User can manually open them if needed
-    if (promptSection.isOpen) {
-      promptSection.setIsOpen(false)
-    }
-    if (outputSettingsSection.isOpen) {
-      outputSettingsSection.setIsOpen(false)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run once on mount
 
   // Sections stay open/closed based on user preference (no auto-collapse/expand)
 
@@ -816,8 +800,8 @@ export default function BulkProcessor() {
             {/* TASK SECTION */}
             <CollapsibleSection
               title="Task"
-              open={promptSection.isOpen}
-              onOpenChange={promptSection.setIsOpen}
+              open={promptSectionOpen}
+              onOpenChange={setPromptSectionOpen}
               className="border border-border/30 rounded-md bg-background/30"
               triggerClassName="hover:bg-accent/20"
               contentClassName="px-0 pb-0"
@@ -847,8 +831,8 @@ export default function BulkProcessor() {
             {/* OUTPUT SECTION */}
             <CollapsibleSection
               title="Output"
-              open={outputSettingsSection.isOpen}
-              onOpenChange={outputSettingsSection.setIsOpen}
+              open={outputSettingsSectionOpen}
+              onOpenChange={setOutputSettingsSectionOpen}
               className="border border-border/30 rounded-md bg-background/30"
               triggerClassName="hover:bg-accent/20"
               contentClassName="space-y-3"
