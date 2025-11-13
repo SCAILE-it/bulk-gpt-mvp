@@ -223,25 +223,103 @@ export default function DashboardPage() {
         return
       }
 
-      // Parse first result to get input column names
+      // Parse first result to get input column names and output column names
       const firstResult = results[0]
       const inputData = typeof firstResult.input_data === 'string'
         ? JSON.parse(firstResult.input_data)
         : firstResult.input_data
       const inputColumns = Object.keys(inputData)
 
-      // Generate CSV with token data
-      const headers = [...inputColumns, 'AI_Output', 'Status', 'Error', 'Input_Tokens', 'Output_Tokens', 'Model']
+      // Parse output_data to determine output columns (spread JSON fields)
+      let outputColumns: string[] = []
+      if (firstResult.output_data) {
+        let outputObj: Record<string, unknown> | null = null
+        
+        if (typeof firstResult.output_data === 'string') {
+          try {
+            const parsed = JSON.parse(firstResult.output_data)
+            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+              outputObj = parsed
+            }
+          } catch {
+            // Not JSON, will use single Output column
+          }
+        } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
+          outputObj = firstResult.output_data as Record<string, unknown>
+        }
+        
+        if (outputObj) {
+          outputColumns = Object.keys(outputObj)
+        }
+      }
+
+      // Generate CSV with token data - spread output fields as separate columns
+      const headers = [
+        ...inputColumns,
+        ...(outputColumns.length > 0 ? outputColumns : ['Output']), // Use parsed columns or fallback to 'Output'
+        'Status',
+        'Error',
+        'Input_Tokens',
+        'Output_Tokens',
+        'Model'
+      ]
+      
       const csvRows = results.map(r => {
         const input = typeof r.input_data === 'string' ? JSON.parse(r.input_data) : r.input_data
-        const inputValues = inputColumns.map(col => `"${(input[col] || '').replace(/"/g, '""')}"`)
-        const output = `"${(r.output_data || '').replace(/"/g, '""')}"`
+        const inputValues = inputColumns.map(col => {
+          const value = input[col] || ''
+          return `"${String(value).replace(/"/g, '""')}"`
+        })
+        
+        // Parse and spread output fields
+        let outputValues: string[] = []
+        if (r.output_data) {
+          let outputObj: Record<string, unknown> | null = null
+          
+          if (typeof r.output_data === 'string') {
+            try {
+              const parsed = JSON.parse(r.output_data)
+              if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+                outputObj = parsed
+              } else {
+                // Not an object, use as single value
+                outputValues = [`"${String(parsed).replace(/"/g, '""')}"`]
+              }
+            } catch {
+              // Not JSON, use as string
+              outputValues = [`"${r.output_data.replace(/"/g, '""')}"`]
+            }
+          } else if (typeof r.output_data === 'object' && r.output_data !== null) {
+            outputObj = r.output_data as Record<string, unknown>
+          }
+          
+          if (outputObj) {
+            // Spread object fields as separate columns
+            outputValues = outputColumns.map(col => {
+              const value = outputObj![col]
+              if (value === null || value === undefined) {
+                return '""'
+              } else if (typeof value === 'object') {
+                return `"${JSON.stringify(value).replace(/"/g, '""')}"`
+              } else {
+                return `"${String(value).replace(/"/g, '""')}"`
+              }
+            })
+          }
+        } else {
+          // No output data - fill with empty strings
+          outputValues = outputColumns.length > 0 
+            ? outputColumns.map(() => '""')
+            : ['""']
+        }
+        
         const status = r.status || ''
         const error = r.error_message ? `"${r.error_message.replace(/"/g, '""')}"` : '""'
         const inputTokens = r.input_tokens || 0
         const outputTokens = r.output_tokens || 0
         const model = r.model || ''
-        return [...inputValues, output, status, error, inputTokens, outputTokens, model].join(',')
+        
+        return [...inputValues, ...outputValues, status, error, inputTokens, outputTokens, model].join(',')
       })
 
       const csvContent = [headers.join(','), ...csvRows].join('\n')
