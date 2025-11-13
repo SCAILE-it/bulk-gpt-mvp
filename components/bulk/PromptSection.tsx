@@ -47,13 +47,13 @@ function highlightVariables(
     
     let colorClass = ''
     if (isMissing) {
-      colorClass = 'text-red-400 bg-red-500/10'
+      colorClass = 'text-red-400'
     } else if (isValid) {
-      colorClass = 'text-green-400 bg-green-500/10'
+      colorClass = 'text-green-400'
     }
     
     if (colorClass) {
-      const highlighted = `<span class="${colorClass} font-semibold">${match[0]}</span>`
+      const highlighted = `<span class="${colorClass}">${match[0]}</span>`
       const start = match.index || 0
       const end = start + match[0].length
       escaped = escaped.slice(0, start) + highlighted + escaped.slice(end)
@@ -138,8 +138,8 @@ export function PromptSection({
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
-          const colorClass = 'text-green-400 bg-green-500/10'
-          const highlighted = `<span class="${colorClass} font-semibold">${escapedValue}</span>`
+          const colorClass = 'text-green-400'
+          const highlighted = `<span class="${colorClass}">${escapedValue}</span>`
           // Replace the first occurrence
           result = result.replace(value, highlighted)
         }
@@ -149,8 +149,8 @@ export function PromptSection({
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
-        const colorClass = 'text-red-400 bg-red-500/10'
-        const highlighted = `<span class="${colorClass} font-semibold">${escapedVar}</span>`
+        const colorClass = 'text-red-400'
+        const highlighted = `<span class="${colorClass}">${escapedVar}</span>`
         result = result.replace(match[0], highlighted)
       }
     })
@@ -216,7 +216,7 @@ export function PromptSection({
         <div
           ref={highlightRef}
           className={cn(
-            "absolute inset-0 w-full min-h-[120px] max-h-[400px] bg-secondary/70 border border-transparent text-foreground font-mono resize-none overflow-hidden pointer-events-none",
+            "absolute inset-0 w-full min-h-[120px] max-h-[400px] bg-secondary/70 border border-transparent text-foreground font-mono resize-none overflow-hidden pointer-events-none text-sm",
             "px-3 py-2 rounded-md whitespace-pre-wrap break-words",
             previewMode && "opacity-90"
           )}
@@ -235,7 +235,7 @@ export function PromptSection({
           }}
           readOnly={previewMode}
           className={cn(
-            "w-full min-h-[120px] max-h-[400px] bg-transparent border border-border text-transparent font-mono resize-y",
+            "w-full min-h-[120px] max-h-[400px] bg-transparent border border-border text-transparent font-mono resize-y text-sm",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-border",
             "caret-foreground",
             previewMode && "opacity-90 cursor-default"
