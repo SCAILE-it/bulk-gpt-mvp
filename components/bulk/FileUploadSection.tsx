@@ -5,7 +5,7 @@
 
 import { forwardRef, useRef, useImperativeHandle } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Upload, CheckCircle, Loader2 } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 
 interface FileUploadSectionProps {
@@ -42,7 +42,7 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
     noKeyboard: false,
   })
 
-  const errorMessage = errors.find(e => e) || null
+  // Errors are handled at parent level (BulkProcessor), not displayed here
 
   return (
     <div className="space-y-3">
