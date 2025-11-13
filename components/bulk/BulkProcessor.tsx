@@ -972,21 +972,14 @@ export default function BulkProcessor() {
                     <button
                       onClick={handleProcess}
                       disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                      className="flex-[2] flex flex-col items-center justify-center gap-0.5 px-4 py-2 h-auto min-h-[36px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                      className="flex-[2] flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                       data-testid="run-button"
                       aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
                     >
-                      <div className="flex items-center gap-2">
-                        {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                        <span className="whitespace-nowrap">
-                          Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
-                        </span>
-                      </div>
-                      {timeEstimate && !batchProcessor.isProcessing && (
-                        <span className="text-[10px] text-primary-foreground/70 font-normal">
-                          ~{timeEstimate.formatted}
-                        </span>
-                      )}
+                      {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                      <span className="whitespace-nowrap">
+                        Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
+                      </span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -994,6 +987,14 @@ export default function BulkProcessor() {
                   </TooltipContent>
                 </Tooltip>
               </div>
+              {/* Time estimate below buttons */}
+              {timeEstimate && !batchProcessor.isProcessing && csvParser.csvData && prompt && variableValidation.isValid && (
+                <div className="text-center mt-1.5">
+                  <span className="text-[10px] text-muted-foreground/70">
+                    Estimated time: ~{timeEstimate.formatted}
+                  </span>
+                </div>
+              )}
             </TooltipProvider>
           </div>
         </div>
