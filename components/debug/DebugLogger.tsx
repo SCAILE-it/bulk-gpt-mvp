@@ -30,10 +30,18 @@ export function DebugLogger({ maxLogs = 100 }: DebugLoggerProps) {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
   const [filterLevel, setFilterLevel] = useState<LogLevel | 'all'>('all')
+  const [isMounted, setIsMounted] = useState(false)
   const logsEndRef = useRef<HTMLDivElement>(null)
 
-  // Load logs from localStorage on mount
+  // Only render on client to avoid hydration errors
   useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Load logs from localStorage on mount (only on client)
+  useEffect(() => {
+    if (!isMounted) return
+    
     const stored = localStorage.getItem(LOG_STORAGE_KEY)
     if (stored) {
       try {
@@ -42,7 +50,7 @@ export function DebugLogger({ maxLogs = 100 }: DebugLoggerProps) {
         console.error('Failed to parse stored logs:', e)
       }
     }
-  }, [])
+  }, [isMounted])
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
@@ -100,6 +108,11 @@ export function DebugLogger({ maxLogs = 100 }: DebugLoggerProps) {
       case 'error': return 'bg-red-50 dark:bg-red-950'
       case 'success': return 'bg-green-50 dark:bg-green-950'
     }
+  }
+
+  // Don't render until mounted to avoid hydration errors
+  if (!isMounted) {
+    return null
   }
 
   return (

@@ -838,26 +838,7 @@ export default function BulkProcessor() {
       {/* Main Content */}
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden min-h-0">
         {/* LEFT PANEL - Configuration */}
-        <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0 relative">
-          {/* Reset Button - Compact floating icon */}
-          <div className="absolute top-3 right-3 z-10">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setShowResetConfirmation(true)}
-                    className="flex items-center justify-center w-6 h-6 text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded transition-colors"
-                    aria-label="Reset configuration"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Reset configuration
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+        <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-h-0">
             {/* Error - Use V2 error if available */}
             {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
@@ -1078,53 +1059,74 @@ export default function BulkProcessor() {
 
           {/* ACTIONS - Fixed Bottom */}
           <div className="flex-shrink-0 p-4 sm:p-6 pb-4 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
-            <TooltipProvider>
-              <div className="flex gap-2.5 items-stretch max-w-4xl mx-auto">
+            <div className="flex items-center justify-between max-w-4xl mx-auto gap-2.5">
+              {/* Reset button - Secondary action on left */}
+              <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={handleTest}
-                      disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
-                      className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 h-9 bg-secondary/50 border border-border/50 rounded-md text-xs font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                      aria-label="Test prompt with first CSV row"
+                      onClick={() => setShowResetConfirmation(true)}
+                      className="flex items-center justify-center w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded transition-colors"
+                      aria-label="Reset configuration"
                     >
-                      {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                      <span className="whitespace-nowrap">Test</span>
+                      <RotateCcw className="h-3.5 w-3.5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : 'Test with first row (⌘T)'}
+                    Reset configuration
                   </TooltipContent>
                 </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={handleProcess}
-                      disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                      className="flex-[2] flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                      data-testid="run-button"
-                      aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
-                    >
-                      {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                      <span className="whitespace-nowrap flex items-center gap-1.5">
-                        <span>Run All</span>
-                        {csvParser.csvData && (
-                          <>
-                            <span className="inline">({csvParser.csvData.totalRows})</span>
-                            {timeEstimate && !batchProcessor.isProcessing && (
-                              <span className="inline opacity-75">• ~{timeEstimate.formatted}</span>
-                            )}
-                          </>
-                        )}
-                      </span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Run all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
-                  </TooltipContent>
-                </Tooltip>
+              </TooltipProvider>
+              
+              {/* Primary action buttons */}
+              <div className="flex gap-2.5 items-stretch flex-1 justify-end">
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleTest}
+                        disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
+                        className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 h-9 bg-secondary/50 border border-border/50 rounded-md text-xs font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                        aria-label="Test prompt with first CSV row"
+                      >
+                        {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                        <span className="whitespace-nowrap">Test</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : 'Test with first row (⌘T)'}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleProcess}
+                        disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
+                        className="flex-[2] flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                        data-testid="run-button"
+                        aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
+                      >
+                        {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                        <span className="whitespace-nowrap flex items-center gap-1.5">
+                          <span>Run All</span>
+                          {csvParser.csvData && (
+                            <>
+                              <span className="inline">({csvParser.csvData.totalRows})</span>
+                              {timeEstimate && !batchProcessor.isProcessing && (
+                                <span className="inline opacity-75">• ~{timeEstimate.formatted}</span>
+                              )}
+                            </>
+                          )}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Run all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            </TooltipProvider>
+            </div>
           </div>
         </div>
 
@@ -1420,9 +1422,7 @@ export default function BulkProcessor() {
       </Modal>
 
       {/* Debug Logger - Only show in development mode or when there are errors */}
-      {(typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') || batchProcessor.error || fileUpload.error || csvParser.error) && (
-        <DebugLogger />
-      )}
+      <DebugLogger />
     </div>
   )
 }

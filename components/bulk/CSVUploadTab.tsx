@@ -3,7 +3,7 @@
  * Handles CSV file upload with drag-and-drop and preview
  */
 
-import { forwardRef, useRef, useImperativeHandle } from 'react'
+import { forwardRef, useRef, useImperativeHandle, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, CheckCircle, Loader2 } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
@@ -40,11 +40,17 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
     noKeyboard: false,
   })
 
-  // Get input props and merge with our ref using callback ref
+  // Get input props - react-dropzone handles the ref internally
   const inputProps = getInputProps()
-  const inputRefCallback = (node: HTMLInputElement | null) => {
-    localRef.current = node
-  }
+  
+  // Sync our ref with the actual input element using useEffect
+  useEffect(() => {
+    // Find the input element by data-testid after react-dropzone attaches it
+    const input = document.querySelector('[data-testid="file-input"]') as HTMLInputElement | null
+    if (input) {
+      localRef.current = input
+    }
+  }, [csvData, isUploading])
 
   return (
     <div className="space-y-3">
@@ -138,26 +144,19 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
               </div>
             )}
           </div>
-          <input {...inputProps} ref={inputRefCallback} className="hidden" data-testid="file-input" />
+          <input {...inputProps} className="hidden" data-testid="file-input" />
         </>
       ) : (
         // Show Upload Dropzone when no file or uploading
         <div
-          {...getRootProps({
-            onClick: (e) => {
-              // Override default click handler to use open() method (same as "Change file" button)
-              e.preventDefault()
-              e.stopPropagation()
-              open()
-            }
-          })}
+          {...getRootProps()}
           className={`border border-dashed rounded-md p-4 flex flex-col items-center justify-center cursor-pointer transition-colors ${
             isDragActive
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/30 bg-transparent'
           }`}
         >
-          <input {...inputProps} ref={inputRefCallback} className="hidden" data-testid="file-input" />
+          <input {...inputProps} className="hidden" data-testid="file-input" />
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
