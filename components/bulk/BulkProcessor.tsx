@@ -97,15 +97,15 @@ export default function BulkProcessor() {
   // Progressive disclosure: Input open by default, Task/Output closed
   const dataInputSection = useCollapsibleState({
     storageKey: 'bulk-processor-data-input',
-    defaultOpen: true // Open by default
+    defaultOpen: true // Only Input open by default
   })
   const promptSection = useCollapsibleState({
     storageKey: 'bulk-processor-prompt',
-    defaultOpen: false // Closed by default
+    defaultOpen: false // Task closed by default - opens when Input is complete
   })
   const outputSettingsSection = useCollapsibleState({
     storageKey: 'bulk-processor-output-settings',
-    defaultOpen: false // Closed by default
+    defaultOpen: false // Output closed by default - opens when Task is complete
   })
   const aiAssistantSection = useCollapsibleState({
     storageKey: 'bulk-processor-ai-assistant',
