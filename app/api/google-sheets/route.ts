@@ -13,6 +13,12 @@ export async function POST(request: NextRequest) {
   let body: { action?: string; accessToken?: string; spreadsheetId?: string; range?: string } | null = null
   try {
     body = await request.json()
+    if (!body) {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      )
+    }
     const { action, accessToken, spreadsheetId, range } = body
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
