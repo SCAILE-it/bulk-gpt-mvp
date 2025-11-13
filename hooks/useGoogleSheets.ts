@@ -93,69 +93,23 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
   const [error, setError] = useState<string | null>(null)
   const [selectedSheet, setSelectedSheet] = useState<GoogleSheet | null>(null)
 
-  // Load Google API script
-  useEffect(() => {
-    if (typeof window === 'undefined' || !GOOGLE_CLIENT_ID) {
-      setError('Google Client ID not configured')
-      return
-    }
+  // Note: Script loading is now handled by GoogleSheetsTab component
+  // This hook assumes scripts are already loaded
 
-    // Check if script already loaded
-    if (window.gapi) {
-      return
-    }
-
-    // Load Google API script
-    const gapiScript = document.createElement('script')
-    gapiScript.src = 'https://apis.google.com/js/api.js'
-    gapiScript.async = true
-    gapiScript.defer = true
-    
-    // Load Google Picker script
-    const pickerScript = document.createElement('script')
-    pickerScript.src = 'https://apis.google.com/js/picker.js'
-    pickerScript.async = true
-    pickerScript.defer = true
-    
-    let gapiLoaded = false
-    let pickerLoaded = false
-    
-    const checkInitialized = () => {
-      if (gapiLoaded && pickerLoaded && window.gapi) {
-        window.gapi.load('auth2', () => {
-          setIsInitialized(true)
-        })
-      }
-    }
-    
-    gapiScript.onload = () => {
-      gapiLoaded = true
-      checkInitialized()
-    }
-    gapiScript.onerror = () => {
-      setError('Failed to load Google API')
-    }
-    
-    pickerScript.onload = () => {
-      pickerLoaded = true
-      checkInitialized()
-    }
-    pickerScript.onerror = () => {
-      setError('Failed to load Google Picker API')
-    }
-    
-    document.body.appendChild(gapiScript)
-    document.body.appendChild(pickerScript)
-
-    return () => {
-      // Cleanup if needed
-    }
-  }, [])
-
-  // Initialize Google API
+  // Initialize Google API (assumes scripts are already loaded)
   const initialize = useCallback(async () => {
-    if (!window.gapi || !GOOGLE_CLIENT_ID) {
-      setError('Google API not loaded or Client ID missing')
+    if (typeof window === 'undefined') {
+      setError('Not in browser environment')
+      return
+    }
+
+    if (!window.gapi) {
+      setError('Google API scripts not loaded. Please wait for scripts to load.')
+      return
+    }
+
+    if (!GOOGLE_CLIENT_ID) {
+      setError('Google Client ID not configured')
       return
     }
 
@@ -184,6 +138,8 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
         discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
         scope: 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.readonly',
       })
+
+      setIsInitialized(true)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize Google API'
       setError(errorMessage)

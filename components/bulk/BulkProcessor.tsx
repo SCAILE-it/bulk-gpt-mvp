@@ -16,8 +16,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
-import { useGoogleSheets } from '@/hooks/useGoogleSheets'
-import { convertSheetsToCSV } from '@/lib/google-sheets-utils'
+import type { ParsedCSV } from '@/lib/types'
 import { useManualJobOptimizer } from '@/hooks/useManualJobOptimizer'
 import { useVariableValidation } from '@/hooks/useVariableValidation'
 import { getTimeEstimate } from '@/lib/time-estimation'
@@ -29,7 +28,7 @@ import { useJobContext } from '@/hooks/useJobContext'
 import { PromptSection } from './PromptSection'
 import { JobPreview } from './JobPreview'
 import { ResultsTable } from './ResultsTable'
-import { FileUploadSection } from './FileUploadSection'
+import { DataInputTabs } from './DataInputTabs'
 import { OutputFieldsSection } from './OutputFieldsSection'
 import { ToolSelectionSection } from './ToolSelectionSection'
 import { Modal } from '@/components/ui/modal'
@@ -57,8 +56,6 @@ export default function BulkProcessor() {
   const fileUpload = useFileUpload()
   const csvParser = useCSVParser()
   const batchProcessor = useBatchProcessor()
-  const googleSheets = useGoogleSheets()
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // === DEBUG LOGGING ===
   const debugLog = useDebugLogger()
@@ -69,7 +66,7 @@ export default function BulkProcessor() {
 
   // === CONFIG STATE ===
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
-  const [outputFields, setOutputFields] = useState<string[]>(['bio'])
+  const [outputFields, setOutputFields] = useState<string[]>([])
   const [newField, setNewField] = useState('')
   const [showAdvancedSettingsModal, setShowAdvancedSettingsModal] = useState(false)
   // JSON mode is always enabled - no toggle needed for better output quality
@@ -426,68 +423,38 @@ export default function BulkProcessor() {
     }
   }, [csvParser, fileUpload])
 
-  // === GOOGLE SHEETS UPLOAD ===
-  const handleGoogleSheetsUpload = useCallback(async () => {
-    setIsUploading(true)
+  // === GOOGLE SHEETS DATA LOADED ===
+  const handleGoogleSheetsDataLoaded = useCallback((parsedCSV: ParsedCSV) => {
+    setIsUploading(true) // Set loading state while processing
     setError(null)
-
+    
     try {
-      // Initialize Google API if not already done
-      if (!googleSheets.isInitialized) {
-        await googleSheets.initialize()
-      }
-
-      // Authenticate if not already authenticated
-      if (!googleSheets.isAuthenticated) {
-        await googleSheets.authenticate()
-        if (!googleSheets.isAuthenticated) {
-          setIsUploading(false)
-          setError('Google authentication cancelled or failed')
-          return
-        }
-      }
-
-      // Pick a sheet
-      const sheet = await googleSheets.pickSheet()
-      if (!sheet) {
-        setIsUploading(false)
-        return // User cancelled
-      }
-
-      // Fetch sheet data
-      const values = await googleSheets.fetchSheetData(sheet.id)
-      
-      // Convert to ParsedCSV format
-      const parsedCSV = convertSheetsToCSV(values, sheet.name)
-      
-      // Set the parsed data directly (bypassing file upload)
+      // Set parsed data directly (bypassing file upload)
       csvParser.setParsedData(parsedCSV)
       
       // Track analytics
       trackEvent(ANALYTICS_EVENTS.FILE_UPLOADED, {
-        fileName: sheet.name,
+        fileName: parsedCSV.filename,
         fileSize: 0, // Google Sheets don't have file size
         source: 'google_sheets',
       })
 
-      toast.success(`Imported "${sheet.name}" from Google Sheets`)
+      toast.success(`Imported "${parsedCSV.filename}" from Google Sheets`)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to import Google Sheet'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process Google Sheet data'
       setError(errorMessage)
       logError(err instanceof Error ? err : new Error(String(err)), {
-        context: 'googleSheetsUpload',
+        context: 'googleSheetsDataLoaded',
       })
       toast.error(errorMessage)
     } finally {
       setIsUploading(false)
     }
-  }, [googleSheets, csvParser])
+  }, [csvParser])
 
   // === KEYBOARD SHORTCUTS ===
-  useHotkeys('mod+o', (e) => {
-    e.preventDefault()
-    fileInputRef.current?.click()
-  })
+  // Note: CSV file input is now handled inside CSVUploadTab component
+  // Keyboard shortcut for file upload can be handled at tab level if needed
 
   useHotkeys('mod+t', (e) => {
     e.preventDefault()
@@ -892,13 +859,12 @@ export default function BulkProcessor() {
               status={csvParser.csvData ? 'ready' : undefined}
               statusMessage={csvParser.csvData ? 'Ready' : undefined}
             >
-              <FileUploadSection
-                ref={fileInputRef}
+              <DataInputTabs
                 csvData={csvParser.csvData}
                 fileName={fileUpload.file?.name}
                 isUploading={isUploading}
                 onFileUpload={handleFileUpload}
-                onGoogleSheetsUpload={handleGoogleSheetsUpload}
+                onGoogleSheetsDataLoaded={handleGoogleSheetsDataLoaded}
                 selectedInputColumns={selectedInputColumns}
                 onInputColumnsChange={setSelectedInputColumns}
               />

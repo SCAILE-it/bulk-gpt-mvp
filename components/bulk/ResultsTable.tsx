@@ -158,10 +158,17 @@ export function ResultsTable({
                       </>
                     )}
                     {result.status === 'failed' && (
-                      <>
-                        <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
-                        <span className="text-xs text-red-400">Failed</span>
-                      </>
+                      <div className="flex items-start gap-2 min-w-0">
+                        <XCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs text-red-400 block">Failed</span>
+                          {result.error && (
+                            <span className="text-xs text-red-400/70 mt-0.5 block truncate" title={result.error}>
+                              {result.error}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                     {result.status === 'processing' && (
                       <>

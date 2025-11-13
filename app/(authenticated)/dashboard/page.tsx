@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search, RefreshCw, AlertCircle } from 'lucide-react'
+import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search, RefreshCw, AlertCircle, X } from 'lucide-react'
 import { logError } from '@/lib/errors'
 import { toast } from 'sonner'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
@@ -433,9 +433,18 @@ export default function DashboardPage() {
                   placeholder="Search by filename or status..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-secondary/70 border-border text-foreground placeholder:text-muted-foreground"
+                  className="pl-10 pr-10 bg-secondary/70 border-border text-foreground placeholder:text-muted-foreground"
                   aria-label="Search batches"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             )}
           </div>
