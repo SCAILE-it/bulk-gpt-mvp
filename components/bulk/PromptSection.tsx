@@ -26,7 +26,7 @@ export function PromptSection({
   selectedInputColumns = [],
   variableValidation
 }: PromptSectionProps) {
-  const [showPreview, setShowPreview] = useState(false)
+  const [previewMode, setPreviewMode] = useState(false)
 
   // Filter available columns based on selectedInputColumns
   const availableColumns = useMemo(() => {
@@ -79,51 +79,50 @@ export function PromptSection({
         </button>
       </div>
 
-      {/* Textarea */}
-      <Textarea
-        id="prompt"
-        value={prompt}
-        onChange={(e) => onPromptChange(e.target.value)}
-        className="w-full min-h-[120px] max-h-[400px] bg-secondary/70 border border-border text-foreground font-mono resize-y focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-border"
-        placeholder="Write a bio for {{name}} at {{company}}"
-        data-testid="prompt-textarea"
-      />
-
-      {/* Preview section - integrated and clean */}
-      {hasPreview && (
-        <div className="space-y-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowPreview(!showPreview)}
-            className="h-7 text-xs text-muted-foreground hover:text-foreground -ml-2"
-          >
-            {showPreview ? (
-              <>
-                <EyeOff className="h-3 w-3 mr-1.5" />
-                Hide Preview
-              </>
-            ) : (
-              <>
-                <Eye className="h-3 w-3 mr-1.5" />
-                Show Preview
-              </>
-            )}
-          </Button>
-          
-          {showPreview && (
-            <div className="p-4 bg-muted/30 border border-border/50 rounded-md">
-              <div className="text-xs font-medium mb-2 text-muted-foreground uppercase tracking-wide">
-                Preview (first row)
-              </div>
-              <div className="text-sm font-mono text-foreground whitespace-pre-wrap leading-relaxed">
-                {filledPrompt}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Textarea with Preview Mode */}
+      <div className="relative">
+        <Textarea
+          id="prompt"
+          value={previewMode ? filledPrompt : prompt}
+          onChange={(e) => {
+            if (!previewMode) {
+              onPromptChange(e.target.value)
+            }
+          }}
+          readOnly={previewMode}
+          className={`w-full min-h-[120px] max-h-[400px] bg-secondary/70 border border-border text-foreground font-mono resize-y focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-border ${
+            previewMode ? 'opacity-90 cursor-default' : ''
+          }`}
+          placeholder="Write a bio for {{name}} at {{company}}"
+          data-testid="prompt-textarea"
+        />
+        
+        {/* Preview Mode Toggle */}
+        {hasPreview && (
+          <div className="absolute top-2 right-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPreviewMode(!previewMode)}
+              className="h-7 text-xs text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm"
+              title={previewMode ? 'Switch to edit mode' : 'Switch to preview mode'}
+            >
+              {previewMode ? (
+                <>
+                  <EyeOff className="h-3 w-3 mr-1.5" />
+                  Edit
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3 w-3 mr-1.5" />
+                  Preview
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Variables and character count */}
       <div className="flex items-start justify-between gap-4 text-xs pt-1">
