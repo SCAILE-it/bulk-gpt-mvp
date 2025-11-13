@@ -10,6 +10,7 @@ const SYSTEM_PROMPT = `You are a bulk data processing expert. Analyze the user's
 Given:
 - User's raw prompt (may be vague or unclear)
 - Available CSV columns
+- Sample CSV rows (first few rows with actual data values) - use this to identify which columns have content vs empty
 - Currently selected input columns (which columns user wants in output)
 - Available GTM enrichment tools
 
@@ -31,7 +32,7 @@ Return JSON (only include fields that were optimized):
 
 Guidelines:
 - Preserve ALL {{variable}} placeholders exactly in prompts
-- For input columns: Exclude redundant/internal columns (IDs, timestamps, metadata) unless needed
+- For input columns: Exclude redundant/internal columns (IDs, timestamps, metadata) unless needed. IMPORTANT: Use sample rows to identify which columns actually have data - exclude columns that are empty or mostly empty in the sample data.
 - For output columns: Match the prompt's natural outputs
 - ONLY suggest tools if truly beneficial (e.g., web-search for bio generation, email-validate for contact verification)
 - If no tools are beneficial, return empty array for suggestedTools
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
     const { 
       prompt, 
       csvColumns, 
+      sampleRows = [],
       optimizeInput = false,
       optimizeTask = false,
       optimizeOutput = false,
@@ -98,6 +100,17 @@ export async function POST(req: Request) {
       optimizationContext.push(`- Optimize OUTPUT columns and tools`)
     }
 
+    // Format sample rows for AI context (show first 3-5 rows to understand data content)
+    const sampleRowsText = sampleRows && sampleRows.length > 0
+      ? `\n\nSample CSV data (first ${Math.min(sampleRows.length, 5)} rows to understand content):
+${sampleRows.slice(0, 5).map((row: Record<string, string>, idx: number) => {
+  const rowData = Object.entries(row)
+    .map(([key, value]) => `  ${key}: "${value || '(empty)'}"`)
+    .join('\n')
+  return `Row ${idx + 1}:\n${rowData}`
+}).join('\n\n')}`
+      : '\n\nNote: No sample rows provided - analyze columns based on names only.'
+
     // Combine system prompt + user prompt into single text (no systemInstruction support)
     const fullPrompt = `${SYSTEM_PROMPT}
 
@@ -108,7 +121,7 @@ ${optimizationContext.join('\n')}
 
 User prompt: "${prompt}"
 All CSV columns: ${csvColumns.join(', ')}
-Currently selected input columns: ${selectedInputColumns.length > 0 ? selectedInputColumns.join(', ') : 'all'}
+Currently selected input columns: ${selectedInputColumns.length > 0 ? selectedInputColumns.join(', ') : 'all'}${sampleRowsText}
 
 Available GTM Tools:
 ${toolsList}

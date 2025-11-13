@@ -131,6 +131,124 @@ export function downloadJSON<T extends Record<string, unknown>>(
 }
 
 /**
+ * Batch result structure from database/API
+ */
+export interface BatchResultRow {
+  input_data: Record<string, unknown> | string
+  output_data: Record<string, unknown> | string | null
+  status: string
+  error_message?: string | null
+  input_tokens?: number | null
+  output_tokens?: number | null
+  model?: string | null
+}
+
+/**
+ * Flattened result ready for CSV/JSON export
+ * Single source of truth for export format - ensures RUN and EXECUTIONS exports are always aligned
+ */
+export interface FlattenedExportResult extends Record<string, unknown> {
+  Status: string
+  Error: string
+  Input_Tokens: number
+  Output_Tokens: number
+  Model: string
+}
+
+/**
+ * Flatten batch results for export
+ * DRY function - single source of truth for export format
+ * Ensures RUN page and EXECUTIONS page exports are always 100% aligned
+ * 
+ * @param results - Array of batch result rows from database/API
+ * @returns Array of flattened records ready for CSV/JSON export
+ */
+export function flattenBatchResultsForExport(
+  results: BatchResultRow[]
+): FlattenedExportResult[] {
+  return results.map((result) => {
+    const flat: FlattenedExportResult = {
+      Status: result.status || 'unknown',
+      Error: result.error_message || '',
+      Input_Tokens: result.input_tokens || 0,
+      Output_Tokens: result.output_tokens || 0,
+      Model: result.model || '',
+    }
+
+    // Parse and spread input fields
+    if (result.input_data) {
+      const inputData = typeof result.input_data === 'string'
+        ? JSON.parse(result.input_data)
+        : result.input_data
+      
+      if (typeof inputData === 'object' && inputData !== null) {
+        Object.assign(flat, inputData)
+      }
+    }
+
+    // Parse and spread output fields as separate columns
+    // IMPORTANT: Each output field becomes its own column, not a single "AI_Output" column
+    if (result.output_data) {
+      let outputObj: Record<string, unknown> | null = null
+      
+      if (typeof result.output_data === 'string') {
+        // Try to parse as JSON
+        try {
+          const parsed = JSON.parse(result.output_data)
+          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+            outputObj = parsed
+          } else {
+            // Not an object, use as single Output column (fallback)
+            flat.Output = String(parsed)
+          }
+        } catch {
+          // Not JSON, check if it's wrapped in markdown code blocks
+          const cleaned = result.output_data.trim()
+          const codeBlockMatch = cleaned.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/m)
+          if (codeBlockMatch) {
+            try {
+              const parsed = JSON.parse(codeBlockMatch[1].trim())
+              if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+                outputObj = parsed
+              } else {
+                flat.Output = String(parsed)
+              }
+            } catch {
+              flat.Output = result.output_data
+            }
+          } else {
+            flat.Output = result.output_data
+          }
+        }
+      } else if (typeof result.output_data === 'object' && result.output_data !== null) {
+        // Already an object, use it directly
+        outputObj = result.output_data as Record<string, unknown>
+      }
+      
+      // Spread object fields as separate columns (each output field = one column)
+      if (outputObj) {
+        Object.entries(outputObj).forEach(([key, value]) => {
+          // Convert non-string values to strings for CSV compatibility
+          if (value === null || value === undefined) {
+            flat[key] = ''
+          } else if (typeof value === 'string') {
+            flat[key] = value
+          } else if (typeof value === 'object') {
+            // Arrays or nested objects - stringify
+            flat[key] = JSON.stringify(value)
+          } else {
+            // Numbers, booleans, etc. - convert to string
+            flat[key] = String(value)
+          }
+        })
+      }
+    }
+
+    return flat
+  })
+}
+
+/**
  * Format results for email notification
  * Generates HTML table for email body
  */

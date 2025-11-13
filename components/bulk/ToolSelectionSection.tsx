@@ -76,7 +76,7 @@ export function ToolSelectionSection({
   }
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delayDuration={0} skipDelayDuration={0}>
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-2">

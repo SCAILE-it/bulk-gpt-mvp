@@ -91,13 +91,16 @@ export async function GET(
       progressPercent = Math.min(90, Math.round(estimatedProgress))
     }
 
-    // Map results to response format
+    // Map results to response format (include tokens for analytics)
     const mappedResults = (results || []).map((r) => ({
       id: r.id,
       input: r.input ? JSON.parse(r.input) : {},
       output: r.output || '',
       status: r.status,
       error: r.error,
+      input_tokens: r.input_tokens || 0,
+      output_tokens: r.output_tokens || 0,
+      model: r.model || '',
     }))
 
     return NextResponse.json(

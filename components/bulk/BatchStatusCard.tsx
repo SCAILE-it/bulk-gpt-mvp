@@ -20,6 +20,8 @@ interface BatchStatusCardProps {
   estimatedSeconds?: number | null
   isTesting?: boolean
   testStartTime?: number
+  totalInputTokens?: number
+  totalOutputTokens?: number
 }
 
 export function BatchStatusCard({
@@ -28,7 +30,9 @@ export function BatchStatusCard({
   errorCount,
   estimatedSeconds,
   isTesting = false,
-  testStartTime
+  testStartTime,
+  totalInputTokens,
+  totalOutputTokens
 }: BatchStatusCardProps) {
   // Progress bar state for test mode (hooks must be at top level)
   const [testProgress, setTestProgress] = useState(0)
@@ -164,6 +168,28 @@ export function BatchStatusCard({
             {progressPercentage.toFixed(1)}%
           </span>
         </div>
+        
+        {/* Token Consumption */}
+        {(totalInputTokens !== undefined && totalInputTokens > 0) || (totalOutputTokens !== undefined && totalOutputTokens > 0) ? (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Token Consumption:</span>
+              <div className="flex items-center gap-3">
+                <span className="text-muted-foreground">
+                  Input: <span className="font-mono text-foreground">{totalInputTokens?.toLocaleString() || 0}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Output: <span className="font-mono text-foreground">{totalOutputTokens?.toLocaleString() || 0}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Total: <span className="font-mono text-foreground font-semibold">
+                    {((totalInputTokens || 0) + (totalOutputTokens || 0)).toLocaleString()}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

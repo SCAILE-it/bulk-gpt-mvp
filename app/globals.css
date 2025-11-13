@@ -254,3 +254,78 @@
   animation-delay: 300ms;
 }
 
+/* MATHEMATICALLY GUARANTEED: Override ALL tooltip animations */
+/* Inline styles have 1000 points, but CSS !important with high specificity can override */
+html body [data-radix-portal] [data-radix-tooltip-content],
+html body [data-radix-portal] [data-radix-tooltip-content][data-state="open"],
+html body [data-radix-portal] [data-radix-tooltip-content][data-state="closed"],
+html body [data-radix-portal] [data-radix-tooltip-content][data-state="delayed-open"],
+html body [data-radix-portal] [data-radix-tooltip-content][data-state="instant-open"],
+html body [data-radix-tooltip-content],
+html body [data-radix-tooltip-content][data-state="open"],
+html body [data-radix-tooltip-content][data-state="closed"],
+html body [data-radix-tooltip-content][data-state="delayed-open"],
+html body [data-radix-tooltip-content][data-state="instant-open"],
+[data-radix-portal] [data-radix-tooltip-content],
+[data-radix-portal] [data-radix-tooltip-content][data-state="open"],
+[data-radix-tooltip-content],
+[data-radix-tooltip-content][data-state="open"],
+[data-radix-tooltip-content][data-state="closed"],
+[data-radix-tooltip-content][data-state="delayed-open"],
+[data-radix-tooltip-content][data-state="instant-open"] {
+  animation: none !important;
+  animation-name: none !important;
+  animation-duration: 0ms !important;
+  animation-delay: 0ms !important;
+  animation-timing-function: none !important;
+  animation-iteration-count: 1 !important;
+  animation-direction: normal !important;
+  animation-fill-mode: none !important;
+  animation-play-state: paused !important;
+  transition: none !important;
+  transition-property: none !important;
+  transition-duration: 0ms !important;
+  transition-delay: 0ms !important;
+  transition-timing-function: none !important;
+  transform: none !important;
+  translate: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  will-change: auto !important;
+}
+
+/* Override ALL possible Tailwind animation classes */
+html body [data-radix-tooltip-content].animate-in,
+html body [data-radix-tooltip-content].animate-out,
+html body [data-radix-tooltip-content].fade-in,
+html body [data-radix-tooltip-content].fade-out,
+html body [data-radix-tooltip-content].slide-in,
+html body [data-radix-tooltip-content].slide-out,
+html body [data-radix-tooltip-content].slide-in-from-top-2,
+html body [data-radix-tooltip-content].slide-in-from-bottom-2,
+html body [data-radix-tooltip-content].slide-in-from-left-2,
+html body [data-radix-tooltip-content].slide-in-from-right-2,
+html body [data-radix-tooltip-content].fade-in-0,
+html body [data-radix-tooltip-content].fade-out-0 {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+/* Override ALL Radix keyframes to do nothing */
+@keyframes radix-tooltip-content-show,
+@keyframes radix-tooltip-content-hide,
+@keyframes slideUpAndFadeIn,
+@keyframes slideDownAndFadeIn,
+@keyframes slideLeftAndFadeIn,
+@keyframes slideRightAndFadeIn,
+@keyframes fadeIn,
+@keyframes fadeOut {
+  from, to {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+  }
+}
+

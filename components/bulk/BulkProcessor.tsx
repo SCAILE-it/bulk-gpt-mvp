@@ -43,6 +43,7 @@ import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
 import { useDebugLogger } from '@/lib/hooks/useDebugLogger'
 import { DebugLogger } from '@/components/debug/DebugLogger'
+import { generateExportFilename } from '@/lib/export-filename'
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow'
 import { TEMPLATE_CATEGORIES, type PromptTemplate } from '@/lib/constants/promptTemplates'
 
@@ -161,6 +162,48 @@ export default function BulkProcessor() {
     return batchProcessor.results
   }, [batchProcessor.results])
 
+  // Calculate token totals from batch results (fetch from database when batchId exists)
+  const [tokenTotals, setTokenTotals] = useState<{ input: number; output: number }>({ input: 0, output: 0 })
+  
+  useEffect(() => {
+    if (!batchProcessor.batchId) {
+      setTokenTotals({ input: 0, output: 0 })
+      return
+    }
+
+    // Fetch token totals from database
+    const fetchTokenTotals = async () => {
+      try {
+        const supabase = createClient()
+        if (!supabase) return
+
+        const { data } = await supabase
+          .from('batch_results')
+          .select('input_tokens, output_tokens')
+          .eq('batch_id', batchProcessor.batchId!)
+
+        if (data && data.length > 0) {
+          const totals = data.reduce(
+            (acc, row) => ({
+              input: acc.input + (row.input_tokens || 0),
+              output: acc.output + (row.output_tokens || 0),
+            }),
+            { input: 0, output: 0 }
+          )
+          setTokenTotals(totals)
+        }
+      } catch (err) {
+        // Silent failure - tokens will just not show
+        console.debug('Failed to fetch token totals:', err)
+      }
+    }
+
+    fetchTokenTotals()
+    // Poll for updates while processing
+    const interval = setInterval(fetchTokenTotals, 2000)
+    return () => clearInterval(interval)
+  }, [batchProcessor.batchId])
+
   // Manual AI optimization (user triggers with button)
   const {
     optimizedPrompt,
@@ -172,7 +215,12 @@ export default function BulkProcessor() {
     isOptimizing,
     triggerOptimization,
     clearOptimization,
-  } = useManualJobOptimizer(prompt, csvColumns)
+  } = useManualJobOptimizer(
+    prompt, 
+    csvColumns,
+    // Pass first 5 rows as sample data so AI can see which columns have content
+    csvParser.csvData?.rows.slice(0, 5).map(row => row.data) || undefined
+  )
 
   // Handle accepting AI suggestion
   const handleAcceptOptimization = useCallback(() => {
@@ -413,6 +461,9 @@ export default function BulkProcessor() {
         output?: string
         status?: string
         error?: string
+        input_tokens?: number
+        output_tokens?: number
+        model?: string
       }
       interface ExportResult {
         input_data: Record<string, unknown>
@@ -421,6 +472,7 @@ export default function BulkProcessor() {
         error_message: string
         input_tokens: number
         output_tokens: number
+        model: string
       }
       let results: ExportResult[] = []
       try {
@@ -428,14 +480,15 @@ export default function BulkProcessor() {
         if (statusResponse.ok) {
           const statusData = await statusResponse.json() as { results?: StatusResult[] }
           if (statusData.results && Array.isArray(statusData.results) && statusData.results.length > 0) {
-            // Transform status API results to export format
+            // Transform status API results to export format (include tokens)
             results = statusData.results.map((r: StatusResult) => ({
               input_data: r.input || {},
               output_data: r.output || '',
               status: r.status === 'success' ? 'success' : r.status === 'error' ? 'error' : (r.status || 'unknown'),
               error_message: r.error || '',
-              input_tokens: 0,
-              output_tokens: 0
+              input_tokens: r.input_tokens || 0,
+              output_tokens: r.output_tokens || 0,
+              model: r.model || ''
             }))
           }
         }
@@ -456,7 +509,7 @@ export default function BulkProcessor() {
 
         const { data: dbResults, error } = await supabase
           .from('batch_results')
-          .select('input_data, output_data, status, error_message, input_tokens, output_tokens')
+          .select('input_data, output_data, status, error_message, input_tokens, output_tokens, model')
           .eq('batch_id', currentBatchId)
           .order('id', { ascending: true })
 
@@ -496,7 +549,8 @@ export default function BulkProcessor() {
           status: row.status,
           error_message: row.error_message,
           input_tokens: row.input_tokens || 0,
-          output_tokens: row.output_tokens || 0
+          output_tokens: row.output_tokens || 0,
+          model: row.model || ''
         }
       })
 
@@ -517,10 +571,11 @@ export default function BulkProcessor() {
         throw new Error(errorData.error || `Export failed with status ${response.status}`)
       }
 
-      // Get filename from Content-Disposition header
+      // Get filename from Content-Disposition header (set by API using new naming convention)
       const disposition = response.headers.get('content-disposition') || ''
       const filenameMatch = disposition.match(/filename="([^"]+)"/)
-      const filename = filenameMatch?.[1] || `results-${currentBatchId}.csv`
+      // Fallback uses same utility function for consistency (unlikely to be used, but ensures alignment)
+      const filename = filenameMatch?.[1] || generateExportFilename(null, new Date(), 'csv')
 
       // Trigger browser download
       const blob = await response.blob()
@@ -819,6 +874,8 @@ export default function BulkProcessor() {
                       optimizeTask,
                       optimizeOutput,
                       selectedInputColumns,
+                      // Pass sample rows so AI can see which columns have data
+                      sampleRows: csvParser.csvData?.rows.slice(0, 5).map(row => row.data),
                     })}
                     disabled={!csvParser.csvData || !prompt || isOptimizing || (!optimizeInput && !optimizeTask && !optimizeOutput)}
                     className="w-full px-3 py-2 h-9 bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-md text-xs font-medium text-foreground transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -905,6 +962,8 @@ export default function BulkProcessor() {
               isTesting={isTesting}
               testStartTime={testStartTime}
               testEstimatedSeconds={isTesting && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
+              totalInputTokens={tokenTotals.input}
+              totalOutputTokens={tokenTotals.output}
             />
           ) : (
             // Empty state - minimal and clean

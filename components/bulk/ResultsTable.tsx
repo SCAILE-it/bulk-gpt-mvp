@@ -32,6 +32,8 @@ interface ResultsTableProps {
   isTesting?: boolean
   testStartTime?: number
   testEstimatedSeconds?: number
+  totalInputTokens?: number
+  totalOutputTokens?: number
 }
 
 export function ResultsTable({
@@ -43,7 +45,9 @@ export function ResultsTable({
   onExport,
   isTesting = false,
   testStartTime,
-  testEstimatedSeconds
+  testEstimatedSeconds,
+  totalInputTokens,
+  totalOutputTokens
 }: ResultsTableProps) {
   const successCount = results.filter(r => r.status === 'completed').length
   const errorCount = results.filter(r => r.status === 'failed').length
@@ -69,6 +73,8 @@ export function ResultsTable({
           estimatedSeconds={isTesting ? testEstimatedSeconds : estimatedSeconds}
           isTesting={isTesting}
           testStartTime={testStartTime}
+          totalInputTokens={totalInputTokens}
+          totalOutputTokens={totalOutputTokens}
         />
       ) : null}
 

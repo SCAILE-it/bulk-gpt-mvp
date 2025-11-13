@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { exportToCSV, exportToJSON } from '@/lib/export'
+import { exportToCSV, exportToJSON, flattenBatchResultsForExport, type BatchResultRow } from '@/lib/export'
+import { generateExportFilename, generateExportFilenameFromBatch } from '@/lib/export-filename'
 import { logError } from '@/lib/errors'
+import { supabaseAdmin } from '@/lib/supabase'
 
 /**
  * POST /api/export
@@ -35,95 +37,37 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const { results, format, batchId, timestamp } = body
 
-    // Flatten batch results structure for export
-    // Each result has: { input_data: {...}, output_data: {...}, status, error_message }
-    const flattenedResults = results.map((result: Record<string, unknown>) => {
-      const flat: Record<string, unknown> = {}
+    // Use DRY shared function - ensures RUN and EXECUTIONS exports are always aligned
+    const flattenedResults = flattenBatchResultsForExport(results as BatchResultRow[])
 
-      // Spread input fields (name, company, etc.)
-      if (result.input_data && typeof result.input_data === 'object') {
-        Object.assign(flat, result.input_data)
-      }
+    // Generate user-oriented filename
+    let filename: string
+    if (batchId) {
+      // Fetch batch data to get original filename and creation timestamp
+      try {
+        const { data: batchData } = await supabaseAdmin
+          .from('batches')
+          .select('csv_filename, created_at')
+          .eq('id', batchId)
+          .single()
 
-      // Add output data (may be string or object) - parse and spread as separate columns
-      // IMPORTANT: Each output field should be its own column, not a single "AI_Output" column
-      if (result.output_data) {
-        let outputObj: Record<string, unknown> | null = null
-        
-        if (typeof result.output_data === 'string') {
-          // Try to parse as JSON and spread fields
-          try {
-            const parsed = JSON.parse(result.output_data)
-            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-              outputObj = parsed
-            } else {
-              // Not an object, use as single Output column (fallback)
-              flat.Output = String(parsed)
-            }
-          } catch {
-            // Not JSON, check if it's a plain string that should be in Output column
-            // But first, try stripping markdown code blocks
-            const cleaned = result.output_data.trim()
-            const codeBlockMatch = cleaned.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/m)
-            if (codeBlockMatch) {
-              try {
-                const parsed = JSON.parse(codeBlockMatch[1].trim())
-                if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-                  outputObj = parsed
-                } else {
-                  flat.Output = String(parsed)
-                }
-              } catch {
-                flat.Output = result.output_data
-              }
-            } else {
-              flat.Output = result.output_data
-            }
-          }
-        } else if (typeof result.output_data === 'object' && result.output_data !== null) {
-          // Already an object, use it directly
-          outputObj = result.output_data as Record<string, unknown>
+        if (batchData) {
+          filename = generateExportFilenameFromBatch(batchData, format)
+        } else {
+          // Fallback if batch not found
+          const date = timestamp ? new Date(timestamp) : new Date()
+          filename = generateExportFilename(null, date, format)
         }
-        
-        // Spread object fields as separate columns (each output field = one column)
-        if (outputObj) {
-          Object.entries(outputObj).forEach(([key, value]) => {
-            // Use the key as-is (e.g., "summary", "skills", etc.)
-            // Convert non-string values to strings for CSV compatibility
-            // For arrays/objects, stringify; for primitives, convert to string
-            if (value === null || value === undefined) {
-              flat[key] = ''
-            } else if (typeof value === 'string') {
-              flat[key] = value
-            } else if (typeof value === 'object') {
-              // Arrays or nested objects - stringify
-              flat[key] = JSON.stringify(value)
-            } else {
-              // Numbers, booleans, etc. - convert to string
-              flat[key] = String(value)
-            }
-          })
-        }
+      } catch (err) {
+        // Fallback on error
+        const date = timestamp ? new Date(timestamp) : new Date()
+        filename = generateExportFilename(null, date, format)
       }
-
-      // Add status and error (consistent with dashboard export)
-      flat.Status = result.status || 'unknown'
-      flat.Error = result.error_message || ''
-      
-      // Note: Token and model columns are not included in export route
-      // to keep exports consistent and focused on data only
-      // Dashboard export includes tokens/model for analytics, but RUN page export doesn't
-
-      return flat
-    })
-
-    // Generate filename
-    const date = timestamp ? new Date(timestamp) : new Date()
-    const dateStr = date.toISOString().split('T')[0]
-    const timeStr = date.toISOString().split('T')[1].split('.')[0].replace(/:/g, '-')
-    const filename = batchId
-      ? `results-${batchId}.${format}`
-      : `bulk-gpt-export-${dateStr}-${timeStr}.${format}`
+    } else {
+      // No batchId - use timestamp from request or current time
+      const date = timestamp ? new Date(timestamp) : new Date()
+      filename = generateExportFilename(null, date, format)
+    }
 
     // Generate content based on format
     let content: string

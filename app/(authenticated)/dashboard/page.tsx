@@ -14,6 +14,8 @@ import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Down
 import { logError } from '@/lib/errors'
 import { toast } from 'sonner'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
+import { flattenBatchResultsForExport, exportToCSV, type BatchResultRow } from '@/lib/export'
+import { generateExportFilenameFromBatch, generateExportFilename } from '@/lib/export-filename'
 
 interface Batch {
   id: string
@@ -195,6 +197,13 @@ export default function DashboardPage() {
 
       toast.loading('Downloading results...', { id: `download-${batchId}` })
 
+      // Fetch batch data to get csv_filename and created_at for proper filename generation
+      const { data: batchData } = await supabase
+        .from('batches')
+        .select('csv_filename, created_at')
+        .eq('id', batchId)
+        .single()
+
       // Fetch batch_results for this batch (including token data)
       const { data: results, error } = await supabase
         .from('batch_results')
@@ -223,108 +232,20 @@ export default function DashboardPage() {
         return
       }
 
-      // Parse first result to get input column names and output column names
-      const firstResult = results[0]
-      const inputData = typeof firstResult.input_data === 'string'
-        ? JSON.parse(firstResult.input_data)
-        : firstResult.input_data
-      const inputColumns = Object.keys(inputData)
-
-      // Parse output_data to determine output columns (spread JSON fields)
-      let outputColumns: string[] = []
-      if (firstResult.output_data) {
-        let outputObj: Record<string, unknown> | null = null
-        
-        if (typeof firstResult.output_data === 'string') {
-          try {
-            const parsed = JSON.parse(firstResult.output_data)
-            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-              outputObj = parsed
-            }
-          } catch {
-            // Not JSON, will use single Output column
-          }
-        } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
-          outputObj = firstResult.output_data as Record<string, unknown>
-        }
-        
-        if (outputObj) {
-          outputColumns = Object.keys(outputObj)
-        }
-      }
-
-      // Generate CSV - spread output fields as separate columns
-      // Note: Consistent with RUN page export - only includes input columns + output columns + status/error
-      // Token/model columns removed to match RUN page export format
-      const headers = [
-        ...inputColumns,
-        ...(outputColumns.length > 0 ? outputColumns : ['Output']), // Use parsed columns or fallback to 'Output'
-        'Status',
-        'Error'
-      ]
+      // Use DRY shared function - ensures RUN and EXECUTIONS exports are always 100% aligned
+      const flattenedResults = flattenBatchResultsForExport(results as BatchResultRow[])
+      const csvContent = exportToCSV(flattenedResults)
       
-      const csvRows = results.map(r => {
-        const input = typeof r.input_data === 'string' ? JSON.parse(r.input_data) : r.input_data
-        const inputValues = inputColumns.map(col => {
-          const value = input[col] || ''
-          return `"${String(value).replace(/"/g, '""')}"`
-        })
-        
-        // Parse and spread output fields
-        let outputValues: string[] = []
-        if (r.output_data) {
-          let outputObj: Record<string, unknown> | null = null
-          
-          if (typeof r.output_data === 'string') {
-            try {
-              const parsed = JSON.parse(r.output_data)
-              if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-                outputObj = parsed
-              } else {
-                // Not an object, use as single value
-                outputValues = [`"${String(parsed).replace(/"/g, '""')}"`]
-              }
-            } catch {
-              // Not JSON, use as string
-              outputValues = [`"${r.output_data.replace(/"/g, '""')}"`]
-            }
-          } else if (typeof r.output_data === 'object' && r.output_data !== null) {
-            outputObj = r.output_data as Record<string, unknown>
-          }
-          
-          if (outputObj) {
-            // Spread object fields as separate columns
-            outputValues = outputColumns.map(col => {
-              const value = outputObj![col]
-              if (value === null || value === undefined) {
-                return '""'
-              } else if (typeof value === 'object') {
-                return `"${JSON.stringify(value).replace(/"/g, '""')}"`
-              } else {
-                return `"${String(value).replace(/"/g, '""')}"`
-              }
-            })
-          }
-        } else {
-          // No output data - fill with empty strings
-          outputValues = outputColumns.length > 0 
-            ? outputColumns.map(() => '""')
-            : ['""']
-        }
-        
-        const status = r.status || ''
-        const error = r.error_message ? `"${r.error_message.replace(/"/g, '""')}"` : '""'
-        
-        // Consistent with RUN page export - only include input + output + status + error
-        return [...inputValues, ...outputValues, status, error].join(',')
-      })
-
-      const csvContent = [headers.join(','), ...csvRows].join('\n')
+      // Generate user-oriented filename using batch data (consistent with RUN page export)
+      const exportFilename = batchData
+        ? generateExportFilenameFromBatch(batchData, 'csv')
+        : generateExportFilename(filename, new Date(), 'csv')
+      
       const blob = new Blob([csvContent], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `results-${filename.replace('.csv', '')}-${new Date().toISOString().split('T')[0]}.csv`
+      a.download = exportFilename
       a.click()
       URL.revokeObjectURL(url)
 

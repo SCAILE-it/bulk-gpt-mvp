@@ -42,6 +42,7 @@ export interface UseManualJobOptimizerResult {
     optimizeTask?: boolean
     optimizeOutput?: boolean
     selectedInputColumns?: string[]
+    sampleRows?: Array<Record<string, string>>
   }) => void
   clearOptimization: () => void
 }
@@ -51,11 +52,13 @@ export interface UseManualJobOptimizerResult {
  *
  * @param prompt - User's raw prompt with {{variables}}
  * @param csvColumns - Available CSV column names
+ * @param sampleRows - Sample CSV rows (first few rows) to help AI understand data content
  * @returns Optimization controls and results
  */
 export function useManualJobOptimizer(
   prompt: string,
-  csvColumns: string[]
+  csvColumns: string[],
+  sampleRows?: Array<Record<string, string>>
 ): UseManualJobOptimizerResult {
   const [optimizedPrompt, setOptimizedPrompt] = useState<string | null>(null)
   const [outputColumns, setOutputColumns] = useState<OutputColumn[]>([])
@@ -70,6 +73,7 @@ export function useManualJobOptimizer(
     optimizeTask?: boolean
     optimizeOutput?: boolean
     selectedInputColumns?: string[]
+    sampleRows?: Array<Record<string, string>>
   }) => {
     // Skip if no prompt or no CSV columns available
     if (!prompt || !csvColumns || csvColumns.length === 0) {
@@ -95,6 +99,7 @@ export function useManualJobOptimizer(
         body: JSON.stringify({
           prompt,
           csvColumns,
+          sampleRows: options?.sampleRows || sampleRows || [],
           optimizeInput: options?.optimizeInput ?? false,
           optimizeTask: options?.optimizeTask ?? false,
           optimizeOutput: options?.optimizeOutput ?? false,
@@ -135,7 +140,7 @@ export function useManualJobOptimizer(
     } finally {
       setIsOptimizing(false)
     }
-  }, [prompt, csvColumns])
+  }, [prompt, csvColumns, sampleRows])
 
   const clearOptimization = useCallback(() => {
     setOptimizedPrompt(null)

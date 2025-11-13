@@ -30,11 +30,11 @@ const TooltipContent = React.forwardRef<
         className
       )}
       style={{ 
-        animation: 'none !important', 
-        transition: 'none !important',
-        transform: 'translate(0, 0) !important',
-        opacity: '1 !important',
-        willChange: 'auto !important'
+        animation: 'none',
+        transition: 'none',
+        transform: 'none',
+        opacity: '1',
+        willChange: 'auto'
       }}
       {...props}
     />
