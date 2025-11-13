@@ -30,26 +30,27 @@ export function BatchStatusCard({
   isTesting = false,
   testStartTime
 }: BatchStatusCardProps) {
+  // Progress bar state for test mode (hooks must be at top level)
+  const [testProgress, setTestProgress] = useState(0)
+  const testEstimatedDuration = estimatedSeconds ? estimatedSeconds * 1000 : 60000 // Use provided estimate or default 60s
+  
+  useEffect(() => {
+    if (!isTesting || !testStartTime || progress) {
+      setTestProgress(0)
+      return
+    }
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - testStartTime
+      const newProgress = Math.min(95, (elapsed / testEstimatedDuration) * 100) // Cap at 95% until complete
+      setTestProgress(newProgress)
+    }, 50) // Update every 50ms for smooth animation
+
+    return () => clearInterval(interval)
+  }, [isTesting, testStartTime, testEstimatedDuration, progress])
+
   // For testing mode, show loading state with progress bar
   if (isTesting && !progress) {
-    const [testProgress, setTestProgress] = useState(0)
-    const testEstimatedDuration = estimatedSeconds ? estimatedSeconds * 1000 : 60000 // Use provided estimate or default 60s
-    
-    useEffect(() => {
-      if (!isTesting || !testStartTime) {
-        setTestProgress(0)
-        return
-      }
-
-      const interval = setInterval(() => {
-        const elapsed = Date.now() - testStartTime
-        const newProgress = Math.min(95, (elapsed / testEstimatedDuration) * 100) // Cap at 95% until complete
-        setTestProgress(newProgress)
-      }, 50) // Update every 50ms for smooth animation
-
-      return () => clearInterval(interval)
-    }, [isTesting, testStartTime, testEstimatedDuration])
-
     return (
       <div className="px-6 py-4 border-b border-border bg-gradient-to-br from-secondary/50 to-background/50">
         <div className="space-y-3">

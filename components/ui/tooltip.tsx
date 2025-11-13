@@ -25,16 +25,17 @@ const TooltipContent = React.forwardRef<
       sideOffset={sideOffset}
       className={cn(
         "z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground",
+        "[&[data-state=open]]:animate-none [&[data-state=closed]]:animate-none",
+        "[&[data-state=open]]:transition-none [&[data-state=closed]]:transition-none",
         className
       )}
       style={{ 
         animation: 'none !important', 
         transition: 'none !important',
-        transform: 'none !important',
+        transform: 'translate(0, 0) !important',
         opacity: '1 !important',
         willChange: 'auto !important'
       }}
-      data-state="instant-open"
       {...props}
     />
   </TooltipPrimitive.Portal>

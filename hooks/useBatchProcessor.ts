@@ -138,7 +138,58 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
     const eventSource = new EventSource('/api/batch/' + batchId + '/stream')
     eventSourceRef.current = eventSource
 
+    let pollInterval: NodeJS.Timeout | null = null
+    let lastProgressCheck = Date.now()
+    const POLL_INTERVAL_MS = 5000 // Poll every 5 seconds as fallback
+    const STREAM_TIMEOUT_MS = 30000 // If no stream updates for 30s, start polling
+
+    // Fallback polling function to check batch status directly
+    const pollBatchStatus = async () => {
+      try {
+        const response = await fetch(`/api/batch/${batchId}-status/status`)
+        if (!response.ok) return
+
+        const data = await response.json()
+        const { status, processedRows, totalRows } = data
+
+        // Update progress from database
+        const total = totalRows || 0
+        const processed = processedRows || 0
+        if (total > 0) {
+          setProgress({
+            completed: processed,
+            total: total,
+            percentage: Math.round((processed / total) * 100),
+          })
+        }
+
+        // Check if batch is complete
+        if (status === 'completed' || status === 'completed_with_errors' || status === 'failed') {
+          setIsProcessing(false)
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close()
+            eventSourceRef.current = null
+          }
+          if (pollInterval) {
+            clearInterval(pollInterval)
+            pollInterval = null
+          }
+
+          if (status === 'completed' || status === 'completed_with_errors') {
+            trackEvent(ANALYTICS_EVENTS.BATCH_COMPLETED, {
+              batchId,
+              status,
+            })
+          }
+        }
+      } catch (err) {
+        // Silently fail polling - EventSource is primary mechanism
+        console.debug('Polling batch status failed:', err)
+      }
+    }
+
     eventSource.addEventListener('result', (e) => {
+      lastProgressCheck = Date.now()
       const result = JSON.parse(e.data)
       setResults(prev => {
         const updated = [...prev]
@@ -163,6 +214,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
     })
 
     eventSource.addEventListener('progress', (e) => {
+      lastProgressCheck = Date.now()
       const { completed, total } = JSON.parse(e.data)
       setProgress({
         completed,
@@ -176,6 +228,10 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
       setIsProcessing(false)
       eventSource.close()
       eventSourceRef.current = null
+      if (pollInterval) {
+        clearInterval(pollInterval)
+        pollInterval = null
+      }
       
       if (status === 'completed' || status === 'completed_with_errors') {
         trackEvent(ANALYTICS_EVENTS.BATCH_COMPLETED, {
@@ -186,15 +242,40 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
     })
 
     eventSource.addEventListener('error', () => {
-      setError('Stream connection failed')
-      setIsProcessing(false)
-      eventSource.close()
-      eventSourceRef.current = null
+      // Don't immediately fail - start polling as fallback
+      console.debug('EventSource error, starting fallback polling')
+      if (!pollInterval) {
+        // Start polling immediately if stream fails
+        pollInterval = setInterval(pollBatchStatus, POLL_INTERVAL_MS)
+        pollBatchStatus() // Check immediately
+      }
     })
+
+    // Start fallback polling after stream timeout
+    const streamTimeout = setTimeout(() => {
+      if (isProcessing && !pollInterval) {
+        console.debug('Stream timeout, starting fallback polling')
+        pollInterval = setInterval(pollBatchStatus, POLL_INTERVAL_MS)
+        pollBatchStatus() // Check immediately
+      }
+    }, STREAM_TIMEOUT_MS)
+
+    // Also poll periodically as backup (less frequent than fallback)
+    const backupPollInterval = setInterval(() => {
+      // Only poll if no recent stream activity
+      if (Date.now() - lastProgressCheck > STREAM_TIMEOUT_MS) {
+        pollBatchStatus()
+      }
+    }, POLL_INTERVAL_MS * 2) // Every 10 seconds
 
     return () => {
       eventSource.close()
       eventSourceRef.current = null
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
+      clearTimeout(streamTimeout)
+      clearInterval(backupPollInterval)
     }
   }, [batchId, isProcessing])
 

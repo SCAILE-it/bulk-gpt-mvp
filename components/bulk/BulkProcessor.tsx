@@ -1088,7 +1088,7 @@ export default function BulkProcessor() {
               onExport={handleExport}
               isTesting={isTesting}
               testStartTime={testStartTime}
-              testEstimatedSeconds={isTesting && csvParser.csvData && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
+              testEstimatedSeconds={isTesting && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
             />
           ) : (
             // Empty state - minimal and clean
