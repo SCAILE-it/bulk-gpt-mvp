@@ -51,13 +51,20 @@ export function ResultsTable({
 }: ResultsTableProps) {
   const successCount = results.filter(r => r.status === 'completed').length
   const errorCount = results.filter(r => r.status === 'failed').length
+  
+  // For real-time progress, use progress prop if available, otherwise calculate from results
+  // This ensures progress bar updates even before results arrive
+  const effectiveProgress = progress || (results.length > 0 ? {
+    completed: successCount + errorCount,
+    total: results.length
+  } : undefined)
 
   // Calculate estimated time remaining
-  const estimatedSeconds = progress && processingStartTime && progress.completed < progress.total
+  const estimatedSeconds = effectiveProgress && processingStartTime && effectiveProgress.completed < effectiveProgress.total
     ? (() => {
         const elapsed = Date.now() - processingStartTime
-        const avgTimePerRow = elapsed / Math.max(progress.completed, 1)
-        const remaining = (progress.total - progress.completed) * avgTimePerRow
+        const avgTimePerRow = elapsed / Math.max(effectiveProgress.completed, 1)
+        const remaining = (effectiveProgress.total - effectiveProgress.completed) * avgTimePerRow
         return Math.ceil(remaining / 1000)
       })()
     : null
@@ -65,9 +72,9 @@ export function ResultsTable({
   return (
     <>
       {/* Batch Status Card - Show when actively processing or testing */}
-      {(progress && progress.total > 0) || isTesting ? (
+      {(effectiveProgress && effectiveProgress.total > 0) || isTesting ? (
         <BatchStatusCard
-          progress={progress || (isTesting ? { completed: 0, total: 1 } : undefined)}
+          progress={effectiveProgress || (isTesting ? { completed: 0, total: 1 } : undefined)}
           successCount={successCount}
           errorCount={errorCount}
           estimatedSeconds={isTesting ? testEstimatedSeconds : estimatedSeconds}
@@ -84,8 +91,8 @@ export function ResultsTable({
           <div className="flex items-center gap-3">
             <span className="text-xs font-medium text-muted-foreground">Results</span>
             <span className="text-xs text-muted-foreground">
-              {progress
-                ? `${progress.completed}/${progress.total} rows`
+              {effectiveProgress
+                ? `${effectiveProgress.completed}/${effectiveProgress.total} rows`
                 : `${results.length} rows`
               }
             </span>

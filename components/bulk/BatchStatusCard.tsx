@@ -83,9 +83,9 @@ export function BatchStatusCard({
 
   // Calculate pending as remaining rows (total minus success minus errors)
   const pendingCount = progress.total - successCount - errorCount
-  // Fix: Use actual completed count (success + errors) instead of progress.completed
-  // This ensures percentage is accurate and doesn't show 100% prematurely
-  const actualCompleted = successCount + errorCount
+  // Use progress.completed from EventSource for real-time updates (most accurate)
+  // Fallback to successCount + errorCount if progress.completed is not available
+  const actualCompleted = progress.completed !== undefined ? progress.completed : (successCount + errorCount)
   const progressPercentage = progress.total > 0
     ? (actualCompleted / progress.total) * 100
     : 0
