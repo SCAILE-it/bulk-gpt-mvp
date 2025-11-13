@@ -30,6 +30,7 @@ export interface StartBatchParams {
   outputColumns: string[]
   tools?: string[]
   webhookUrl?: string
+  testMode?: boolean // Optional flag for test batches (single row)
 }
 
 export interface UseBatchProcessorReturn {
@@ -54,7 +55,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
   const eventSourceRef = useRef<EventSource | null>(null)
 
   const startBatch = useCallback(async (params: StartBatchParams): Promise<void> => {
-    const { csvData, prompt, context = '', outputColumns, webhookUrl, tools } = params
+    const { csvData, prompt, context = '', outputColumns, webhookUrl, tools, testMode = false } = params
 
     setIsProcessing(true)
     setError(null)
@@ -73,6 +74,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
           outputColumns,
           tools: tools || undefined,
           webhookUrl: webhookUrl || undefined,
+          testMode: testMode || undefined,
         }),
       })
 
@@ -89,6 +91,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
         rowCount: csvData.rows.length,
         promptLength: prompt.length,
         outputFieldCount: outputColumns.length,
+        testMode,
       })
 
       const initialResults: BatchResult[] = csvData.rows.map((row, index) => ({
@@ -129,7 +132,8 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
     setResults([])
     setProgress(null)
     setError(null)
-    setBatchId(null)
+    // Don't clear batchId immediately - allow post-completion actions like export
+    // batchId will be cleared when starting a new batch
   }, [])
 
   useEffect(() => {

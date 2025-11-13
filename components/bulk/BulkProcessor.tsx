@@ -48,14 +48,6 @@ import { TEMPLATE_CATEGORIES, type PromptTemplate } from '@/lib/constants/prompt
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
-interface Result {
-  id: string
-  input: Record<string, string>
-  output: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
-  error?: string
-}
-
 export default function BulkProcessor() {
   // === FILE STATE ===
   const fileUpload = useFileUpload()
@@ -158,17 +150,16 @@ export default function BulkProcessor() {
   const [testStartTime, setTestStartTime] = useState<number | undefined>(undefined)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [testResults, setTestResults] = useState<Result[]>([])
 
   // Memoize CSV columns to prevent infinite render loop (array created on every render)
   const csvColumns = useMemo(() => {
     return csvParser.csvData?.columns || []
   }, [csvParser.csvData?.columns])
 
-  // Display results: show test results if available, otherwise batch results
+  // Unified results: use batchProcessor.results as single source of truth
   const displayResults = useMemo(() => {
-    return testResults.length > 0 ? testResults : batchProcessor.results
-  }, [testResults, batchProcessor.results])
+    return batchProcessor.results
+  }, [batchProcessor.results])
 
   // Manual AI optimization (user triggers with button)
   const {
@@ -226,6 +217,16 @@ export default function BulkProcessor() {
       PARALLEL_CONCURRENCY
     )
   }, [csvParser.csvData, prompt, selectedTools.length, variableValidation.isValid])
+
+  // === BATCH COMPLETION HANDLER ===
+  // Clear test state when batch completes (for unified architecture)
+  useEffect(() => {
+    if (!batchProcessor.isProcessing && isTesting) {
+      // Batch completed, clear test state
+      setIsTesting(false)
+      setTestStartTime(undefined)
+    }
+  }, [batchProcessor.isProcessing, isTesting])
 
   // === FILTERED TEMPLATES ===
   const filteredTemplates = useTemplateFilter(templateSearchQuery, templateCategoryFilter)
@@ -320,7 +321,7 @@ export default function BulkProcessor() {
     )
   }, [])
 
-  // === TEST (1 ROW) - Now polls for async results ===
+  // === TEST (1 ROW) - Unified with batch processor ===
   const handleTest = useCallback(async () => {
     if (!csvParser.csvData || !prompt) return
 
@@ -335,275 +336,34 @@ export default function BulkProcessor() {
     setTestStartTime(Date.now())
 
     try {
-      // Log test mode API call
-      debugLog.info('Starting test mode - sending single row to /api/process', {
-        filename: csvParser.csvData.filename,
+      // Create test CSV with only first row
+      const testCSVData = {
+        ...csvParser.csvData,
+        rows: [csvParser.csvData.rows[0]],
+        totalRows: 1,
+      }
+
+      // Use unified batch processor with testMode flag
+      await batchProcessor.startBatch({
+        csvData: testCSVData,
+        prompt,
+        context: '',
+        outputColumns: outputFields,
+        tools: selectedTools.length > 0 ? selectedTools : undefined,
+        testMode: true, // Enable test mode to bypass batch limit
+      })
+
+      // Note: batchId is set synchronously by startBatch after API call
+      debugLog.info('Test batch started via unified processor', {
         rowCount: 1,
-        promptLength: prompt.length,
-        outputFieldsCount: outputFields.length
       })
-
-      // Step 1: Create batch (async) - testMode bypasses batch limit
-      const response = await fetch('/api/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          csvFilename: csvParser.csvData.filename,
-          rows: [csvParser.csvData.rows[0].data], // Only first row
-          prompt,
-          context: '',
-          outputColumns: outputFields, // Always use JSON mode for structured output
-          tools: selectedTools.length > 0 ? selectedTools : undefined,
-          testMode: true, // Enable test mode to bypass batch limit
-        }),
-      })
-
-      debugLog.info('Test mode API response received', {
-        status: response.status,
-        ok: response.ok
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        debugLog.error('Test mode API call failed', { status: response.status, error: errorData })
-        
-        // Enhanced error message for limit issues
-        if (response.status === 429 && errorData.error) {
-          throw new Error(errorData.error)
-        }
-        throw new Error(errorData.error || 'Test failed')
-      }
-
-      const data = await response.json()
-
-      // API returns 202 with batchId, status: 'pending'
-      if (!data.batchId) {
-        throw new Error('No batch ID returned from API')
-      }
-
-      const testBatchId = data.batchId
-
-      // Step 2: Poll for completion (max 120 seconds to match actual processing time)
-      // Increased timeout since batches can take longer than 90 seconds
-      const maxAttempts = 60 // 60 attempts * 2 seconds = 120 seconds
-      const pollInterval = 2000 // 2 seconds
-
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval))
-
-        try {
-          const statusResponse = await fetch(`/api/batch/${testBatchId}/status`)
-          if (!statusResponse.ok) {
-            debugLog.warn(`Status check failed (attempt ${attempt + 1}/${maxAttempts})`, {
-              status: statusResponse.status,
-              batchId: testBatchId
-            })
-            continue
-          }
-
-          const statusData = await statusResponse.json()
-          debugLog.info(`Status check (attempt ${attempt + 1}/${maxAttempts})`, {
-            status: statusData.status,
-            batchId: testBatchId
-          })
-
-          // Check if completed (including completed_with_errors which is still a valid completion)
-          if (statusData.status === 'completed' || statusData.status === 'completed_with_errors') {
-          // Fetch the result
-          const supabase = createClient()
-          if (!supabase) {
-            throw new Error('Database client not configured')
-          }
-
-          const { data: results, error: fetchError } = await supabase
-            .from('batch_results')
-            .select('input_data, output_data, status, error_message')
-            .eq('batch_id', testBatchId)
-            .order('id', { ascending: true })
-            .limit(1)
-
-          if (fetchError || !results || results.length === 0) {
-            throw new Error('Failed to fetch test result from database')
-          }
-
-          const firstResult = results[0]
-          const inputData = typeof firstResult.input_data === 'string'
-            ? JSON.parse(firstResult.input_data)
-            : firstResult.input_data
-
-          // Parse output_data properly - handle JSON objects and strings
-          // This should match the export logic for consistency
-          let outputValue: string
-          if (firstResult.output_data) {
-            if (typeof firstResult.output_data === 'string') {
-              // Try to parse as JSON first
-              try {
-                const parsed = JSON.parse(firstResult.output_data)
-                // If it's an object, stringify it nicely; otherwise use as-is
-                outputValue = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-                  ? JSON.stringify(parsed, null, 2)
-                  : String(parsed)
-              } catch {
-                // Not JSON, use as string
-                outputValue = firstResult.output_data
-              }
-            } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
-              // Already an object, stringify it
-              outputValue = JSON.stringify(firstResult.output_data, null, 2)
-            } else {
-              outputValue = String(firstResult.output_data)
-            }
-          } else {
-            outputValue = ''
-          }
-
-          // Show test result
-          const testResult: Result = {
-            id: 'test-result',
-            input: inputData,
-            output: outputValue,
-            status: firstResult.status === 'success' ? 'completed' : 'failed',
-            error: firstResult.error_message || undefined
-          }
-            setTestResults([testResult])
-            setIsTesting(false)
-            return
-          } else if (statusData.status === 'failed') {
-            throw new Error('Test batch failed during processing')
-          }
-        } catch (statusError) {
-          debugLog.warn(`Error checking status (attempt ${attempt + 1}/${maxAttempts})`, {
-            error: statusError instanceof Error ? statusError.message : String(statusError),
-            batchId: testBatchId
-          })
-          // Continue polling even if one check fails
-          continue
-        }
-      }
-
-      // Timeout - check if batch actually completed but status check failed
-      // Try fetching results directly from database first (might be faster)
-      debugLog.info('Polling timeout reached, checking database directly', { batchId: testBatchId })
-      
-      const supabase = createClient()
-      if (supabase) {
-        // Try fetching results directly - if they exist, batch completed
-        const { data: directResults, error: directError } = await supabase
-          .from('batch_results')
-          .select('input_data, output_data, status, error_message')
-          .eq('batch_id', testBatchId)
-          .order('id', { ascending: true })
-          .limit(1)
-        
-        if (!directError && directResults && directResults.length > 0) {
-          debugLog.info('Found results in database, batch completed', { batchId: testBatchId })
-          // Batch completed, use the results
-          const firstResult = directResults[0]
-          const inputData = typeof firstResult.input_data === 'string'
-            ? JSON.parse(firstResult.input_data)
-            : firstResult.input_data
-
-          let outputValue: string
-          if (firstResult.output_data) {
-            if (typeof firstResult.output_data === 'string') {
-              try {
-                const parsed = JSON.parse(firstResult.output_data)
-                outputValue = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-                  ? JSON.stringify(parsed, null, 2)
-                  : String(parsed)
-              } catch {
-                outputValue = firstResult.output_data
-              }
-            } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
-              outputValue = JSON.stringify(firstResult.output_data, null, 2)
-            } else {
-              outputValue = String(firstResult.output_data)
-            }
-          } else {
-            outputValue = ''
-          }
-
-          const testResult: Result = {
-            id: 'test-result',
-            input: inputData,
-            output: outputValue,
-            status: firstResult.status === 'success' ? 'completed' : 'failed',
-            error: firstResult.error_message || undefined
-          }
-          setTestResults([testResult])
-          setIsTesting(false)
-          setTestStartTime(undefined)
-          return
-        }
-      }
-      
-      // Fallback: Try status endpoint one more time
-      const finalStatusResponse = await fetch(`/api/batch/${testBatchId}/status`)
-      if (finalStatusResponse.ok) {
-        const finalStatusData = await finalStatusResponse.json()
-        debugLog.info('Final status check', { status: finalStatusData.status, batchId: testBatchId })
-        if (finalStatusData.status === 'completed' || finalStatusData.status === 'completed_with_errors') {
-          // Batch actually completed, fetch result
-          const supabase = createClient()
-          if (supabase) {
-            const { data: finalResults } = await supabase
-              .from('batch_results')
-              .select('input_data, output_data, status, error_message')
-              .eq('batch_id', testBatchId)
-              .order('id', { ascending: true })
-              .limit(1)
-            
-            if (finalResults && finalResults.length > 0) {
-              const firstResult = finalResults[0]
-              const inputData = typeof firstResult.input_data === 'string'
-                ? JSON.parse(firstResult.input_data)
-                : firstResult.input_data
-
-              let outputValue: string
-              if (firstResult.output_data) {
-                if (typeof firstResult.output_data === 'string') {
-                  try {
-                    const parsed = JSON.parse(firstResult.output_data)
-                    outputValue = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-                      ? JSON.stringify(parsed, null, 2)
-                      : String(parsed)
-                  } catch {
-                    outputValue = firstResult.output_data
-                  }
-                } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
-                  outputValue = JSON.stringify(firstResult.output_data, null, 2)
-                } else {
-                  outputValue = String(firstResult.output_data)
-                }
-              } else {
-                outputValue = ''
-              }
-
-              const testResult: Result = {
-                id: 'test-result',
-                input: inputData,
-                output: outputValue,
-                status: firstResult.status === 'success' ? 'completed' : 'failed',
-                error: firstResult.error_message || undefined
-              }
-              setTestResults([testResult])
-              setIsTesting(false)
-              return
-            }
-          }
-        }
-      }
-      
-      throw new Error('Test timed out after 120 seconds. The API may be slow or overloaded. Check the Executions page to see if the batch completed.')
-
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       setError(`Test failed: ${message}`)
-    } finally {
       setIsTesting(false)
       setTestStartTime(undefined)
     }
-  }, [csvParser.csvData, prompt, outputFields, variableValidation, debugLog, selectedTools])
+  }, [csvParser.csvData, prompt, outputFields, variableValidation, batchProcessor, selectedTools, debugLog])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
@@ -615,8 +375,9 @@ export default function BulkProcessor() {
       return
     }
 
-    // Clear test results when starting full batch
-    setTestResults([])
+    // Clear test state when starting full batch
+    setIsTesting(false)
+    setTestStartTime(undefined)
 
     // Start batch processing using hook
     await batchProcessor.startBatch({
@@ -625,12 +386,15 @@ export default function BulkProcessor() {
       context: '',
       outputColumns: outputFields, // Always use JSON mode for structured output
       tools: selectedTools.length > 0 ? selectedTools : undefined,
+      testMode: false, // Full batch
     })
   }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools])
 
   // === EXPORT ===
   const handleExport = useCallback(async () => {
-    if (!batchProcessor.batchId) {
+    // Unified batch ID: use current batch (works for both test and full batches)
+    const currentBatchId = batchProcessor.batchId
+    if (!currentBatchId) {
       toast.error('No Batch Available', {
         description: 'Please run a batch first before exporting results.'
       })
@@ -638,7 +402,7 @@ export default function BulkProcessor() {
     }
 
     try {
-      toast.loading('Preparing download...', { id: `export-${batchProcessor.batchId}` })
+      toast.loading('Preparing download...', { id: `export-${currentBatchId}` })
 
       // First try to fetch from status API (includes batch info)
       interface StatusResult {
@@ -658,7 +422,7 @@ export default function BulkProcessor() {
       }
       let results: ExportResult[] = []
       try {
-        const statusResponse = await fetch(`/api/batch/${batchProcessor.batchId}-status/status`)
+        const statusResponse = await fetch(`/api/batch/${currentBatchId}-status/status`)
         if (statusResponse.ok) {
           const statusData = await statusResponse.json() as { results?: StatusResult[] }
           if (statusData.results && Array.isArray(statusData.results) && statusData.results.length > 0) {
@@ -683,7 +447,7 @@ export default function BulkProcessor() {
         if (!supabase) {
           toast.error('Database Error', {
             description: 'Supabase client not configured. Please refresh the page.',
-            id: `export-${batchProcessor.batchId}`
+            id: `export-${currentBatchId}`
           })
           return
         }
@@ -691,18 +455,18 @@ export default function BulkProcessor() {
         const { data: dbResults, error } = await supabase
           .from('batch_results')
           .select('input_data, output_data, status, error_message, input_tokens, output_tokens')
-          .eq('batch_id', batchProcessor.batchId)
+          .eq('batch_id', currentBatchId)
           .order('id', { ascending: true })
 
         if (error) {
           logError(new Error('Batch results fetch failed'), {
             source: 'BulkProcessor/handleExport',
-            batchId: batchProcessor.batchId,
+            batchId: currentBatchId,
             supabaseError: error
           })
           toast.error('Failed to Fetch Results', {
             description: 'Please try again or check the Dashboard for completed batches.',
-            id: `export-${batchProcessor.batchId}`
+            id: `export-${currentBatchId}`
           })
           return
         }
@@ -741,7 +505,7 @@ export default function BulkProcessor() {
         body: JSON.stringify({
           results: exportData,
           format: 'csv',
-          batchId: batchProcessor.batchId,
+          batchId: currentBatchId,
           timestamp: new Date().toISOString()
         })
       })
@@ -754,7 +518,7 @@ export default function BulkProcessor() {
       // Get filename from Content-Disposition header
       const disposition = response.headers.get('content-disposition') || ''
       const filenameMatch = disposition.match(/filename="([^"]+)"/)
-      const filename = filenameMatch?.[1] || `results-${batchProcessor.batchId}.csv`
+      const filename = filenameMatch?.[1] || `results-${currentBatchId}.csv`
 
       // Trigger browser download
       const blob = await response.blob()
@@ -769,16 +533,16 @@ export default function BulkProcessor() {
 
       toast.success('Download Complete', {
         description: `Successfully downloaded ${results.length} result rows.`,
-        id: `export-${batchProcessor.batchId}`
+        id: `export-${currentBatchId}`
       })
     } catch (err) {
       logError(err instanceof Error ? err : new Error('Export failed'), {
         source: 'BulkProcessor/handleExport',
-        batchId: batchProcessor.batchId
+        batchId: currentBatchId
       })
       toast.error('Export Failed', {
         description: 'An unexpected error occurred. Please try again.',
-        id: `export-${batchProcessor.batchId}`
+        id: `export-${currentBatchId}`
       })
     }
   }, [batchProcessor.batchId])
