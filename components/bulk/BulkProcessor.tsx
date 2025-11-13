@@ -96,15 +96,15 @@ export default function BulkProcessor() {
   // Sections start collapsed, but auto-expand based on active state
   // Progressive disclosure: Input open by default, Task/Output closed
   const dataInputSection = useCollapsibleState({
-    storageKey: 'bulk-processor-data-input',
+    storageKey: 'bulk-processor-data-input-v2',
     defaultOpen: true // Only Input open by default
   })
   const promptSection = useCollapsibleState({
-    storageKey: 'bulk-processor-prompt',
+    storageKey: 'bulk-processor-prompt-v2',
     defaultOpen: false // Task closed by default - opens when Input is complete
   })
   const outputSettingsSection = useCollapsibleState({
-    storageKey: 'bulk-processor-output-settings',
+    storageKey: 'bulk-processor-output-settings-v2',
     defaultOpen: false // Output closed by default - opens when Task is complete
   })
   const aiAssistantSection = useCollapsibleState({
