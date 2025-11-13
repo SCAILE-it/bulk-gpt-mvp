@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         const data = await response.json()
         return NextResponse.json({
           title: data.properties?.title,
-          sheets: data.sheets?.map((sheet: any) => ({
+          sheets: data.sheets?.map((sheet: { properties?: { title?: string; sheetId?: number } }) => ({
             title: sheet.properties?.title,
             sheetId: sheet.properties?.sheetId,
           })) || [],

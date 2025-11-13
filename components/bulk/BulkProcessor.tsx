@@ -230,7 +230,8 @@ export default function BulkProcessor() {
     if (isOptimizing && aiAssistantSection.isOpen) {
       aiAssistantSection.setIsOpen(false)
     }
-  }, [isOptimizing, aiAssistantSection.isOpen, aiAssistantSection.setIsOpen])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOptimizing, aiAssistantSection.isOpen])
 
   // Handle accepting AI suggestion
   const handleAcceptOptimization = useCallback(() => {
