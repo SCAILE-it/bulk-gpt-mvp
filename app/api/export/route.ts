@@ -106,9 +106,13 @@ export async function POST(request: NextRequest): Promise<Response> {
         }
       }
 
-      // Add status and error
+      // Add status and error (consistent with dashboard export)
       flat.Status = result.status || 'unknown'
       flat.Error = result.error_message || ''
+      
+      // Note: Token and model columns are not included in export route
+      // to keep exports consistent and focused on data only
+      // Dashboard export includes tokens/model for analytics, but RUN page export doesn't
 
       return flat
     })

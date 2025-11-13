@@ -74,7 +74,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    const { csvFilename, rows, prompt, context = '', outputColumns = [], tools = [], testMode = false } = body
+    const { csvFilename, rows, prompt, context = '', outputColumns = [], tools = [], testMode = false, selectedInputColumns } = body
 
     // Check usage limits (database-backed)
     // testMode bypasses batch limit but still checks row limit
@@ -155,6 +155,7 @@ export async function POST(request: NextRequest): Promise<Response> {
               status: gtmResponse.failedRows === 0 ? 'completed' : 'completed_with_errors',
               prompt: prompt,
               tools: tools,
+              selected_input_columns: selectedInputColumns && Array.isArray(selectedInputColumns) ? selectedInputColumns : null,
             })
 
           if (batchInsertError) {
@@ -231,6 +232,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           status: 'pending',
           prompt: prompt,
           tools: tools.length > 0 ? tools : null,
+          selected_input_columns: selectedInputColumns && Array.isArray(selectedInputColumns) ? selectedInputColumns : null,
         })
         .select()
 

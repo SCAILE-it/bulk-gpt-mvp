@@ -253,15 +253,14 @@ export default function DashboardPage() {
         }
       }
 
-      // Generate CSV with token data - spread output fields as separate columns
+      // Generate CSV - spread output fields as separate columns
+      // Note: Consistent with RUN page export - only includes input columns + output columns + status/error
+      // Token/model columns removed to match RUN page export format
       const headers = [
         ...inputColumns,
         ...(outputColumns.length > 0 ? outputColumns : ['Output']), // Use parsed columns or fallback to 'Output'
         'Status',
-        'Error',
-        'Input_Tokens',
-        'Output_Tokens',
-        'Model'
+        'Error'
       ]
       
       const csvRows = results.map(r => {
@@ -315,11 +314,9 @@ export default function DashboardPage() {
         
         const status = r.status || ''
         const error = r.error_message ? `"${r.error_message.replace(/"/g, '""')}"` : '""'
-        const inputTokens = r.input_tokens || 0
-        const outputTokens = r.output_tokens || 0
-        const model = r.model || ''
         
-        return [...inputValues, ...outputValues, status, error, inputTokens, outputTokens, model].join(',')
+        // Consistent with RUN page export - only include input + output + status + error
+        return [...inputValues, ...outputValues, status, error].join(',')
       })
 
       const csvContent = [headers.join(','), ...csvRows].join('\n')

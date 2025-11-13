@@ -31,6 +31,7 @@ export interface StartBatchParams {
   tools?: string[]
   webhookUrl?: string
   testMode?: boolean // Optional flag for test batches (single row)
+  selectedInputColumns?: string[] // Input columns to include in output
 }
 
 export interface UseBatchProcessorReturn {
@@ -55,7 +56,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
   const eventSourceRef = useRef<EventSource | null>(null)
 
   const startBatch = useCallback(async (params: StartBatchParams): Promise<void> => {
-    const { csvData, prompt, context = '', outputColumns, webhookUrl, tools, testMode = false } = params
+    const { csvData, prompt, context = '', outputColumns, webhookUrl, tools, testMode = false, selectedInputColumns } = params
 
     setIsProcessing(true)
     setError(null)
@@ -63,18 +64,33 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
     setProgress(null)
 
     try {
+      // Filter rows to only include selected input columns (if specified)
+      // If not specified, include all columns (backward compatibility)
+      const filteredRows = selectedInputColumns && selectedInputColumns.length > 0
+        ? csvData.rows.map(row => {
+            const filteredData: Record<string, string> = {}
+            selectedInputColumns.forEach(col => {
+              if (col in row.data) {
+                filteredData[col] = row.data[col]
+              }
+            })
+            return filteredData
+          })
+        : csvData.rows.map(r => r.data)
+
       const response = await fetch('/api/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           csvFilename: csvData.filename,
-          rows: csvData.rows.map(r => r.data),
+          rows: filteredRows,
           prompt,
           context,
           outputColumns,
           tools: tools || undefined,
           webhookUrl: webhookUrl || undefined,
           testMode: testMode || undefined,
+          selectedInputColumns: selectedInputColumns || undefined,
         }),
       })
 

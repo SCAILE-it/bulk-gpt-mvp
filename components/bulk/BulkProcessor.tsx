@@ -351,6 +351,7 @@ export default function BulkProcessor() {
         outputColumns: outputFields,
         tools: selectedTools.length > 0 ? selectedTools : undefined,
         testMode: true, // Enable test mode to bypass batch limit
+        selectedInputColumns: selectedInputColumns.length > 0 ? selectedInputColumns : undefined,
       })
 
       // Note: batchId is set synchronously by startBatch after API call
@@ -363,7 +364,7 @@ export default function BulkProcessor() {
       setIsTesting(false)
       setTestStartTime(undefined)
     }
-  }, [csvParser.csvData, prompt, outputFields, variableValidation, batchProcessor, selectedTools, debugLog])
+  }, [csvParser.csvData, prompt, outputFields, variableValidation, batchProcessor, selectedTools, selectedInputColumns, debugLog])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
@@ -387,8 +388,9 @@ export default function BulkProcessor() {
       outputColumns: outputFields, // Always use JSON mode for structured output
       tools: selectedTools.length > 0 ? selectedTools : undefined,
       testMode: false, // Full batch
+      selectedInputColumns: selectedInputColumns.length > 0 ? selectedInputColumns : undefined,
     })
-  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools])
+  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools, selectedInputColumns])
 
   // === EXPORT ===
   const handleExport = useCallback(async () => {
@@ -868,8 +870,16 @@ export default function BulkProcessor() {
                       aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
                     >
                       {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                      <span className="whitespace-nowrap">
-                        Run All {csvParser.csvData && <span className="inline">({csvParser.csvData.totalRows})</span>}
+                      <span className="whitespace-nowrap flex items-center gap-1.5">
+                        <span>Run All</span>
+                        {csvParser.csvData && (
+                          <>
+                            <span className="inline">({csvParser.csvData.totalRows})</span>
+                            {timeEstimate && !batchProcessor.isProcessing && (
+                              <span className="inline opacity-75">• ~{timeEstimate.formatted}</span>
+                            )}
+                          </>
+                        )}
                       </span>
                     </button>
                   </TooltipTrigger>
@@ -878,14 +888,6 @@ export default function BulkProcessor() {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              {/* Time estimate below buttons */}
-              {timeEstimate && !batchProcessor.isProcessing && csvParser.csvData && prompt && variableValidation.isValid && (
-                <div className="text-center mt-1.5">
-                  <span className="text-[10px] text-muted-foreground/70">
-                    Estimated time: ~{timeEstimate.formatted}
-                  </span>
-                </div>
-              )}
             </TooltipProvider>
           </div>
         </div>
