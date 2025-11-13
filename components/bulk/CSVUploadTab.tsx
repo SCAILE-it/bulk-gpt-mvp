@@ -30,7 +30,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
 
   useImperativeHandle(forwardedRef, () => localRef.current as HTMLInputElement)
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop: (acceptedFiles) => {
       if (acceptedFiles[0]) onFileUpload(acceptedFiles[0])
     },
@@ -53,7 +53,10 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => localRef.current?.click()}
+            onClick={(e) => {
+              e.stopPropagation()
+              open()
+            }}
             title="Upload a different CSV file (⌘O)"
             aria-label="Upload a different CSV file"
           >
