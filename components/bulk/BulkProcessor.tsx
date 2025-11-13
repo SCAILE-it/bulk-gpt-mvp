@@ -116,10 +116,17 @@ export default function BulkProcessor() {
   
   const aiAssistantSection = useCollapsibleState({
     storageKey: 'bulk-processor-ai-assistant',
-    defaultOpen: true // Always expanded when visible
+    defaultOpen: true // Open by default
   })
 
-  // Sections stay open/closed based on user preference (no auto-collapse/expand)
+  // Force AI Optimization section to be open on mount (override localStorage)
+  useEffect(() => {
+    // Only open if not currently optimizing (don't override collapse when running)
+    if (!isOptimizing && !aiAssistantSection.isOpen) {
+      aiAssistantSection.setIsOpen(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
 
   // Restore job context on mount (only once)
   useEffect(() => {

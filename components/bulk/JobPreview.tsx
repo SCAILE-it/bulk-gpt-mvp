@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Sparkles, Check, X } from 'lucide-react'
 import type { OutputColumn } from '@/hooks/useManualJobOptimizer'
+import { ProgressBar } from '@/components/ui/progress-bar'
 
 interface JobPreviewProps {
   optimizedPrompt?: string
@@ -31,26 +32,17 @@ export function JobPreview({
   onAccept,
   onReject,
 }: JobPreviewProps) {
-  // Progress bar animation - typical optimization takes 5-10 seconds
-  const [progress, setProgress] = useState(0)
   const estimatedDuration = 8000 // 8 seconds average (doubled from 4s)
+  const [startTime, setStartTime] = useState<number | undefined>(undefined)
 
+  // Set start time when optimization begins
   useEffect(() => {
-    if (!isOptimizing) {
-      setProgress(0)
-      return
+    if (isOptimizing && !startTime) {
+      setStartTime(Date.now())
+    } else if (!isOptimizing) {
+      setStartTime(undefined)
     }
-
-    // Start progress animation
-    const startTime = Date.now()
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime
-      const newProgress = Math.min(95, (elapsed / estimatedDuration) * 100) // Cap at 95% until complete
-      setProgress(newProgress)
-    }, 50) // Update every 50ms for smooth animation
-
-    return () => clearInterval(interval)
-  }, [isOptimizing, estimatedDuration])
+  }, [isOptimizing, startTime])
 
   if (isOptimizing) {
     return (
@@ -60,14 +52,12 @@ export function JobPreview({
           <span>AI is analyzing your job and generating optimizations...</span>
         </div>
         {/* Animated progress bar */}
-        <div className="w-full h-1.5 bg-primary/20 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-primary rounded-full transition-all duration-75 ease-out"
-            style={{ 
-              width: `${progress}%`
-            }}
-          />
-        </div>
+        <ProgressBar
+          isActive={isOptimizing}
+          estimatedDuration={estimatedDuration}
+          startTime={startTime}
+          height="md"
+        />
       </div>
     )
   }

@@ -5,8 +5,8 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react'
+import { ProgressBar } from '@/components/ui/progress-bar'
 
 interface Progress {
   completed: number
@@ -34,24 +34,7 @@ export function BatchStatusCard({
   totalInputTokens,
   totalOutputTokens
 }: BatchStatusCardProps) {
-  // Progress bar state for test mode (hooks must be at top level)
-  const [testProgress, setTestProgress] = useState(0)
   const testEstimatedDuration = estimatedSeconds ? estimatedSeconds * 1000 : 60000 // Use provided estimate or default 60s
-  
-  useEffect(() => {
-    if (!isTesting || !testStartTime || progress) {
-      setTestProgress(0)
-      return
-    }
-
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - testStartTime
-      const newProgress = Math.min(95, (elapsed / testEstimatedDuration) * 100) // Cap at 95% until complete
-      setTestProgress(newProgress)
-    }, 50) // Update every 50ms for smooth animation
-
-    return () => clearInterval(interval)
-  }, [isTesting, testStartTime, testEstimatedDuration, progress])
 
   // For testing mode, show loading state with progress bar
   if (isTesting && !progress) {
@@ -68,12 +51,12 @@ export function BatchStatusCard({
             </div>
           </div>
           {/* Progress bar */}
-          <div className="w-full h-1.5 bg-primary/20 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary rounded-full transition-all duration-75 ease-out"
-              style={{ width: `${testProgress}%` }}
-            />
-          </div>
+          <ProgressBar
+            isActive={isTesting && !progress}
+            estimatedDuration={testEstimatedDuration}
+            startTime={testStartTime}
+            height="md"
+          />
         </div>
       </div>
     )
