@@ -381,13 +381,24 @@ export default function BulkProcessor() {
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         await new Promise(resolve => setTimeout(resolve, pollInterval))
 
-        const statusResponse = await fetch(`/api/batch/${testBatchId}/status`)
-        if (!statusResponse.ok) continue
+        try {
+          const statusResponse = await fetch(`/api/batch/${testBatchId}/status`)
+          if (!statusResponse.ok) {
+            debugLog.warn(`Status check failed (attempt ${attempt + 1}/${maxAttempts})`, {
+              status: statusResponse.status,
+              batchId: testBatchId
+            })
+            continue
+          }
 
-        const statusData = await statusResponse.json()
+          const statusData = await statusResponse.json()
+          debugLog.info(`Status check (attempt ${attempt + 1}/${maxAttempts})`, {
+            status: statusData.status,
+            batchId: testBatchId
+          })
 
-        // Check if completed (including completed_with_errors which is still a valid completion)
-        if (statusData.status === 'completed' || statusData.status === 'completed_with_errors') {
+          // Check if completed (including completed_with_errors which is still a valid completion)
+          if (statusData.status === 'completed' || statusData.status === 'completed_with_errors') {
           // Fetch the result
           const supabase = createClient()
           if (!supabase) {
@@ -444,19 +455,82 @@ export default function BulkProcessor() {
             status: firstResult.status === 'success' ? 'completed' : 'failed',
             error: firstResult.error_message || undefined
           }
-          setTestResults([testResult])
-          setIsTesting(false)
-          return
-        } else if (statusData.status === 'failed') {
-          throw new Error('Test batch failed during processing')
+            setTestResults([testResult])
+            setIsTesting(false)
+            return
+          } else if (statusData.status === 'failed') {
+            throw new Error('Test batch failed during processing')
+          }
+        } catch (statusError) {
+          debugLog.warn(`Error checking status (attempt ${attempt + 1}/${maxAttempts})`, {
+            error: statusError instanceof Error ? statusError.message : String(statusError),
+            batchId: testBatchId
+          })
+          // Continue polling even if one check fails
+          continue
         }
       }
 
       // Timeout - check if batch actually completed but status check failed
-      // Try one final check to see if batch completed
+      // Try fetching results directly from database first (might be faster)
+      debugLog.info('Polling timeout reached, checking database directly', { batchId: testBatchId })
+      
+      const supabase = createClient()
+      if (supabase) {
+        // Try fetching results directly - if they exist, batch completed
+        const { data: directResults, error: directError } = await supabase
+          .from('batch_results')
+          .select('input_data, output_data, status, error_message')
+          .eq('batch_id', testBatchId)
+          .order('id', { ascending: true })
+          .limit(1)
+        
+        if (!directError && directResults && directResults.length > 0) {
+          debugLog.info('Found results in database, batch completed', { batchId: testBatchId })
+          // Batch completed, use the results
+          const firstResult = directResults[0]
+          const inputData = typeof firstResult.input_data === 'string'
+            ? JSON.parse(firstResult.input_data)
+            : firstResult.input_data
+
+          let outputValue: string
+          if (firstResult.output_data) {
+            if (typeof firstResult.output_data === 'string') {
+              try {
+                const parsed = JSON.parse(firstResult.output_data)
+                outputValue = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+                  ? JSON.stringify(parsed, null, 2)
+                  : String(parsed)
+              } catch {
+                outputValue = firstResult.output_data
+              }
+            } else if (typeof firstResult.output_data === 'object' && firstResult.output_data !== null) {
+              outputValue = JSON.stringify(firstResult.output_data, null, 2)
+            } else {
+              outputValue = String(firstResult.output_data)
+            }
+          } else {
+            outputValue = ''
+          }
+
+          const testResult: Result = {
+            id: 'test-result',
+            input: inputData,
+            output: outputValue,
+            status: firstResult.status === 'success' ? 'completed' : 'failed',
+            error: firstResult.error_message || undefined
+          }
+          setTestResults([testResult])
+          setIsTesting(false)
+          return
+        }
+      }
+      
+      // Fallback: Try status endpoint one more time
       const finalStatusResponse = await fetch(`/api/batch/${testBatchId}/status`)
       if (finalStatusResponse.ok) {
         const finalStatusData = await finalStatusResponse.json()
+        debugLog.info('Final status check', { status: finalStatusData.status, batchId: testBatchId })
         if (finalStatusData.status === 'completed' || finalStatusData.status === 'completed_with_errors') {
           // Batch actually completed, fetch result
           const supabase = createClient()
