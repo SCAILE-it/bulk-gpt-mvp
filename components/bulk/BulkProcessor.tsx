@@ -540,7 +540,7 @@ export default function BulkProcessor() {
       csvData: csvParser.csvData,
       prompt,
       context: '',
-      outputColumns: useJsonMode ? outputFields : [], // Empty array = free-form text
+      outputColumns: outputFields, // Always use JSON mode for structured output
       tools: selectedTools.length > 0 ? selectedTools : undefined,
     })
   }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools])
