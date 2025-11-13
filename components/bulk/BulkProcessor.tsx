@@ -16,6 +16,8 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useCSVParser } from '@/hooks/useCSVParser'
 import { useBatchProcessor } from '@/hooks/useBatchProcessor'
+import { useGoogleSheets } from '@/hooks/useGoogleSheets'
+import { convertSheetsToCSV } from '@/lib/google-sheets-utils'
 import { useManualJobOptimizer } from '@/hooks/useManualJobOptimizer'
 import { useVariableValidation } from '@/hooks/useVariableValidation'
 import { getTimeEstimate } from '@/lib/time-estimation'
@@ -54,6 +56,7 @@ export default function BulkProcessor() {
   const fileUpload = useFileUpload()
   const csvParser = useCSVParser()
   const batchProcessor = useBatchProcessor()
+  const googleSheets = useGoogleSheets()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // === DEBUG LOGGING ===
@@ -222,6 +225,13 @@ export default function BulkProcessor() {
     csvParser.csvData?.rows.slice(0, 5).map(row => row.data) || undefined
   )
 
+  // Collapse AI Optimization panel when optimization starts (redundant when running)
+  useEffect(() => {
+    if (isOptimizing && aiAssistantSection.isOpen) {
+      aiAssistantSection.setIsOpen(false)
+    }
+  }, [isOptimizing, aiAssistantSection.isOpen, aiAssistantSection.setIsOpen])
+
   // Handle accepting AI suggestion
   const handleAcceptOptimization = useCallback(() => {
     if (optimizedPrompt) {
@@ -324,6 +334,63 @@ export default function BulkProcessor() {
       setIsUploading(false)
     }
   }, [csvParser, fileUpload])
+
+  // === GOOGLE SHEETS UPLOAD ===
+  const handleGoogleSheetsUpload = useCallback(async () => {
+    setIsUploading(true)
+    setError(null)
+
+    try {
+      // Initialize Google API if not already done
+      if (!googleSheets.isInitialized) {
+        await googleSheets.initialize()
+      }
+
+      // Authenticate if not already authenticated
+      if (!googleSheets.isAuthenticated) {
+        await googleSheets.authenticate()
+        if (!googleSheets.isAuthenticated) {
+          setIsUploading(false)
+          setError('Google authentication cancelled or failed')
+          return
+        }
+      }
+
+      // Pick a sheet
+      const sheet = await googleSheets.pickSheet()
+      if (!sheet) {
+        setIsUploading(false)
+        return // User cancelled
+      }
+
+      // Fetch sheet data
+      const values = await googleSheets.fetchSheetData(sheet.id)
+      
+      // Convert to ParsedCSV format
+      const parsedCSV = convertSheetsToCSV(values, sheet.name)
+      
+      // Set the parsed data directly (bypassing file upload)
+      csvParser.setParsedData(parsedCSV)
+      
+      // Track analytics
+      trackEvent(ANALYTICS_EVENTS.FILE_UPLOADED, {
+        fileName: sheet.name,
+        fileSize: 0, // Google Sheets don't have file size
+        source: 'google_sheets',
+      })
+
+      toast.success(`Imported "${sheet.name}" from Google Sheets`)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to import Google Sheet'
+      setError(errorMessage)
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        context: 'googleSheetsUpload',
+      })
+      toast.error(errorMessage)
+    } finally {
+      setIsUploading(false)
+    }
+  }, [googleSheets, csvParser])
 
   // === KEYBOARD SHORTCUTS ===
   useHotkeys('mod+o', (e) => {
@@ -740,6 +807,7 @@ export default function BulkProcessor() {
                 fileName={fileUpload.file?.name}
                 isUploading={isUploading}
                 onFileUpload={handleFileUpload}
+                onGoogleSheetsUpload={handleGoogleSheetsUpload}
                 selectedInputColumns={selectedInputColumns}
                 onInputColumnsChange={setSelectedInputColumns}
               />
@@ -954,7 +1022,7 @@ export default function BulkProcessor() {
           {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
             <ResultsTable
               results={displayResults}
-              columns={csvParser.csvData?.columns || []}
+              columns={selectedInputColumns.length > 0 ? selectedInputColumns : (csvParser.csvData?.columns || [])}
               outputColumns={outputFields}
               progress={batchProcessor.progress ?? undefined}
               processingStartTime={(batchProcessor.isProcessing || isTesting) ? Date.now() : undefined}

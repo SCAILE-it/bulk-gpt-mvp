@@ -22,6 +22,7 @@ export interface UseCSVParserReturn {
   error: string | null
   
   parseFile: (file: File) => Promise<ParsedCSV | null>
+  setParsedData: (data: ParsedCSV) => void
   clearData: () => void
   clearError: () => void
 }
@@ -81,6 +82,14 @@ export function useCSVParser(): UseCSVParserReturn {
   }, [])
 
   /**
+   * Set parsed data directly (useful for Google Sheets integration)
+   */
+  const setParsedData = useCallback((data: ParsedCSV) => {
+    setCsvData(data)
+    setError(null)
+  }, [])
+
+  /**
    * Clear parsed data
    */
   const clearData = useCallback(() => {
@@ -100,6 +109,7 @@ export function useCSVParser(): UseCSVParserReturn {
     isParsing,
     error,
     parseFile,
+    setParsedData,
     clearData,
     clearError,
   }

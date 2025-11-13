@@ -10,7 +10,7 @@ interface JobPreviewProps {
   outputColumns?: OutputColumn[]
   suggestedInputColumns?: string[]
   suggestedTools?: string[]
-  reasoning: string | null
+  reasoning?: string | null
   isOptimizing: boolean
   onAccept: () => void
   onReject: () => void
@@ -26,7 +26,7 @@ export function JobPreview({
   outputColumns = [],
   suggestedInputColumns = [],
   suggestedTools = [],
-  reasoning,
+  // reasoning - removed verbose reasoning display (too much text)
   isOptimizing,
   onAccept,
   onReject,
@@ -173,13 +173,6 @@ export function JobPreview({
           <p className="text-xs text-muted-foreground/60 italic">No tools suggested</p>
         )}
       </div>
-
-      {/* Reasoning */}
-      {reasoning && (
-        <p className="text-xs text-primary/70 italic">
-          💡 {reasoning}
-        </p>
-      )}
     </div>
   )
 }

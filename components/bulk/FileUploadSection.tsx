@@ -5,7 +5,7 @@
 
 import { forwardRef, useRef, useImperativeHandle } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, CheckCircle, Loader2 } from 'lucide-react'
+import { Upload, CheckCircle, Loader2, FileSpreadsheet } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 
 interface FileUploadSectionProps {
@@ -13,6 +13,7 @@ interface FileUploadSectionProps {
   fileName?: string
   isUploading: boolean
   onFileUpload: (file: File) => void
+  onGoogleSheetsUpload?: () => void
   selectedInputColumns?: string[]
   onInputColumnsChange?: (columns: string[]) => void
 }
@@ -22,6 +23,7 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
   fileName,
   isUploading,
   onFileUpload,
+  onGoogleSheetsUpload,
   selectedInputColumns,
   onInputColumnsChange
 }, forwardedRef) {
@@ -45,7 +47,21 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
   return (
     <div className="space-y-3">
       {csvData && (
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-2">
+          {onGoogleSheetsUpload && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onGoogleSheetsUpload()
+              }}
+              className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded-md text-xs text-foreground transition-all flex items-center gap-1.5 active:scale-95"
+              title="Import from Google Sheets"
+              aria-label="Import from Google Sheets"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
+              Google Sheets
+            </button>
+          )}
           <button
             onClick={() => localRef.current?.click()}
             className="px-2.5 py-1.5 bg-accent hover:bg-accent border border-border rounded-md text-xs text-foreground transition-all flex items-center gap-1.5 active:scale-95"
@@ -155,16 +171,31 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
               <p className="text-sm text-foreground font-medium mb-2">
                 {isDragActive ? 'Drop here' : 'Drop CSV file or click to browse'}
               </p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  localRef.current?.click()
-                }}
-                className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-border rounded-md text-sm font-medium text-foreground transition-all active:scale-95"
-                aria-label="Browse for CSV file to upload"
-              >
-                Browse Files
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    localRef.current?.click()
+                  }}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-border rounded-md text-sm font-medium text-foreground transition-all active:scale-95"
+                  aria-label="Browse for CSV file to upload"
+                >
+                  Browse Files
+                </button>
+                {onGoogleSheetsUpload && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onGoogleSheetsUpload()
+                    }}
+                    className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded-md text-sm font-medium text-foreground transition-all active:scale-95 flex items-center gap-2"
+                    aria-label="Import from Google Sheets"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Google Sheets
+                  </button>
+                )}
+              </div>
             </>
           )}
         </div>

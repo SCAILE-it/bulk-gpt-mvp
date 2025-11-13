@@ -110,9 +110,10 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
         testMode,
       })
 
-      const initialResults: BatchResult[] = csvData.rows.map((row, index) => ({
+      // Create initial results with filtered input columns (matches what was sent to API)
+      const initialResults: BatchResult[] = filteredRows.map((filteredData, index) => ({
         id: data.batchId + '-' + index,
-        input: row.data,
+        input: filteredData, // Use filtered data (only selected columns)
         output: '',
         status: 'pending' as const,
       }))
@@ -215,6 +216,18 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
                 })
               }
             })
+            
+            // Update progress based on actual results (real-time progress)
+            const completed = updated.filter(r => r.status === 'completed' || r.status === 'failed').length
+            const total = updated.length || totalRows || 0
+            if (total > 0) {
+              setProgress({
+                completed,
+                total,
+                percentage: Math.round((completed / total) * 100),
+              })
+            }
+            
             return updated
           })
         }
@@ -289,6 +302,18 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
             error: result.error_message,
           }
         }
+        
+        // Update progress based on actual results (real-time progress)
+        const completed = updated.filter(r => r.status === 'completed' || r.status === 'failed').length
+        const total = updated.length
+        if (total > 0) {
+          setProgress({
+            completed,
+            total,
+            percentage: Math.round((completed / total) * 100),
+          })
+        }
+        
         return updated
       })
     })
