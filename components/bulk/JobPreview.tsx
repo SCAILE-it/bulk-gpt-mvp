@@ -31,9 +31,9 @@ export function JobPreview({
   onAccept,
   onReject,
 }: JobPreviewProps) {
-  // Progress bar animation - typical optimization takes 3-5 seconds
+  // Progress bar animation - typical optimization takes 5-10 seconds
   const [progress, setProgress] = useState(0)
-  const estimatedDuration = 4000 // 4 seconds average
+  const estimatedDuration = 8000 // 8 seconds average (doubled from 4s)
 
   useEffect(() => {
     if (!isOptimizing) {

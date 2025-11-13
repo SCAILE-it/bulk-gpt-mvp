@@ -5,6 +5,7 @@
 
 'use client'
 
+import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react'
 
 interface Progress {
@@ -18,6 +19,7 @@ interface BatchStatusCardProps {
   errorCount: number
   estimatedSeconds?: number | null
   isTesting?: boolean
+  testStartTime?: number
 }
 
 export function BatchStatusCard({
@@ -25,17 +27,47 @@ export function BatchStatusCard({
   successCount,
   errorCount,
   estimatedSeconds,
-  isTesting = false
+  isTesting = false,
+  testStartTime
 }: BatchStatusCardProps) {
-  // For testing mode, show loading state
+  // For testing mode, show loading state with progress bar
   if (isTesting && !progress) {
+    const [testProgress, setTestProgress] = useState(0)
+    const testEstimatedDuration = estimatedSeconds ? estimatedSeconds * 1000 : 60000 // Use provided estimate or default 60s
+    
+    useEffect(() => {
+      if (!isTesting || !testStartTime) {
+        setTestProgress(0)
+        return
+      }
+
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - testStartTime
+        const newProgress = Math.min(95, (elapsed / testEstimatedDuration) * 100) // Cap at 95% until complete
+        setTestProgress(newProgress)
+      }, 50) // Update every 50ms for smooth animation
+
+      return () => clearInterval(interval)
+    }, [isTesting, testStartTime, testEstimatedDuration])
+
     return (
       <div className="px-6 py-4 border-b border-border bg-gradient-to-br from-secondary/50 to-background/50">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Testing with first row...</p>
-            <p className="text-xs text-muted-foreground">Processing AI response</p>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Testing with first row...</p>
+              <p className="text-xs text-muted-foreground">
+                Processing AI response{estimatedSeconds ? ` (~${Math.ceil(estimatedSeconds)}s)` : ''}
+              </p>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div className="w-full h-1.5 bg-primary/20 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary rounded-full transition-all duration-75 ease-out"
+              style={{ width: `${testProgress}%` }}
+            />
           </div>
         </div>
       </div>

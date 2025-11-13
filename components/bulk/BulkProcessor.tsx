@@ -147,6 +147,7 @@ export default function BulkProcessor() {
 
   // === PROCESSING STATE ===
   const [isTesting, setIsTesting] = useState(false)
+  const [testStartTime, setTestStartTime] = useState<number | undefined>(undefined)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Result[]>([])
@@ -323,6 +324,7 @@ export default function BulkProcessor() {
 
     setIsTesting(true)
     setError(null)
+    setTestStartTime(Date.now())
 
     try {
       // Log test mode API call
@@ -522,6 +524,7 @@ export default function BulkProcessor() {
           }
           setTestResults([testResult])
           setIsTesting(false)
+          setTestStartTime(undefined)
           return
         }
       }
@@ -590,6 +593,7 @@ export default function BulkProcessor() {
       setError(`Test failed: ${message}`)
     } finally {
       setIsTesting(false)
+      setTestStartTime(undefined)
     }
   }, [csvParser.csvData, prompt, outputFields, variableValidation, debugLog, selectedTools])
 
@@ -1083,6 +1087,8 @@ export default function BulkProcessor() {
               processingStartTime={(batchProcessor.isProcessing || isTesting) ? Date.now() : undefined}
               onExport={handleExport}
               isTesting={isTesting}
+              testStartTime={testStartTime}
+              testEstimatedSeconds={isTesting && csvParser.csvData && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
             />
           ) : (
             // Empty state - minimal and clean
