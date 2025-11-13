@@ -140,8 +140,8 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
 
     let pollInterval: NodeJS.Timeout | null = null
     let lastProgressCheck = Date.now()
-    const POLL_INTERVAL_MS = 5000 // Poll every 5 seconds as fallback
-    const STREAM_TIMEOUT_MS = 30000 // If no stream updates for 30s, start polling
+    const POLL_INTERVAL_MS = 2000 // Poll every 2 seconds as fallback (more aggressive)
+    const STREAM_TIMEOUT_MS = 10000 // If no stream updates for 10s, start polling (faster fallback)
 
     // Fallback polling function to check batch status directly
     const pollBatchStatus = async () => {
@@ -150,7 +150,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
         if (!response.ok) return
 
         const data = await response.json()
-        const { status, processedRows, totalRows } = data
+        const { status, processedRows, totalRows, results: dbResults } = data
 
         // Update progress from database
         const total = totalRows || 0
@@ -160,6 +160,42 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
             completed: processed,
             total: total,
             percentage: Math.round((processed / total) * 100),
+          })
+        }
+
+        // Update results from database if available
+        if (dbResults && Array.isArray(dbResults) && dbResults.length > 0) {
+          setResults(prev => {
+            // Merge database results with existing results
+            const updated = [...prev]
+            dbResults.forEach((dbResult: any) => {
+              // Find matching result by input data or create new entry
+              const existingIndex = updated.findIndex(r => {
+                // Try to match by comparing input data
+                const inputMatch = JSON.stringify(r.input) === JSON.stringify(dbResult.input || {})
+                return inputMatch
+              })
+              
+              if (existingIndex >= 0) {
+                updated[existingIndex] = {
+                  id: dbResult.id || updated[existingIndex].id,
+                  input: dbResult.input || updated[existingIndex].input,
+                  output: dbResult.output || updated[existingIndex].output,
+                  status: dbResult.status === 'success' ? 'completed' : dbResult.status === 'error' ? 'failed' : updated[existingIndex].status,
+                  error: dbResult.error || updated[existingIndex].error,
+                }
+              } else {
+                // Add new result if not found
+                updated.push({
+                  id: dbResult.id || `${batchId}-${updated.length}`,
+                  input: dbResult.input || {},
+                  output: dbResult.output || '',
+                  status: dbResult.status === 'success' ? 'completed' : dbResult.status === 'error' ? 'failed' : 'pending',
+                  error: dbResult.error,
+                })
+              }
+            })
+            return updated
           })
         }
 
@@ -173,6 +209,30 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
           if (pollInterval) {
             clearInterval(pollInterval)
             pollInterval = null
+          }
+
+          // Fetch final results from database if not already loaded
+          if (dbResults && Array.isArray(dbResults) && dbResults.length > 0) {
+            // Results already updated above
+          } else {
+            // Fetch results directly from database
+            try {
+              const resultsResponse = await fetch(`/api/batch/${batchId}-status/status`)
+              if (resultsResponse.ok) {
+                const resultsData = await resultsResponse.json()
+                if (resultsData.results && Array.isArray(resultsData.results)) {
+                  setResults(resultsData.results.map((r: any) => ({
+                    id: r.id,
+                    input: r.input || {},
+                    output: r.output || '',
+                    status: r.status === 'success' ? 'completed' : r.status === 'error' ? 'failed' : 'pending',
+                    error: r.error,
+                  })))
+                }
+              }
+            } catch (fetchErr) {
+              console.debug('Failed to fetch final results:', fetchErr)
+            }
           }
 
           if (status === 'completed' || status === 'completed_with_errors') {
@@ -260,13 +320,13 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
       }
     }, STREAM_TIMEOUT_MS)
 
-    // Also poll periodically as backup (less frequent than fallback)
+    // Also poll periodically as backup (same frequency as fallback)
     const backupPollInterval = setInterval(() => {
       // Only poll if no recent stream activity
       if (Date.now() - lastProgressCheck > STREAM_TIMEOUT_MS) {
         pollBatchStatus()
       }
-    }, POLL_INTERVAL_MS * 2) // Every 10 seconds
+    }, POLL_INTERVAL_MS) // Every 2 seconds (same as fallback)
 
     return () => {
       eventSource.close()

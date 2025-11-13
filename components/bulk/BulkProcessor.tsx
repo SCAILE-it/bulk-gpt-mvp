@@ -630,34 +630,61 @@ export default function BulkProcessor() {
     }
 
     try {
-      const supabase = createClient()
-      if (!supabase) {
-        toast.error('Database Error', {
-          description: 'Supabase client not configured. Please refresh the page.'
-        })
-        return
-      }
-
       toast.loading('Preparing download...', { id: `export-${batchProcessor.batchId}` })
 
-      // Fetch completed results from database
-      const { data: results, error } = await supabase
-        .from('batch_results')
-        .select('input_data, output_data, status, error_message, input_tokens, output_tokens')
-        .eq('batch_id', batchProcessor.batchId)
-        .order('id', { ascending: true })
+      // First try to fetch from status API (includes batch info)
+      let results: any[] = []
+      try {
+        const statusResponse = await fetch(`/api/batch/${batchProcessor.batchId}-status/status`)
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json()
+          if (statusData.results && Array.isArray(statusData.results) && statusData.results.length > 0) {
+            // Transform status API results to export format
+            results = statusData.results.map((r: any) => ({
+              input_data: r.input || {},
+              output_data: r.output || '',
+              status: r.status === 'success' ? 'success' : r.status === 'error' ? 'error' : r.status,
+              error_message: r.error || '',
+              input_tokens: 0,
+              output_tokens: 0
+            }))
+          }
+        }
+      } catch (statusErr) {
+        console.debug('Status API fetch failed, trying database:', statusErr)
+      }
 
-      if (error) {
-        logError(new Error('Batch results fetch failed'), {
-          source: 'BulkProcessor/handleExport',
-          batchId: batchProcessor.batchId,
-          supabaseError: error
-        })
-        toast.error('Failed to Fetch Results', {
-          description: 'Please try again or check the Dashboard for completed batches.',
-          id: `export-${batchProcessor.batchId}`
-        })
-        return
+      // Fallback to direct database fetch if status API didn't work
+      if (results.length === 0) {
+        const supabase = createClient()
+        if (!supabase) {
+          toast.error('Database Error', {
+            description: 'Supabase client not configured. Please refresh the page.',
+            id: `export-${batchProcessor.batchId}`
+          })
+          return
+        }
+
+        const { data: dbResults, error } = await supabase
+          .from('batch_results')
+          .select('input_data, output_data, status, error_message, input_tokens, output_tokens')
+          .eq('batch_id', batchProcessor.batchId)
+          .order('id', { ascending: true })
+
+        if (error) {
+          logError(new Error('Batch results fetch failed'), {
+            source: 'BulkProcessor/handleExport',
+            batchId: batchProcessor.batchId,
+            supabaseError: error
+          })
+          toast.error('Failed to Fetch Results', {
+            description: 'Please try again or check the Dashboard for completed batches.',
+            id: `export-${batchProcessor.batchId}`
+          })
+          return
+        }
+
+        results = dbResults || []
       }
 
       if (!results || results.length === 0) {
