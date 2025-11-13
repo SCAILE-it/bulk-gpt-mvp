@@ -7,6 +7,7 @@ import { forwardRef, useRef, useImperativeHandle } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, CheckCircle, Loader2, FileSpreadsheet } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
+import { Button } from '@/components/ui/button'
 
 interface FileUploadSectionProps {
   csvData: ParsedCSV | null
@@ -49,52 +50,54 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
       {csvData && (
         <div className="flex items-center justify-end gap-2">
           {onGoogleSheetsUpload && (
-            <button
+            <Button
+              variant="brand"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation()
                 onGoogleSheetsUpload()
               }}
-              className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded-md text-xs text-foreground transition-all flex items-center gap-1.5 active:scale-95"
               title="Import from Google Sheets"
               aria-label="Import from Google Sheets"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
               Google Sheets
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => localRef.current?.click()}
-            className="px-2.5 py-1.5 bg-accent hover:bg-accent border border-border rounded-md text-xs text-foreground transition-all flex items-center gap-1.5 active:scale-95"
             title="Upload a different CSV file (⌘O)"
             aria-label="Upload a different CSV file"
           >
             <Upload className="h-3.5 w-3.5" aria-hidden="true" />
             Change file
-          </button>
+          </Button>
         </div>
       )}
 
       {csvData && !isUploading ? (
         // Show CSV Preview when file is loaded
         <>
-          <div className="border border-border rounded-lg overflow-hidden bg-secondary/40">
-            <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-secondary/60">
+          <div className="border border-border rounded-lg overflow-hidden bg-card">
+            <div className="px-4 py-2.5 border-b border-border flex items-center justify-between bg-muted/30">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                <span className="text-xs text-foreground font-medium">{fileName || 'data.csv'}</span>
+                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span className="text-sm text-foreground font-medium">{fileName || 'data.csv'}</span>
               </div>
               <span className="text-xs text-muted-foreground" data-testid="row-count-display">
                 {csvData.totalRows} rows • {csvData.columns.length} columns
               </span>
             </div>
-            <div className="overflow-x-auto max-h-[120px] overflow-y-auto">
+            <div className="overflow-x-auto max-h-[140px] overflow-y-auto">
               <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-secondary/95 border-b border-border">
+                <thead className="sticky top-0 bg-muted/50 border-b border-border backdrop-blur-sm">
                   <tr>
                     {csvData.columns.map(col => {
                       const isSelected = selectedInputColumns?.includes(col) ?? true
                       return (
-                        <th key={col} className="px-2 py-1 text-left font-medium text-muted-foreground whitespace-nowrap">
+                        <th key={col} className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <input
                               type="checkbox"
@@ -120,14 +123,14 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
                   {csvData.rows.slice(0, 5).map((row, i) => (
                     <tr
                       key={i}
-                      className={`border-b border-border last:border-0 ${i % 2 === 0 ? 'bg-secondary/40' : 'bg-transparent'}`}
+                      className={`border-b border-border/50 last:border-0 ${i % 2 === 0 ? 'bg-muted/20' : 'bg-transparent'}`}
                     >
                       {csvData.columns.map(col => {
                         const isSelected = selectedInputColumns?.includes(col) ?? true
                         return (
                           <td 
                             key={col} 
-                            className={`px-2 py-1 text-foreground font-mono text-xs whitespace-nowrap ${
+                            className={`px-3 py-1.5 text-foreground font-mono text-xs whitespace-nowrap ${
                               !isSelected ? 'opacity-30' : ''
                             }`}
                           >
@@ -141,7 +144,7 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
               </table>
             </div>
             {csvData.totalRows > 5 && (
-              <div className="px-3 py-1.5 bg-secondary/60 border-t border-border text-xs text-muted-foreground">
+              <div className="px-4 py-2 bg-muted/30 border-t border-border text-xs text-muted-foreground">
                 Showing first 5 of {csvData.totalRows} rows
               </div>
             )}
@@ -152,48 +155,49 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
         // Show Upload Dropzone when no file or uploading
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-3 min-h-[80px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
+          className={`border-2 border-dashed rounded-lg p-6 min-h-[100px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-150 ${
             isDragActive
-              ? 'border-border bg-white/5 scale-[1.02]'
-              : 'border-border hover:border-border bg-secondary/30 hover:bg-secondary/50 active:scale-[0.98]'
+              ? 'border-primary bg-primary/5 scale-[1.01]'
+              : 'border-border hover:border-primary/50 bg-muted/30 hover:bg-muted/50'
           }`}
-
         >
           <input {...getInputProps()} ref={localRef} className="hidden" data-testid="file-input" />
           {isUploading ? (
             <>
-              <Loader2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground animate-spin" />
+              <Loader2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground animate-spin" />
               <p className="text-sm text-foreground font-medium">Uploading and parsing...</p>
             </>
           ) : (
             <>
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-foreground font-medium mb-2">
+              <Upload className={`h-8 w-8 mx-auto mb-3 ${isDragActive ? 'text-primary' : 'text-muted-foreground'} transition-colors`} />
+              <p className="text-sm text-foreground font-medium mb-4">
                 {isDragActive ? 'Drop here' : 'Drop CSV file or click to browse'}
               </p>
-              <div className="flex gap-2">
-                <button
+              <div className="flex gap-2.5">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation()
                     localRef.current?.click()
                   }}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-border rounded-md text-sm font-medium text-foreground transition-all active:scale-95"
                   aria-label="Browse for CSV file to upload"
                 >
                   Browse Files
-                </button>
+                </Button>
                 {onGoogleSheetsUpload && (
-                  <button
+                  <Button
+                    variant="brand"
+                    size="sm"
                     onClick={(e) => {
                       e.stopPropagation()
                       onGoogleSheetsUpload()
                     }}
-                    className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded-md text-sm font-medium text-foreground transition-all active:scale-95 flex items-center gap-2"
                     aria-label="Import from Google Sheets"
                   >
                     <FileSpreadsheet className="h-4 w-4" />
                     Google Sheets
-                  </button>
+                  </Button>
                 )}
               </div>
             </>
