@@ -5,7 +5,7 @@
 
 'use client'
 
-import { CheckCircle, XCircle, Loader2, Download } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2, Download, Sparkles } from 'lucide-react'
 import { BatchStatusCard } from './BatchStatusCard'
 import { formatOutputValue } from '@/lib/utils/format-output'
 
@@ -113,15 +113,33 @@ export function ResultsTable({
           <thead className="sticky top-0 bg-secondary/95 backdrop-blur-md border-b border-border">
             <tr>
               <th className="px-4 py-2 text-left w-8"></th>
+              {/* Input columns - normal styling */}
               {columns.map(h => (
                 <th key={h} className="px-4 py-2 text-left font-medium text-muted-foreground">{h}</th>
               ))}
+              {/* Output columns - highlighted as AI-generated */}
               {outputColumns.length > 0 ? (
                 outputColumns.map(col => (
-                  <th key={col} className="px-4 py-2 text-left font-medium text-muted-foreground">{col}</th>
+                  <th 
+                    key={col} 
+                    className="px-4 py-2 text-left font-medium text-primary/90 bg-primary/5 border-l border-primary/20 relative group"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="h-3 w-3 text-primary/70 flex-shrink-0" />
+                      <span>{col}</span>
+                      <span className="text-[10px] text-primary/60 font-normal ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                        AI
+                      </span>
+                    </div>
+                  </th>
                 ))
               ) : (
-                <th className="px-4 py-2 text-left font-medium text-muted-foreground">Output</th>
+                <th className="px-4 py-2 text-left font-medium text-primary/90 bg-primary/5 border-l border-primary/20">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3 text-primary/70 flex-shrink-0" />
+                    <span>Output</span>
+                  </div>
+                </th>
               )}
             </tr>
           </thead>
@@ -203,17 +221,19 @@ export function ResultsTable({
                     )}
                   </div>
                 </td>
+                {/* Input columns - normal styling */}
                 {columns.map(h => (
                   <td key={h} className="px-4 py-3 text-muted-foreground font-mono text-xs">
                     {result.input[h] || '—'}
                   </td>
                 ))}
+                {/* Output columns - highlighted as AI-generated */}
                 {outputColumns.length > 0 ? (
                   // Parse JSON output and render each field as a separate column
                   outputColumns.map(col => {
                     if (result.error) {
                       return (
-                        <td key={col} className="px-4 py-3">
+                        <td key={col} className="px-4 py-3 bg-primary/5 border-l border-primary/20">
                           <span className="text-red-400 text-xs">{result.error}</span>
                         </td>
                       )
@@ -221,7 +241,7 @@ export function ResultsTable({
 
                     if (!result.output) {
                       return (
-                        <td key={col} className="px-4 py-3">
+                        <td key={col} className="px-4 py-3 bg-primary/5 border-l border-primary/20">
                           <span className="text-muted-foreground">—</span>
                         </td>
                       )
@@ -252,7 +272,7 @@ export function ResultsTable({
                         return (
                           <td
                             key={col}
-                            className="px-4 py-3"
+                            className="px-4 py-3 bg-primary/5 border-l border-primary/20"
                             title={`Expected field "${col}" but AI returned: ${availableKeys}`}
                           >
                             <span className="text-muted-foreground">—</span>
@@ -266,7 +286,7 @@ export function ResultsTable({
                         : String(value)
 
                       return (
-                        <td key={col} className="px-4 py-3 text-foreground">
+                        <td key={col} className="px-4 py-3 text-foreground bg-primary/5 border-l border-primary/20">
                           <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">
                             {displayValue}
                           </span>
@@ -276,7 +296,7 @@ export function ResultsTable({
                       // If JSON parsing fails, show the formatted output in the first column only
                       if (col === outputColumns[0]) {
                         return (
-                          <td key={col} className="px-4 py-3 text-foreground">
+                          <td key={col} className="px-4 py-3 text-foreground bg-primary/5 border-l border-primary/20">
                             <span className="line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap">
                               {formatOutputValue(result.output)}
                             </span>
@@ -284,7 +304,7 @@ export function ResultsTable({
                         )
                       }
                       return (
-                        <td key={col} className="px-4 py-3">
+                        <td key={col} className="px-4 py-3 bg-primary/5 border-l border-primary/20">
                           <span className="text-muted-foreground">—</span>
                         </td>
                       )
@@ -292,7 +312,7 @@ export function ResultsTable({
                   })
                 ) : (
                   // Fallback to single output column (original behavior)
-                  <td className="px-4 py-3 text-foreground">
+                  <td className="px-4 py-3 text-foreground bg-primary/5 border-l border-primary/20">
                     {result.error ? (
                       <span className="text-red-400 text-xs">{result.error}</span>
                     ) : result.output ? (
