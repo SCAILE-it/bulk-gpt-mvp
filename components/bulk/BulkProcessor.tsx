@@ -1011,43 +1011,67 @@ export default function BulkProcessor() {
                         </tr>
                       </thead>
                       <tbody>
-                        {[1, 2, 3].map((row) => (
-                          <tr key={row} className="border-b border-border/20 last:border-0">
-                            <td className="px-3 py-2.5">
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
-                            </td>
-                            {csvParser.csvData ? (
-                              <>
-                                {csvParser.csvData.columns.slice(0, 3).map((col, idx) => (
-                                  <td key={col} className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">
-                                    {idx === 0 ? `Sample ${row}` : `data-${row}-${idx}`}
-                                  </td>
-                                ))}
-                                {outputFields.length > 0 ? (
-                                  outputFields.slice(0, 2).map((field) => (
-                                    <td key={field} className="px-3 py-2.5 text-foreground/60 text-[10px]">
-                                      <div className="line-clamp-1">
-                                        {field === outputFields[0] ? 'Generated content...' : 'Result data...'}
-                                      </div>
-                                    </td>
-                                  ))
-                                ) : (
-                                  <td className="px-3 py-2.5 text-foreground/60 text-[10px]">
-                                    <div className="line-clamp-1">AI-generated output...</div>
-                                  </td>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <td className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">Alice Johnson</td>
-                                <td className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">TechCorp</td>
-                                <td className="px-3 py-2.5 text-foreground/60 text-[10px]">
-                                  <div className="line-clamp-1">Data analyst with expertise in statistical analysis...</div>
+                        {(() => {
+                          // Generate varied example data for 3 rows
+                          const exampleInputs = [
+                            ['Alice Johnson', 'TechCorp', 'San Francisco'],
+                            ['Bob Smith', 'DataCo', 'New York'],
+                            ['Carol White', 'StartupXYZ', 'Austin']
+                          ]
+                          
+                          const exampleOutputs = outputFields.length > 0 ? [
+                            ['Senior data analyst specializing in machine learning and cloud infrastructure', '10+ years'],
+                            ['Product manager with expertise in agile methodologies and user research', '8 years'],
+                            ['Full-stack engineer focused on React and Node.js development', '5 years']
+                          ] : [
+                            ['Senior data analyst specializing in machine learning and cloud infrastructure'],
+                            ['Product manager with expertise in agile methodologies and user research'],
+                            ['Full-stack engineer focused on React and Node.js development']
+                          ]
+                          
+                          return [1, 2, 3].map((row) => {
+                            const inputData = exampleInputs[row - 1] || exampleInputs[0]
+                            const outputData = exampleOutputs[row - 1] || exampleOutputs[0]
+                            
+                            return (
+                              <tr key={row} className="border-b border-border/20 last:border-0">
+                                <td className="px-3 py-2.5">
+                                  <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
                                 </td>
-                              </>
-                            )}
-                          </tr>
-                        ))}
+                                {csvParser.csvData ? (
+                                  <>
+                                    {csvParser.csvData.columns.slice(0, 3).map((col, idx) => (
+                                      <td key={col} className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">
+                                        {inputData[idx] || `sample-${row}-${idx}`}
+                                      </td>
+                                    ))}
+                                    {outputFields.length > 0 ? (
+                                      outputFields.slice(0, 2).map((field, idx) => (
+                                        <td key={field} className="px-3 py-2.5 text-foreground/60 text-[10px]">
+                                          <div className="line-clamp-1">
+                                            {outputData[idx] || 'Generated content...'}
+                                          </div>
+                                        </td>
+                                      ))
+                                    ) : (
+                                      <td className="px-3 py-2.5 text-foreground/60 text-[10px]">
+                                        <div className="line-clamp-1">{outputData[0] || 'AI-generated output...'}</div>
+                                      </td>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">{inputData[0]}</td>
+                                    <td className="px-3 py-2.5 text-muted-foreground/60 font-mono text-[10px]">{inputData[1]}</td>
+                                    <td className="px-3 py-2.5 text-foreground/60 text-[10px]">
+                                      <div className="line-clamp-1">{outputData[0]}</div>
+                                    </td>
+                                  </>
+                                )}
+                              </tr>
+                            )
+                          })
+                        })()}
                       </tbody>
                     </table>
                   </div>
