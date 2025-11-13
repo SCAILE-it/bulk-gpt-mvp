@@ -29,6 +29,7 @@ interface ResultsTableProps {
   progress?: Progress
   processingStartTime?: number
   onExport: () => void
+  isTesting?: boolean
 }
 
 export function ResultsTable({
@@ -37,7 +38,8 @@ export function ResultsTable({
   outputColumns = [],
   progress,
   processingStartTime,
-  onExport
+  onExport,
+  isTesting = false
 }: ResultsTableProps) {
   const successCount = results.filter(r => r.status === 'completed').length
   const errorCount = results.filter(r => r.status === 'failed').length
@@ -54,15 +56,16 @@ export function ResultsTable({
 
   return (
     <>
-      {/* Batch Status Card - Show when actively processing */}
-      {progress && progress.total > 0 && (
+      {/* Batch Status Card - Show when actively processing or testing */}
+      {(progress && progress.total > 0) || isTesting ? (
         <BatchStatusCard
-          progress={progress}
+          progress={progress || (isTesting ? { completed: 0, total: 1 } : undefined)}
           successCount={successCount}
           errorCount={errorCount}
           estimatedSeconds={estimatedSeconds}
+          isTesting={isTesting}
         />
-      )}
+      ) : null}
 
       {/* Header */}
       <div className="border-b border-border">
@@ -105,6 +108,20 @@ export function ResultsTable({
             </tr>
           </thead>
           <tbody>
+            {/* Show loading state when testing and no results yet */}
+            {isTesting && results.length === 0 && (
+              <tr>
+                <td colSpan={columns.length + outputColumns.length + 1} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Testing with first row...</p>
+                      <p className="text-xs text-muted-foreground mt-1">Processing AI response</p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
             {results.map((result, i) => (
               <tr
                 key={result.id}

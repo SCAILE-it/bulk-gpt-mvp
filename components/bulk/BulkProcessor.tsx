@@ -1001,14 +1001,15 @@ export default function BulkProcessor() {
 
         {/* RIGHT PANEL - Results */}
         <div className="h-full overflow-hidden flex flex-col border-l border-border/30 bg-muted/20">
-          {displayResults.length > 0 || batchProcessor.isProcessing ? (
+          {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
             <ResultsTable
               results={displayResults}
               columns={csvParser.csvData?.columns || []}
               outputColumns={outputFields}
               progress={batchProcessor.progress ?? undefined}
-              processingStartTime={batchProcessor.isProcessing ? Date.now() : undefined}
+              processingStartTime={(batchProcessor.isProcessing || isTesting) ? Date.now() : undefined}
               onExport={handleExport}
+              isTesting={isTesting}
             />
           ) : (
             // Empty state - minimal and clean

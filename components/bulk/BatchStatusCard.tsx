@@ -13,18 +13,37 @@ interface Progress {
 }
 
 interface BatchStatusCardProps {
-  progress: Progress
+  progress?: Progress
   successCount: number
   errorCount: number
   estimatedSeconds?: number | null
+  isTesting?: boolean
 }
 
 export function BatchStatusCard({
   progress,
   successCount,
   errorCount,
-  estimatedSeconds
+  estimatedSeconds,
+  isTesting = false
 }: BatchStatusCardProps) {
+  // For testing mode, show loading state
+  if (isTesting && !progress) {
+    return (
+      <div className="px-6 py-4 border-b border-border bg-gradient-to-br from-secondary/50 to-background/50">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Testing with first row...</p>
+            <p className="text-xs text-muted-foreground">Processing AI response</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!progress) return null
+
   // Calculate pending as remaining rows (total minus success minus errors)
   const pendingCount = progress.total - successCount - errorCount
   const progressPercentage = progress.total > 0
