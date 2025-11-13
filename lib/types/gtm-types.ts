@@ -46,29 +46,19 @@ export interface GTMTool {
 // ============================================================================
 
 /**
- * Essential tools - most commonly used (6 tools)
+ * Essential tools - most commonly used (5 tools)
  * Always visible in UI, shown by default
  */
 export const ESSENTIAL_GTM_TOOLS: GTMTool[] = [
   {
-    name: 'email-validate',
-    displayName: 'Email Validation',
-    description: 'Verify email addresses are valid and deliverable',
-    category: 'enrichment',
+    name: 'web-search',
+    displayName: 'Web Search',
+    description: 'AI-powered web research with citations',
+    category: 'generation',
     group: 'core',
-    endpoint: '/enrichment/email-validate',
-    exampleInputs: ['email'],
-    useCases: ['Clean email lists', 'Verify contact data']
-  },
-  {
-    name: 'phone-validation',
-    displayName: 'Phone Validation',
-    description: 'Verify and format phone numbers',
-    category: 'enrichment',
-    group: 'core',
-    endpoint: '/enrichment/phone-validation',
-    exampleInputs: ['phoneNumber'],
-    useCases: ['Clean phone lists', 'International formatting']
+    endpoint: '/generation/web-search',
+    exampleInputs: ['query'],
+    useCases: ['Market research', 'Competitive intelligence']
   },
   {
     name: 'company-data',
@@ -81,34 +71,34 @@ export const ESSENTIAL_GTM_TOOLS: GTMTool[] = [
     useCases: ['Company research', 'Lead enrichment']
   },
   {
-    name: 'tech-stack',
-    displayName: 'Technology Stack',
-    description: 'Discover technologies used by a website',
+    name: 'deep-research',
+    displayName: 'Deep Research',
+    description: 'Multi-query research with comprehensive analysis',
+    category: 'generation',
+    group: 'core',
+    endpoint: '/generation/deep-research',
+    exampleInputs: ['topic'],
+    useCases: ['Market research', 'Competitive analysis']
+  },
+  {
+    name: 'email-finder',
+    displayName: 'Email Finder',
+    description: 'Find email addresses for a domain',
     category: 'enrichment',
     group: 'core',
-    endpoint: '/enrichment/tech-stack',
+    endpoint: '/enrichment/email-finder',
     exampleInputs: ['domain'],
-    useCases: ['Competitive analysis', 'Lead qualification']
+    useCases: ['Lead generation', 'Contact discovery']
   },
   {
-    name: 'web-search',
-    displayName: 'Web Search',
-    description: 'AI-powered web research with citations',
-    category: 'generation',
+    name: 'scrape',
+    displayName: 'Website Scraper',
+    description: 'Extract structured data from websites using AI (crawl4ai-based)',
+    category: 'enrichment',
     group: 'core',
-    endpoint: '/generation/web-search',
-    exampleInputs: ['query'],
-    useCases: ['Market research', 'Competitive intelligence']
-  },
-  {
-    name: 'blog-create',
-    displayName: 'Blog Writer',
-    description: 'Generate production-quality blog posts with research',
-    category: 'generation',
-    group: 'core',
-    endpoint: '/generation/blog-create',
-    exampleInputs: ['template', 'research_topic'],
-    useCases: ['Content creation', 'SEO writing']
+    endpoint: '/scrape',
+    exampleInputs: ['url', 'prompt'],
+    useCases: ['Web scraping', 'Content extraction', 'Data collection']
   },
 ]
 
@@ -189,21 +179,12 @@ export const CORE_GTM_TOOLS: GTMTool[] = [
 ]
 
 /**
- * Advanced tools - specialized use cases (31 tools)
+ * Advanced tools - specialized use cases (29 tools)
  * Hidden by default, shown in collapsible section
+ * Note: deep-research and email-finder moved to ESSENTIAL_GTM_TOOLS
  */
 export const ADVANCED_GTM_TOOLS: GTMTool[] = [
-  // Email Tools (3)
-  {
-    name: 'email-finder',
-    displayName: 'Email Finder',
-    description: 'Find email addresses for a domain',
-    category: 'enrichment',
-    group: 'advanced',
-    endpoint: '/enrichment/email-finder',
-    exampleInputs: ['domain'],
-    useCases: ['Lead generation', 'Contact discovery']
-  },
+  // Email Tools (2)
   {
     name: 'email-pattern',
     displayName: 'Email Pattern',
@@ -225,17 +206,7 @@ export const ADVANCED_GTM_TOOLS: GTMTool[] = [
     useCases: ['Developer research', 'Technical assessment']
   },
 
-  // AI Research Tools (4)
-  {
-    name: 'deep-research',
-    displayName: 'Deep Research',
-    description: 'Multi-query research with comprehensive analysis',
-    category: 'generation',
-    group: 'advanced',
-    endpoint: '/generation/deep-research',
-    exampleInputs: ['topic'],
-    useCases: ['Market research', 'Competitive analysis']
-  },
+  // AI Research Tools (3)
   {
     name: 'prompt-executor',
     displayName: 'Custom Prompt Executor',
@@ -445,9 +416,18 @@ export const ADVANCED_GTM_TOOLS: GTMTool[] = [
 ]
 
 /**
+ * All other tools - combines MORE_CORE and ADVANCED (excluding essential tools)
+ * Shown in single collapsible "More Tools" section, starts collapsed
+ */
+export const ALL_OTHER_TOOLS: GTMTool[] = [
+  ...MORE_CORE_GTM_TOOLS,
+  ...ADVANCED_GTM_TOOLS,
+]
+
+/**
  * All GTM tools combined (43 total)
  */
-export const ALL_GTM_TOOLS: GTMTool[] = [...CORE_GTM_TOOLS, ...ADVANCED_GTM_TOOLS]
+export const ALL_GTM_TOOLS: GTMTool[] = [...ESSENTIAL_GTM_TOOLS, ...ALL_OTHER_TOOLS]
 
 // ============================================================================
 // API Request/Response Types
