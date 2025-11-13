@@ -633,14 +633,29 @@ export default function BulkProcessor() {
       toast.loading('Preparing download...', { id: `export-${batchProcessor.batchId}` })
 
       // First try to fetch from status API (includes batch info)
-      let results: any[] = []
+      interface StatusResult {
+        id?: string
+        input?: Record<string, unknown>
+        output?: string
+        status?: string
+        error?: string
+      }
+      interface ExportResult {
+        input_data: Record<string, unknown>
+        output_data: string
+        status: string
+        error_message: string
+        input_tokens: number
+        output_tokens: number
+      }
+      let results: ExportResult[] = []
       try {
         const statusResponse = await fetch(`/api/batch/${batchProcessor.batchId}-status/status`)
         if (statusResponse.ok) {
-          const statusData = await statusResponse.json()
+          const statusData = await statusResponse.json() as { results?: StatusResult[] }
           if (statusData.results && Array.isArray(statusData.results) && statusData.results.length > 0) {
             // Transform status API results to export format
-            results = statusData.results.map((r: any) => ({
+            results = statusData.results.map((r: StatusResult) => ({
               input_data: r.input || {},
               output_data: r.output || '',
               status: r.status === 'success' ? 'success' : r.status === 'error' ? 'error' : r.status,
