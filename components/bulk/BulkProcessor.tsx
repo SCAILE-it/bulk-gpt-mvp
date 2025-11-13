@@ -100,6 +100,14 @@ export default function BulkProcessor() {
     defaultOpen: true // Only Input open by default
   })
   
+  // Force Input section to be open on mount (override localStorage if needed)
+  useEffect(() => {
+    if (!dataInputSection.isOpen) {
+      dataInputSection.setIsOpen(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
+  
   // Task and Output don't persist state - always start closed
   const [promptSectionOpen, setPromptSectionOpen] = useState(false)
   const [outputSettingsSectionOpen, setOutputSettingsSectionOpen] = useState(false)
