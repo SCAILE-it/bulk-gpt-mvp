@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Sparkles, Check, X } from 'lucide-react'
 import type { OutputColumn } from '@/hooks/useManualJobOptimizer'
 
@@ -30,6 +31,27 @@ export function JobPreview({
   onAccept,
   onReject,
 }: JobPreviewProps) {
+  // Progress bar animation - typical optimization takes 3-5 seconds
+  const [progress, setProgress] = useState(0)
+  const estimatedDuration = 4000 // 4 seconds average
+
+  useEffect(() => {
+    if (!isOptimizing) {
+      setProgress(0)
+      return
+    }
+
+    // Start progress animation
+    const startTime = Date.now()
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      const newProgress = Math.min(95, (elapsed / estimatedDuration) * 100) // Cap at 95% until complete
+      setProgress(newProgress)
+    }, 50) // Update every 50ms for smooth animation
+
+    return () => clearInterval(interval)
+  }, [isOptimizing, estimatedDuration])
+
   if (isOptimizing) {
     return (
       <div data-testid="job-preview" className="mt-3 p-3 rounded-md bg-primary/10 border border-primary/20 space-y-3">
@@ -37,15 +59,12 @@ export function JobPreview({
           <Sparkles className="h-3 w-3 animate-pulse" />
           <span>AI is analyzing your job and generating optimizations...</span>
         </div>
-        {/* Progress bar with shimmer effect */}
+        {/* Animated progress bar */}
         <div className="w-full h-1.5 bg-primary/20 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-primary rounded-full relative"
+            className="h-full bg-primary rounded-full transition-all duration-75 ease-out"
             style={{ 
-              width: '100%',
-              background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 50%, hsl(var(--primary)) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'progress-shimmer 1.5s linear infinite'
+              width: `${progress}%`
             }}
           />
         </div>
