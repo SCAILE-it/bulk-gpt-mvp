@@ -148,7 +148,7 @@ export function ToolSelectionSection({
         {/* No results message */}
         {searchQuery && coreTools.length === 0 && advancedTools.length === 0 && (
           <div className="text-center py-4 text-xs text-muted-foreground">
-            No tools found matching "{searchQuery}"
+            No tools found matching &quot;{searchQuery}&quot;
           </div>
         )}
       </div>
