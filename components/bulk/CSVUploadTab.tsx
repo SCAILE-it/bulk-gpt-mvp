@@ -143,7 +143,14 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
       ) : (
         // Show Upload Dropzone when no file or uploading
         <div
-          {...getRootProps()}
+          {...getRootProps({
+            onClick: (e) => {
+              // Override default click handler to use open() method (same as "Change file" button)
+              e.preventDefault()
+              e.stopPropagation()
+              open()
+            }
+          })}
           className={`border border-dashed rounded-md p-4 flex flex-col items-center justify-center cursor-pointer transition-colors ${
             isDragActive
               ? 'border-primary bg-primary/5'

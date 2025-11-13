@@ -34,6 +34,7 @@ import { ToolSelectionSection } from './ToolSelectionSection'
 import { Modal } from '@/components/ui/modal'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
@@ -837,28 +838,27 @@ export default function BulkProcessor() {
       {/* Main Content */}
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden min-h-0">
         {/* LEFT PANEL - Configuration */}
-        <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
-          {/* Reset Button Header */}
-          <div className="flex items-center justify-end px-4 sm:px-6 pt-4 pb-2">
+        <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0 relative">
+          {/* Reset Button - Compact floating icon */}
+          <div className="absolute top-3 right-3 z-10">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setShowResetConfirmation(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-border/50 rounded-md transition-colors"
+                    className="flex items-center justify-center w-6 h-6 text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded transition-colors"
                     aria-label="Reset configuration"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
-                    <span>Reset</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Clear prompt, tools, and output fields
+                  Reset configuration
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-2 space-y-4 min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-h-0">
             {/* Error - Use V2 error if available */}
             {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
               <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
@@ -1390,45 +1390,33 @@ export default function BulkProcessor() {
       <Modal
         isOpen={showResetConfirmation}
         onClose={() => setShowResetConfirmation(false)}
-        title="Reset Configuration?"
+        title="Reset configuration?"
         titleIcon={RotateCcw}
-        titleIconColor="text-yellow-500"
+        titleIconColor="text-muted-foreground"
         size="sm"
         ariaLabelledBy="reset-config-title"
         footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowResetConfirmation(false)}
-              className="px-4 py-2 bg-accent hover:bg-accent text-foreground text-sm font-medium rounded-md transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleResetConfiguration}
-              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-md transition-colors"
             >
               Reset
-            </button>
+            </Button>
           </div>
         }
       >
-        <div className="space-y-4">
-          <p className="text-sm text-foreground">
-            Are you sure you want to reset all configuration?
-          </p>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p>This will clear:</p>
-            <ul className="list-disc list-inside space-y-0.5 ml-2">
-              <li>Prompt</li>
-              <li>Output fields</li>
-              <li>Selected tools</li>
-              <li>AI optimization settings</li>
-            </ul>
-            <p className="mt-2 pt-2 border-t border-border/50">
-              Your CSV file and selected input columns will remain unchanged.
-            </p>
-          </div>
-        </div>
+        <p className="text-sm text-foreground">
+          This will clear your prompt, output fields, selected tools, and AI optimization settings. Your CSV file will remain unchanged.
+        </p>
       </Modal>
 
       {/* Debug Logger - Only show in development mode or when there are errors */}
