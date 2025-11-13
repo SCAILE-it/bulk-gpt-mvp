@@ -26,7 +26,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
   selectedInputColumns,
   onInputColumnsChange
 }, forwardedRef) {
-  const localRef = useRef<HTMLInputElement>(null)
+  const localRef = useRef<HTMLInputElement | null>(null)
 
   useImperativeHandle(forwardedRef, () => localRef.current as HTMLInputElement)
 
@@ -39,6 +39,12 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
     noClick: false,
     noKeyboard: false,
   })
+
+  // Get input props and merge with our ref using callback ref
+  const inputProps = getInputProps()
+  const inputRefCallback = (node: HTMLInputElement | null) => {
+    localRef.current = node
+  }
 
   return (
     <div className="space-y-3">
@@ -129,7 +135,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
               </div>
             )}
           </div>
-          <input {...getInputProps()} ref={localRef} className="hidden" data-testid="file-input" />
+          <input {...inputProps} ref={inputRefCallback} className="hidden" data-testid="file-input" />
         </>
       ) : (
         // Show Upload Dropzone when no file or uploading
@@ -141,7 +147,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
               : 'border-border hover:border-primary/30 bg-transparent'
           }`}
         >
-          <input {...getInputProps()} ref={localRef} className="hidden" data-testid="file-input" />
+          <input {...inputProps} ref={inputRefCallback} className="hidden" data-testid="file-input" />
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
