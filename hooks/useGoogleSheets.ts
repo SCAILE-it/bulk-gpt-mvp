@@ -205,6 +205,9 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
     setError(null)
 
     try {
+      if (!window.gapi) {
+        throw new Error('Google API not loaded')
+      }
       const authInstance = window.gapi.auth2.getAuthInstance()
       await authInstance.signIn()
       setIsAuthenticated(true)
@@ -345,7 +348,7 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
       setError(errorMessage)
       logError(err instanceof Error ? err : new Error(String(err)), {
         context: 'googleSheetsFetchData',
-        spreadsheetId,
+        sheetId,
       })
       setIsLoading(false)
       throw err
