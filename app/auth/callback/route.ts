@@ -1,10 +1,15 @@
 import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase"
 import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get("code")
-  const next = searchParams.get("next") ?? searchParams.get("returnUrl") ?? "/"
+  // Try multiple sources for returnUrl: query param, Supabase state, or default
+  // Note: LinkedIn OAuth doesn't support query params in redirect_uri, so we use cookies or default
+  const cookieStore = await cookies()
+  const storedReturnUrl = cookieStore.get('oauth_return_url')?.value
+  const next = searchParams.get("next") ?? searchParams.get("returnUrl") ?? storedReturnUrl ?? "/"
 
   if (!code) {
     return NextResponse.redirect(`${origin}/auth?error=Missing authentication code`)
@@ -41,6 +46,7 @@ export async function GET(request: Request) {
   }
 
   // Successful authentication, redirect to app
+  // Note: returnUrl from OAuth flow will be handled client-side via sessionStorage if needed
   const redirectUrl = `${origin}${next}`
   return NextResponse.redirect(redirectUrl)
 }

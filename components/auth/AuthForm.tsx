@@ -49,7 +49,11 @@ export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/bulk' }:
       setIsLoadingLinkedIn(true)
       setError(null)
 
-      const redirectUrl = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(returnUrl)}`
+      // Use clean redirect URL without query params (LinkedIn requires exact match)
+      // Store returnUrl in cookie to restore after OAuth callback (server-side accessible)
+      document.cookie = `oauth_return_url=${encodeURIComponent(returnUrl)}; path=/; max-age=600; SameSite=Lax`
+      
+      const redirectUrl = `${window.location.origin}/auth/callback`
       const data = await signInWithLinkedIn(supabase, redirectUrl)
 
       if (data?.url) {
