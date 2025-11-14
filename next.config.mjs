@@ -50,7 +50,7 @@ const nextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               "connect-src 'self' https://*.supabase.co https://*.posthog.com https://*.sentry.io https://*.vercel.app https://bulk-gpt.com https://www.bulk-gpt.com https://accounts.google.com https://*.googleapis.com",
-              "frame-src 'self' https://accounts.google.com",
+              "frame-src 'self' https://accounts.google.com https://*.googleapis.com https://*.google.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

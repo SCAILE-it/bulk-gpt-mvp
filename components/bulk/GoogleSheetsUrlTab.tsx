@@ -265,13 +265,13 @@ export function GoogleSheetsUrlTab({
             } finally {
               setIsLoading(false)
             }
-          } else if (action === window.google!.picker!.Action.CANCEL) {
-            // User cancelled picker
-            setIsPickerLoading(false)
           } else {
-            // Unknown action or error
-            console.warn('[Google Picker] Unknown action:', action, pickerData)
+            // User cancelled picker or other action (CANCEL, etc.)
+            // Note: Action.CANCEL might not be available in all Picker API versions
             setIsPickerLoading(false)
+            if (action !== window.google!.picker!.Action.PICKED) {
+              console.log('[Google Picker] Action:', action, pickerData)
+            }
           }
         }) as typeof pickerBuilder
       
