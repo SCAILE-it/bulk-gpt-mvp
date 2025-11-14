@@ -49,22 +49,21 @@ export async function POST(request: NextRequest): Promise<Response> {
       }).join(',')
     ).join('\n')
 
-    // Step 1: Create spreadsheet using Drive API (works with drive.file scope)
-    // Upload CSV file and convert to Google Sheets format
+    // Create spreadsheet using Drive API (works with drive.file scope)
+    // Upload CSV file and convert to Google Sheets format using multipart upload
     const boundary = `----WebKitFormBoundary${Date.now()}`
     const metadata = JSON.stringify({
       name: title,
       mimeType: 'application/vnd.google-apps.spreadsheet',
     })
     
-    const formData = [
+    // Build multipart body correctly for Drive API
+    const multipartBody = [
       `--${boundary}`,
-      'Content-Disposition: form-data; name="metadata"',
       'Content-Type: application/json; charset=UTF-8',
       '',
       metadata,
       `--${boundary}`,
-      'Content-Disposition: form-data; name="file"; filename="data.csv"',
       'Content-Type: text/csv',
       '',
       csvContent,
@@ -77,7 +76,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': `multipart/related; boundary=${boundary}`,
       },
-      body: formData,
+      body: multipartBody,
     })
 
     if (!createResponse.ok) {
