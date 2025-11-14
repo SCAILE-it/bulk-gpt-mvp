@@ -1,6 +1,7 @@
 import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { getSiteUrl } from "@/lib/utils/get-site-url"
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -45,9 +46,14 @@ export async function GET(request: Request) {
     }
   }
 
-  // Successful authentication, redirect to app
+  // Use the getSiteUrl utility to ensure correct URL regardless of environment
+  // This matches zola-aisdkv5 pattern and ensures consistency with OAuth redirect
+  const siteUrl = getSiteUrl({ requestOrigin: origin })
+  const safeNext = next && next.startsWith("/") ? next : `/${next?.replace(/^\/+/, "") ?? ""}`
+  const redirectUrl = `${siteUrl}${safeNext}`
+
   // Clean up the oauth_return_url cookie after use
-  const response = NextResponse.redirect(`${origin}${next}`)
+  const response = NextResponse.redirect(redirectUrl)
   response.cookies.delete('oauth_return_url')
   return response
 }
