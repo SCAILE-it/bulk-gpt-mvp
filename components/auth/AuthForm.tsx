@@ -20,10 +20,9 @@ interface AuthFormProps {
  * Authentication form component - LinkedIn OAuth only for beta
  * Follows SOLID principles: Single Responsibility, Open/Closed
  */
-export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
+export function AuthForm({ onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
   const [isLoadingLinkedIn, setIsLoadingLinkedIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -72,16 +71,6 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps
         </div>
       )}
 
-      {successMessage && (
-        <div
-          id="form-success"
-          role="alert"
-          aria-live="polite"
-          className="mb-4 rounded-md bg-green-500/10 border border-green-500/20 p-3 text-xs text-green-400"
-        >
-          {successMessage}
-        </div>
-      )}
 
       {/* LinkedIn OAuth Button - Only authentication method for beta */}
       <Button
