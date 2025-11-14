@@ -1,15 +1,10 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { logError } from '@/lib/errors'
-import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
-import { validateEmail, validatePassword } from '@/lib/validation/auth'
-import { ensureUserRecord } from '@/lib/auth/ensure-user'
 import { signInWithLinkedIn } from '@/lib/auth/linkedin'
 
 export type AuthMode = 'signin' | 'signup' | 'reset'
@@ -22,17 +17,10 @@ interface AuthFormProps {
 }
 
 /**
- * Reusable authentication form component
- * Supports sign-in, sign-up, and password reset
+ * Authentication form component - LinkedIn OAuth only for beta
  * Follows SOLID principles: Single Responsibility, Open/Closed
  */
-export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
   const [isLoadingLinkedIn, setIsLoadingLinkedIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -70,182 +58,6 @@ export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/bulk' }:
     }
   }
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccessMessage(null)
-
-    if (!email || !password) {
-      setError('Please enter both email and password')
-      return
-    }
-
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address')
-      return
-    }
-
-    if (!supabase) {
-      setError('Authentication service unavailable')
-      return
-    }
-
-    try {
-      setIsLoading(true)
-
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (signInError) {
-        throw signInError
-      }
-
-      if (data?.user) {
-        await ensureUserRecord(data.user.id, data.user.email)
-        trackEvent(ANALYTICS_EVENTS.USER_SIGNED_IN, { email: data.user.email })
-        onSuccess()
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
-      setError(errorMessage)
-      logError(err instanceof Error ? err : new Error(errorMessage), {
-        source: 'AuthForm',
-        action: 'signIn',
-        email,
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccessMessage(null)
-
-    if (!email || !password || !confirmPassword) {
-      setError('Please fill in all fields')
-      return
-    }
-
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address')
-      return
-    }
-
-    if (!validatePassword(password)) {
-      setError('Password must be at least 8 characters and contain both letters and numbers')
-      return
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-
-    if (!supabase) {
-      setError('Authentication service unavailable')
-      return
-    }
-
-    try {
-      setIsLoading(true)
-
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(returnUrl)}`,
-        },
-      })
-
-      if (signUpError) {
-        throw signUpError
-      }
-
-      if (data?.user) {
-        await ensureUserRecord(data.user.id, data.user.email)
-        trackEvent(ANALYTICS_EVENTS.USER_SIGNED_UP, { email: data.user.email })
-        
-        // Check if email confirmation is required
-        if (data.user.confirmed_at) {
-          // Email already confirmed (may happen in development)
-          onSuccess()
-        } else {
-          // Email confirmation required
-          setSuccessMessage('Please check your email to confirm your account before signing in.')
-        }
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create account'
-      setError(errorMessage)
-      logError(err instanceof Error ? err : new Error(errorMessage), {
-        source: 'AuthForm',
-        action: 'signUp',
-        email,
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccessMessage(null)
-
-    if (!email) {
-      setError('Please enter your email address')
-      return
-    }
-
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address')
-      return
-    }
-
-    if (!supabase) {
-      setError('Authentication service unavailable')
-      return
-    }
-
-    try {
-      setIsLoading(true)
-
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
-
-      if (resetError) {
-        throw resetError
-      }
-
-      setSuccessMessage('Password reset email sent. Please check your inbox.')
-      trackEvent(ANALYTICS_EVENTS.PASSWORD_RESET_REQUESTED, { email })
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send reset email'
-      setError(errorMessage)
-      logError(err instanceof Error ? err : new Error(errorMessage), {
-        source: 'AuthForm',
-        action: 'passwordReset',
-        email,
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    if (mode === 'signin') {
-      handleSignIn(e)
-    } else if (mode === 'signup') {
-      handleSignUp(e)
-    } else {
-      handlePasswordReset(e)
-    }
-  }
 
   return (
     <div className="space-y-4">
