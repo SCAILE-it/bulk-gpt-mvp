@@ -46,8 +46,9 @@ export async function GET(request: Request) {
   }
 
   // Successful authentication, redirect to app
-  // Note: returnUrl from OAuth flow will be handled client-side via sessionStorage if needed
-  const redirectUrl = `${origin}${next}`
-  return NextResponse.redirect(redirectUrl)
+  // Clean up the oauth_return_url cookie after use
+  const response = NextResponse.redirect(`${origin}${next}`)
+  response.cookies.delete('oauth_return_url')
+  return response
 }
 
