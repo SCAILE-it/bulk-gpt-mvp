@@ -130,6 +130,11 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
     
     // Define callback FIRST (before creating tokenClient) - matching test file pattern
     const oauthCallback = (response: { access_token?: string; error?: string; error_description?: string; expires_in?: number }) => {
+      // Remove global callback reference
+      if (typeof window !== 'undefined') {
+        delete (window as any).__googleOAuthCallback
+      }
+      
       callbackFired = true
       if (timeoutId) clearTimeout(timeoutId)
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
@@ -202,10 +207,28 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
 
       debugLog('info', '👁️ Requesting access token (popup should open)...')
       debugLog('info', '💡 IMPORTANT: Complete authorization in popup and wait for it to close automatically')
+      debugLog('info', '🔍 DEBUG: If callback never fires, check popup console (right-click popup → Inspect)')
+      debugLog('info', `🔍 DEBUG: Verify ${window.location.origin} is in Google Cloud Console → Credentials → Authorized JavaScript origins`)
+      
+      // Store callback reference globally for debugging (in case it gets lost)
+      if (typeof window !== 'undefined') {
+        (window as any).__googleOAuthCallback = oauthCallback
+        debugLog('info', '🔧 Callback stored globally for debugging: window.__googleOAuthCallback')
+      }
       
       // Request access token - matching test file pattern exactly
-      tokenClient.requestAccessToken({ prompt: 'consent' })
-      debugLog('info', '✅ requestAccessToken() called - callback registered, waiting for popup...')
+      try {
+        tokenClient.requestAccessToken({ prompt: 'consent' })
+        debugLog('info', '✅ requestAccessToken() called - callback registered, waiting for popup...')
+        debugLog('info', '⏳ Waiting for OAuth callback... (check popup window console if it takes > 10s)')
+      } catch (requestError) {
+        debugLog('error', '❌ Error calling requestAccessToken', {
+          error: requestError instanceof Error ? requestError.message : String(requestError),
+          stack: requestError instanceof Error ? requestError.stack : undefined,
+        })
+        if (timeoutId) clearTimeout(timeoutId)
+        throw requestError
+      }
       
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId)
