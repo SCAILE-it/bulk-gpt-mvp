@@ -137,9 +137,9 @@ export async function POST(request: NextRequest): Promise<Response> {
         errorText: errorText.substring(0, 500),
       })
       
-      let errorData: any = {}
+      let errorData: { error?: { message?: string; errors?: Array<{ reason?: string }>; status?: string }; raw?: string } = {}
       try {
-        errorData = JSON.parse(errorText)
+        errorData = JSON.parse(errorText) as typeof errorData
       } catch {
         errorData = { raw: errorText.substring(0, 200) }
       }
