@@ -128,15 +128,33 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
       currentUrl: window.location.href,
     })
     
+    // Listen for postMessage events (Google Identity Services might use this)
+    const messageHandler = (event: MessageEvent) => {
+      debugLog('info', '📨 PostMessage received', {
+        origin: event.origin,
+        data: event.data,
+        source: event.source === window ? 'same window' : 'popup/iframe',
+      })
+      // Google Identity Services might send messages via postMessage
+      if (event.origin.includes('google.com') || event.origin.includes('googleapis.com')) {
+        debugLog('info', '🔍 Google postMessage detected', { data: event.data })
+      }
+    }
+    window.addEventListener('message', messageHandler)
+    
+    // Clean up message listener when callback fires or timeout
+    const cleanup = () => {
+      window.removeEventListener('message', messageHandler)
+      if (typeof window !== 'undefined') {
+        delete (window as unknown as Record<string, unknown>).__googleOAuthCallback
+      }
+    }
+    
     // Define callback FIRST (before creating tokenClient) - matching test file pattern
     const oauthCallback = (response: { access_token?: string; error?: string; error_description?: string; expires_in?: number }) => {
-      // Remove global callback reference
-      if (typeof window !== 'undefined') {
-        delete (window as any).__googleOAuthCallback
-      }
-      
       callbackFired = true
       if (timeoutId) clearTimeout(timeoutId)
+      cleanup()
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
       
       debugLog('success', `🎉 OAuth callback fired after ${elapsed}s`, {
@@ -179,6 +197,36 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
       }
     }
     
+    // Store callback reference globally for debugging (in case it gets lost)
+    if (typeof window !== 'undefined') {
+      (window as unknown as Record<string, unknown>).__googleOAuthCallback = oauthCallback
+      debugLog('info', '🔧 Callback stored globally for debugging: window.__googleOAuthCallback')
+    }
+    
+    // Set up timeout with cleanup
+    let popupCheckInterval: NodeJS.Timeout | null = null
+    timeoutId = setTimeout(() => {
+      if (!callbackFired) {
+        cleanup()
+        if (popupCheckInterval) clearInterval(popupCheckInterval)
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+        debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - OAuth callback never fired`, {
+          elapsedSeconds: elapsed,
+          troubleshooting: [
+            'Popup may have closed before completing authorization',
+            'Check browser console in the popup window for errors',
+            'Verify OAuth consent screen is published (not in Testing mode)',
+            `Verify ${window.location.origin} is in Authorized JavaScript origins`,
+            'Try clearing browser cache/cookies and retry',
+            'Check if popup URL shows redirect_uri_mismatch error',
+            'Right-click popup → Inspect → Console to see Google errors',
+            `Manual check: Open ${window.location.origin} in Google Cloud Console → Credentials → OAuth 2.0 Client → Authorized JavaScript origins`,
+          ],
+        })
+        reject(new Error(`OAuth timeout after ${elapsed}s. The popup may have been blocked, closed prematurely, or there may be an OAuth configuration issue. Check Debug Logger for details.`))
+      }
+    }, 60000)
+    
     try {
       // Create token client with callback - matching test file pattern exactly
       const tokenClient = window.google!.accounts.oauth2.initTokenClient({
@@ -187,40 +235,33 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
         callback: oauthCallback,
       })
 
-      // Add timeout to detect if callback never fires
-      timeoutId = setTimeout(() => {
-        if (!callbackFired) {
-          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-          debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - OAuth callback never fired`, {
-            elapsedSeconds: elapsed,
-            troubleshooting: [
-              'Popup may have closed before completing authorization',
-              'Check browser console in the popup window for errors',
-              'Verify OAuth consent screen is published (not in Testing mode)',
-              `Verify ${window.location.origin} is in Authorized JavaScript origins`,
-              'Try clearing browser cache/cookies and retry',
-            ],
-          })
-          reject(new Error(`OAuth timeout after ${elapsed}s. The popup may have been blocked, closed prematurely, or there may be an OAuth configuration issue. Check Debug Logger for details.`))
-        }
-      }, 60000) // 60 second timeout
-
       debugLog('info', '👁️ Requesting access token (popup should open)...')
       debugLog('info', '💡 IMPORTANT: Complete authorization in popup and wait for it to close automatically')
       debugLog('info', '🔍 DEBUG: If callback never fires, check popup console (right-click popup → Inspect)')
       debugLog('info', `🔍 DEBUG: Verify ${window.location.origin} is in Google Cloud Console → Credentials → Authorized JavaScript origins`)
+      debugLog('info', `🔍 DEBUG: Current URL: ${window.location.href}`)
       
-      // Store callback reference globally for debugging (in case it gets lost)
-      if (typeof window !== 'undefined') {
-        (window as any).__googleOAuthCallback = oauthCallback
-        debugLog('info', '🔧 Callback stored globally for debugging: window.__googleOAuthCallback')
-      }
+      // Note: We can't directly monitor popup window due to CORS restrictions
+      // But postMessage listener above will catch any messages from Google
       
       // Request access token - matching test file pattern exactly
       try {
         tokenClient.requestAccessToken({ prompt: 'consent' })
         debugLog('info', '✅ requestAccessToken() called - callback registered, waiting for popup...')
         debugLog('info', '⏳ Waiting for OAuth callback... (check popup window console if it takes > 10s)')
+        
+        // Try to detect popup window (may not always be accessible due to CORS)
+        setTimeout(() => {
+          try {
+            // This might fail due to CORS, but worth trying
+            const windows = window.open('', '_blank')
+            if (windows) {
+              windows.close()
+            }
+          } catch (e) {
+            // Expected - can't access popup due to CORS
+          }
+        }, 1000)
       } catch (requestError) {
         debugLog('error', '❌ Error calling requestAccessToken', {
           error: requestError instanceof Error ? requestError.message : String(requestError),
