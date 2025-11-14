@@ -117,7 +117,6 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now()
     let callbackFired = false
-    let popupWindow: Window | null = null
 
     // Add timeout to detect if popup never opens or callback never fires
     const timeout = setTimeout(() => {
@@ -126,8 +125,6 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
         debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - OAuth callback never fired`, {
           elapsedSeconds: elapsed,
           callbackFired,
-          popupWindow: popupWindow ? 'opened' : 'never opened',
-          popupClosed: popupWindow?.closed,
         })
         reject(new Error(`OAuth timeout after ${elapsed}s. The popup may have been blocked or the user didn't complete authorization.`))
       }
