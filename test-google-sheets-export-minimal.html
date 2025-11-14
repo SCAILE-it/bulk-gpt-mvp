@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Export Minimal Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0052a3;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #log {
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        .error { color: #f44; }
+        .success { color: #4f4; }
+        .info { color: #4af; }
+        .warning { color: #ff4; }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .section {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google Sheets Export Minimal Test</h1>
+    <p>This tests ONLY the Google Sheets export functionality, isolated from the app.</p>
+    
+    <div class="section">
+        <h2>Step 1: Get OAuth Token</h2>
+        <button id="getToken">Get Google OAuth Token</button>
+        <div id="tokenStatus">No token</div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 2: Prepare Test Data</h2>
+        <p>Test data (CSV format):</p>
+        <textarea id="testData">Name,Email,Status
+John Doe,john@example.com,Active
+Jane Smith,jane@example.com,Inactive</textarea>
+        <button id="prepareData">Prepare Data for Export</button>
+        <div id="dataStatus">Not prepared</div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 3: Test API Endpoint</h2>
+        <label>
+            API Base URL:
+            <input type="text" id="apiBase" value="https://bulk-gpt.com" style="width: 300px; padding: 8px; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px;">
+        </label>
+        <br><br>
+        <button id="testEndpoint">Test /api/google-sheets/create-sheet</button>
+        <div id="endpointStatus">Not tested</div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 4: Full Export Test</h2>
+        <button id="fullTest">Run Full Export Test</button>
+    </div>
+    
+    <button id="clearLog">Clear Log</button>
+    <div id="log"></div>
+
+    <script>
+        const GOOGLE_CLIENT_ID = '466128555451-uobrlom0thvcnfkniaacre1gbajpevpf.apps.googleusercontent.com';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        
+        let accessToken = null;
+        let preparedData = null;
+        
+        const log = (message, type = 'info') => {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logEl.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(`[${type.toUpperCase()}]`, message);
+        };
+        
+        const clearLog = () => {
+            document.getElementById('log').innerHTML = '';
+        };
+        
+        // Load Google Identity Services
+        const loadGoogleScripts = () => {
+            return new Promise((resolve, reject) => {
+                if (window.google?.accounts?.oauth2) {
+                    log('✓ Google Identity Services already loaded', 'success');
+                    resolve();
+                    return;
+                }
+                
+                log('Loading Google Identity Services...', 'info');
+                const script = document.createElement('script');
+                script.src = 'https://accounts.google.com/gsi/client';
+                script.async = true;
+                script.defer = true;
+                script.onload = () => {
+                    setTimeout(() => {
+                        if (window.google?.accounts?.oauth2) {
+                            log('✓ Google Identity Services loaded', 'success');
+                            resolve();
+                        } else {
+                            log('✗ Google Identity Services not initialized', 'error');
+                            reject(new Error('GSI not initialized'));
+                        }
+                    }, 500);
+                };
+                script.onerror = () => {
+                    log('✗ Failed to load Google Identity Services', 'error');
+                    reject(new Error('Script load failed'));
+                };
+                document.head.appendChild(script);
+            });
+        };
+        
+        // Step 1: Get OAuth Token
+        document.getElementById('getToken').addEventListener('click', async () => {
+            try {
+                await loadGoogleScripts();
+                
+                if (!window.google?.accounts?.oauth2) {
+                    log('✗ Google Identity Services not available', 'error');
+                    document.getElementById('tokenStatus').innerHTML = '<span style="color: #f44;">Failed</span>';
+                    return;
+                }
+                
+                log('Requesting OAuth token...', 'info');
+                document.getElementById('tokenStatus').innerHTML = 'Requesting...';
+                
+                const tokenClient = window.google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (response) => {
+                        if (response.error) {
+                            log(`✗ OAuth error: ${response.error}`, 'error');
+                            document.getElementById('tokenStatus').innerHTML = `<span style="color: #f44;">Error: ${response.error}</span>`;
+                            return;
+                        }
+                        
+                        if (response.access_token) {
+                            accessToken = response.access_token;
+                            log(`✓ Token obtained (${accessToken.length} chars)`, 'success');
+                            log(`  Expires in: ${response.expires_in} seconds`, 'info');
+                            document.getElementById('tokenStatus').innerHTML = `<span style="color: #4f4;">Token obtained (${accessToken.length} chars)</span>`;
+                        } else {
+                            log('✗ No access token received', 'error');
+                            document.getElementById('tokenStatus').innerHTML = '<span style="color: #f44;">No token</span>';
+                        }
+                    },
+                });
+                
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (error) {
+                log(`✗ Error: ${error.message}`, 'error');
+                document.getElementById('tokenStatus').innerHTML = `<span style="color: #f44;">Error: ${error.message}</span>`;
+            }
+        });
+        
+        // Step 2: Prepare Data
+        document.getElementById('prepareData').addEventListener('click', () => {
+            const csvText = document.getElementById('testData').value.trim();
+            if (!csvText) {
+                log('✗ No data provided', 'error');
+                return;
+            }
+            
+            log('Preparing data...', 'info');
+            const lines = csvText.split('\n').filter(l => l.trim());
+            if (lines.length === 0) {
+                log('✗ No data lines found', 'error');
+                return;
+            }
+            
+            const headers = lines[0].split(',').map(h => h.trim());
+            const rows = lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim());
+                return headers.map((header, i) => values[i] || '');
+            });
+            
+            preparedData = [headers, ...rows];
+            log(`✓ Data prepared: ${preparedData.length} rows (${preparedData[0].length} columns)`, 'success');
+            log(`  Headers: ${headers.join(', ')}`, 'info');
+            log(`  Data rows: ${rows.length}`, 'info');
+            document.getElementById('dataStatus').innerHTML = `<span style="color: #4f4;">Prepared: ${preparedData.length} rows</span>`;
+        });
+        
+        // Step 3: Test API Endpoint
+        document.getElementById('testEndpoint').addEventListener('click', async () => {
+            if (!accessToken) {
+                log('✗ No access token. Get token first.', 'error');
+                document.getElementById('endpointStatus').innerHTML = '<span style="color: #f44;">No token</span>';
+                return;
+            }
+            
+            if (!preparedData) {
+                log('✗ No data prepared. Prepare data first.', 'error');
+                document.getElementById('endpointStatus').innerHTML = '<span style="color: #f44;">No data</span>';
+                return;
+            }
+            
+            const apiBase = document.getElementById('apiBase').value.trim() || 'https://bulk-gpt.com';
+            const apiUrl = `${apiBase}/api/google-sheets/create-sheet`;
+            
+            log(`Testing API endpoint: ${apiUrl}`, 'info');
+            document.getElementById('endpointStatus').innerHTML = 'Testing...';
+            
+            try {
+                const requestBody = {
+                    accessToken: accessToken,
+                    title: `Test Export - ${new Date().toISOString()}`,
+                    data: preparedData,
+                };
+                
+                log('Request body:', 'info');
+                log(`  Title: ${requestBody.title}`, 'info');
+                log(`  Data rows: ${requestBody.data.length}`, 'info');
+                log(`  Token length: ${requestBody.accessToken.length}`, 'info');
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                log(`Response headers: ${JSON.stringify(Object.fromEntries(response.headers))}`, 'info');
+                
+                const responseText = await response.text();
+                log(`Response body (${responseText.length} chars):`, 'info');
+                
+                let responseData;
+                try {
+                    responseData = JSON.parse(responseText);
+                    log(JSON.stringify(responseData, null, 2), response.ok ? 'success' : 'error');
+                } catch {
+                    log(responseText.substring(0, 500), 'error');
+                }
+                
+                if (response.ok) {
+                    if (responseData?.spreadsheetUrl) {
+                        log(`✓ Success! Spreadsheet URL: ${responseData.spreadsheetUrl}`, 'success');
+                        document.getElementById('endpointStatus').innerHTML = `<span style="color: #4f4;">Success! <a href="${responseData.spreadsheetUrl}" target="_blank" style="color: #4af;">Open Sheet</a></span>`;
+                    } else {
+                        log('⚠ Response OK but no spreadsheetUrl in response', 'warning');
+                        document.getElementById('endpointStatus').innerHTML = '<span style="color: #ff4;">OK but no URL</span>';
+                    }
+                } else {
+                    log(`✗ API Error: ${responseData?.error || responseText}`, 'error');
+                    document.getElementById('endpointStatus').innerHTML = `<span style="color: #f44;">Error: ${response.status}</span>`;
+                }
+            } catch (error) {
+                log(`✗ Network/Fetch error: ${error.message}`, 'error');
+                log(`  Stack: ${error.stack}`, 'error');
+                document.getElementById('endpointStatus').innerHTML = `<span style="color: #f44;">Error: ${error.message}</span>`;
+            }
+        });
+        
+        // Step 4: Full Test
+        document.getElementById('fullTest').addEventListener('click', async () => {
+            log('=== Running Full Export Test ===', 'info');
+            
+            // Step 1: Get token
+            if (!accessToken) {
+                log('Step 1: Getting token...', 'info');
+                await loadGoogleScripts();
+                // Trigger token request (user will need to complete OAuth)
+                document.getElementById('getToken').click();
+                log('⚠ Complete OAuth flow, then click "Full Export Test" again', 'warning');
+                return;
+            }
+            
+            // Step 2: Prepare data
+            if (!preparedData) {
+                log('Step 2: Preparing data...', 'info');
+                document.getElementById('prepareData').click();
+            }
+            
+            // Step 3: Test endpoint
+            log('Step 3: Testing endpoint...', 'info');
+            document.getElementById('testEndpoint').click();
+        });
+        
+        document.getElementById('clearLog').addEventListener('click', clearLog);
+        
+        // Initial log
+        log('Ready. Test steps: 1) Get Token 2) Prepare Data 3) Test Endpoint', 'info');
+        log('Or click "Run Full Export Test" to do all steps', 'info');
+    </script>
+</body>
+</html>
+
