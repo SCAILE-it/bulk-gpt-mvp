@@ -49,8 +49,17 @@ export function GoogleSheetsUrlTab({
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    // Check if Client ID is available
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 
+                     process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
+    if (!clientId) {
+      console.error('[Google Sheets] Client ID not found. Check environment variables.')
+      setError('Google Sheets integration not configured. Please contact support.')
+      return
+    }
+
     // Check if already loaded
-    if (window.google?.picker) {
+    if (window.google?.picker && window.google?.accounts?.oauth2) {
       setScriptsLoaded(true)
       return
     }
@@ -69,10 +78,27 @@ export function GoogleSheetsUrlTab({
 
     let gsiLoaded = false
     let pickerLoaded = false
+    let checkAttempts = 0
+    const maxAttempts = 50 // 5 seconds max wait
 
     const checkLoaded = () => {
-      if (gsiLoaded && pickerLoaded && window.google?.picker && window.google?.accounts?.oauth2) {
-        setScriptsLoaded(true)
+      checkAttempts++
+      
+      // Check if both scripts loaded AND APIs are available
+      if (gsiLoaded && pickerLoaded) {
+        // Give Google APIs a moment to initialize
+        if (window.google?.picker && window.google?.accounts?.oauth2) {
+          setScriptsLoaded(true)
+          return
+        }
+        
+        // If not ready yet, wait a bit more (up to 5 seconds)
+        if (checkAttempts < maxAttempts) {
+          setTimeout(checkLoaded, 100)
+        } else {
+          console.error('[Google Sheets] Scripts loaded but APIs not initialized')
+          setError('Google Sheets integration failed to initialize. Please refresh the page.')
+        }
       }
     }
 
@@ -80,10 +106,20 @@ export function GoogleSheetsUrlTab({
       gsiLoaded = true
       checkLoaded()
     }
+    
+    gsiScript.onerror = () => {
+      console.error('[Google Sheets] Failed to load Google Identity Services')
+      setError('Failed to load Google authentication. Please check your internet connection and try again.')
+    }
 
     pickerScript.onload = () => {
       pickerLoaded = true
       checkLoaded()
+    }
+    
+    pickerScript.onerror = () => {
+      console.error('[Google Sheets] Failed to load Google Picker API')
+      setError('Failed to load Google Picker. Please check your internet connection and try again.')
     }
 
     document.head.appendChild(gsiScript)

@@ -65,11 +65,33 @@ export async function POST(request: NextRequest) {
           
           // Handle specific Google API error codes
           if (errorCode === 403 || response.status === 403) {
+            // Check for SERVICE_DISABLED first (API not enabled in Google Cloud Console)
+            if (
+              errorMessage.includes('has not been used') ||
+              errorMessage.includes('is disabled') ||
+              errorMessage.includes('SERVICE_DISABLED') ||
+              errorData.error?.details?.[0]?.reason === 'SERVICE_DISABLED'
+            ) {
+              // Extract project ID from error if available
+              const projectId = errorData.error?.details?.[0]?.metadata?.consumer?.replace('projects/', '') || 
+                               errorMessage.match(/project (\d+)/)?.[1] ||
+                               'your project'
+              
+              return NextResponse.json(
+                { 
+                  error: `Google Sheets API is not enabled for project ${projectId}. The API key belongs to a different project than where the API is enabled. Please use an API key from the project where Google Sheets API is enabled, or enable the API in project ${projectId}: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=${projectId}`,
+                  projectId,
+                  activationUrl: errorData.error?.details?.[0]?.metadata?.activationUrl || `https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=${projectId}`
+                },
+                { status: 503 }
+              )
+            }
+            
             // Check if it's actually a permission issue or API key issue
             if (
               errorMessage.includes('API key not valid') ||
               errorMessage.includes('API_KEY_INVALID') ||
-              errorMessage.includes('API key')
+              (errorMessage.includes('API key') && !errorMessage.includes('SERVICE_DISABLED'))
             ) {
               return NextResponse.json(
                 { error: 'Google API key is not configured correctly. Please contact support.' },
@@ -89,12 +111,14 @@ export async function POST(request: NextRequest) {
               )
             }
             
-            // Only show permission error if it's actually a permission issue
+            // Only show permission error if it's explicitly about sheet permissions (not API permissions)
             if (
-              errorMessage.includes('PERMISSION_DENIED') ||
-              errorMessage.includes('permission') ||
-              errorMessage.includes('access denied') ||
-              errorMessage.toLowerCase().includes('forbidden')
+              (errorMessage.includes('PERMISSION_DENIED') && 
+               !errorMessage.includes('SERVICE_DISABLED') &&
+               !errorMessage.includes('has not been used')) ||
+              (errorMessage.includes('permission') && 
+               !errorMessage.includes('API') &&
+               !errorMessage.includes('SERVICE_DISABLED'))
             ) {
               return NextResponse.json(
                 { error: 'Sheet is not publicly accessible. Please set sharing to "Anyone with the link can view" in Google Sheets sharing settings.' },
@@ -102,9 +126,9 @@ export async function POST(request: NextRequest) {
               )
             }
             
-            // Generic 403 - might be other issues
+            // Generic 403 - provide more helpful message
             return NextResponse.json(
-              { error: `Access denied: ${errorMessage}. Please ensure the sheet is set to "Anyone with the link can view".` },
+              { error: `Access denied: ${errorMessage}. This might be due to API configuration or sheet permissions.` },
               { status: 403 }
             )
           }
