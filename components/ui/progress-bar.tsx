@@ -65,10 +65,15 @@ export function ProgressBar({
     lg: 'h-2',
   }
 
+  // Determine if progress is complete (100%)
+  const isComplete = actualProgress !== undefined ? actualProgress >= 100 : progress >= 100
+
   return (
-    <div className={`w-full ${heightClasses[height]} bg-primary/20 rounded-full overflow-hidden ${className}`}>
+    <div className={`w-full ${heightClasses[height]} ${isComplete ? 'bg-green-500/20' : 'bg-primary/20'} rounded-full overflow-hidden ${className}`}>
       <div 
-        className={`h-full bg-primary rounded-full transition-all duration-75 ease-out`}
+        className={`h-full rounded-full transition-all duration-300 ease-out ${
+          isComplete ? 'bg-green-500' : 'bg-primary'
+        }`}
         style={{ width: `${progress}%` }}
       />
     </div>

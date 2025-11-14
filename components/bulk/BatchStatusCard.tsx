@@ -116,11 +116,15 @@ export function BatchStatusCard({
               {successCount + errorCount} / {progress.total} processed
             </span>
           </div>
-          {estimatedSeconds && estimatedSeconds > 0 && (
+          {estimatedSeconds && estimatedSeconds > 0 ? (
             <span className="text-muted-foreground">
               ~{Math.round(estimatedSeconds)}s remaining
             </span>
-          )}
+          ) : progress && actualCompleted === 0 ? (
+            <span className="text-muted-foreground">
+              Starting...
+            </span>
+          ) : null}
         </div>
 
         {/* Use same ProgressBar component as AI optimization */}

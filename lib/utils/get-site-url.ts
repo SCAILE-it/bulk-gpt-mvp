@@ -127,20 +127,11 @@ export function getSiteUrl(options: GetSiteUrlOptions = {}): string {
   }
 
   if (vercelOrigin) {
-    // On Vercel, construct full URL with https://
-    return `https://${vercelHost}`
+    return vercelOrigin
   }
 
   if (typeof window !== 'undefined') {
-    const origin = window.location.origin
-    // Don't use localhost in production - prefer explicit config
-    if (isLocalHost(new URL(origin).host) && process.env.NODE_ENV === 'production') {
-      // In production but got localhost - this shouldn't happen, but fallback to VERCEL_URL
-      if (vercelHost) {
-        return `https://${vercelHost}`
-      }
-    }
-    return origin
+    return window.location.origin
   }
 
   return DEFAULT_LOCAL_URL

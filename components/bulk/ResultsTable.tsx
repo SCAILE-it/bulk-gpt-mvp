@@ -59,11 +59,11 @@ export function ResultsTable({
     total: results.length
   } : undefined)
 
-  // Calculate estimated time remaining
-  const estimatedSeconds = effectiveProgress && processingStartTime && effectiveProgress.completed < effectiveProgress.total
+  // Calculate estimated time remaining (only when we have at least 1 completed row)
+  const estimatedSeconds = effectiveProgress && processingStartTime && effectiveProgress.completed < effectiveProgress.total && effectiveProgress.completed > 0
     ? (() => {
         const elapsed = Date.now() - processingStartTime
-        const avgTimePerRow = elapsed / Math.max(effectiveProgress.completed, 1)
+        const avgTimePerRow = elapsed / effectiveProgress.completed
         const remaining = (effectiveProgress.total - effectiveProgress.completed) * avgTimePerRow
         return Math.ceil(remaining / 1000)
       })()
