@@ -24,6 +24,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`)
   }
 
+  if (!data?.session) {
+    console.error("No session created after OAuth exchange")
+    return NextResponse.redirect(`${origin}/auth?error=Failed to create session`)
+  }
+
   const user = data?.user
   if (user?.id) {
     // Ensure user exists in public.users table (upsert to handle existing users)
@@ -52,9 +57,15 @@ export async function GET(request: Request) {
   const safeNext = next && next.startsWith("/") ? next : `/${next?.replace(/^\/+/, "") ?? ""}`
   const redirectUrl = `${siteUrl}${safeNext}`
 
-  // Clean up the oauth_return_url cookie after use
+  // Create response and ensure cookies are properly set
+  // The Supabase client should have already set cookies via setAll callback
   const response = NextResponse.redirect(redirectUrl)
+  
+  // Clean up the oauth_return_url cookie after use
   response.cookies.delete('oauth_return_url')
+  
+  // Ensure session cookies are preserved with correct domain
+  // Supabase SSR client handles this, but we ensure redirect uses same origin
   return response
 }
 

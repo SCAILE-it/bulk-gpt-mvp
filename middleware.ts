@@ -8,6 +8,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip middleware for auth callback - it handles its own redirects and session creation
+  if (request.nextUrl.pathname === '/auth/callback') {
+    return NextResponse.next()
+  }
+
   return await updateSession(request)
 }
 

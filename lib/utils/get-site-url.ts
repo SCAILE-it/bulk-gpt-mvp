@@ -116,6 +116,18 @@ export function getSiteUrl(options: GetSiteUrlOptions = {}): string {
     allowedHosts.add(vercelHost)
   }
 
+  // Check if requestOrigin is bulk-gpt.com (production domain)
+  if (requestOrigin) {
+    try {
+      const requestHost = new URL(requestOrigin).host
+      if (requestHost === 'bulk-gpt.com' || requestHost === 'www.bulk-gpt.com') {
+        return requestOrigin
+      }
+    } catch {
+      // Invalid URL, continue with other checks
+    }
+  }
+
   if (
     allowOriginFallback &&
     requestOrigin &&
