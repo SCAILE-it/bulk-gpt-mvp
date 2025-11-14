@@ -28,6 +28,18 @@
    
    **Note:** For GSI popup flow, the redirect URI is typically just the origin (no path). Make sure there are NO trailing slashes and NO paths.
 
+### Enable Required APIs
+
+**CRITICAL:** The Google Picker API must be enabled for the Picker to work!
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Select your project (`gtm-dashboard-launch`)
+3. Navigate to: **APIs & Services** → **Library**
+4. Search for and enable:
+   - **Google Picker API** (REQUIRED for Picker to open)
+   - **Google Drive API** (if not already enabled)
+   - **Google Sheets API** (if not already enabled)
+
 ### OAuth Consent Screen
 
 - **App name:** Bulk GPT

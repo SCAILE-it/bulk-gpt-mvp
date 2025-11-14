@@ -278,15 +278,24 @@ export function GoogleSheetsUrlTab({
       const builtPicker = pickerWithCallback.build()
       
       try {
+        console.log('[Google Picker] Attempting to open picker...', {
+          hasAccessToken: !!accessToken,
+          tokenLength: accessToken?.length,
+          pickerBuilder: !!builtPicker,
+        })
         builtPicker.setVisible(true)
+        console.log('[Google Picker] setVisible(true) called successfully')
         // Note: Timeout will be cleared by the callback when picker opens
         // If picker doesn't open within 10 seconds, timeout will reset loading state
       } catch (pickerError) {
+        console.error('[Google Picker] Error opening picker:', pickerError)
         if (loadingTimeout) {
           clearTimeout(loadingTimeout)
         }
         setIsPickerLoading(false)
-        throw new Error(`Failed to open Google Picker: ${pickerError instanceof Error ? pickerError.message : 'Unknown error'}`)
+        const errorMsg = pickerError instanceof Error ? pickerError.message : 'Unknown error'
+        setError(`Failed to open Google Picker: ${errorMsg}. Please ensure Google Picker API is enabled in Google Cloud Console.`)
+        throw new Error(`Failed to open Google Picker: ${errorMsg}`)
       }
     } catch (err) {
       setIsPickerLoading(false)
