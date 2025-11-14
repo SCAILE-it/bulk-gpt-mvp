@@ -16,6 +16,8 @@
    https://www.bulk-gpt.com
    https://bulk-gpt-app.vercel.app
    http://localhost:3000
+   http://localhost:8000
+   http://127.0.0.1:8000
    ```
 
 6. Under **Authorized redirect URIs**, add (one per line):
@@ -24,6 +26,8 @@
    https://www.bulk-gpt.com
    https://bulk-gpt-app.vercel.app
    http://localhost:3000
+   http://localhost:8000
+   http://127.0.0.1:8000
    ```
    
    **Note:** For GSI popup flow, the redirect URI is typically just the origin (no path). Make sure there are NO trailing slashes and NO paths.
