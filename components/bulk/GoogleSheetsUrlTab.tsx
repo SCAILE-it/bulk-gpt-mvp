@@ -197,6 +197,13 @@ export function GoogleSheetsUrlTab({
         throw new Error('Google Picker API not available')
       }
 
+      // Add timeout to reset loading state if picker doesn't open
+      let loadingTimeout: NodeJS.Timeout | null = null
+      loadingTimeout = setTimeout(() => {
+        setIsPickerLoading(false)
+        setError('Google Picker failed to open. Please check if pop-ups are blocked and try again.')
+      }, 10000) // 10 second timeout
+
       // Open Google Picker
       const pickerBuilder = new window.google.picker!.PickerBuilder()
       const picker = pickerBuilder
@@ -205,6 +212,12 @@ export function GoogleSheetsUrlTab({
         .addView(window.google.picker!.ViewId.SPREADSHEETS) as typeof pickerBuilder
       const pickerWithCallback = pickerWithView
         .setCallback(async (data: unknown) => {
+          // Clear timeout since picker opened and callback was triggered
+          if (loadingTimeout) {
+            clearTimeout(loadingTimeout)
+            loadingTimeout = null
+          }
+          
           const pickerData = data as PickerResponse
           setIsPickerLoading(false)
           
@@ -252,13 +265,31 @@ export function GoogleSheetsUrlTab({
             } finally {
               setIsLoading(false)
             }
-          } else {
+          } else if (action === window.google!.picker!.Action.CANCEL) {
             // User cancelled picker
+            setIsPickerLoading(false)
+          } else {
+            // Unknown action or error
+            console.warn('[Google Picker] Unknown action:', action, pickerData)
             setIsPickerLoading(false)
           }
         }) as typeof pickerBuilder
-      const builtPicker = pickerWithCallback.build()
-      builtPicker.setVisible(true)
+      
+      // Set origin for better compatibility
+      const pickerWithOrigin = pickerWithCallback.setOrigin(window.location.origin) as typeof pickerBuilder
+      const builtPicker = pickerWithOrigin.build()
+      
+      try {
+        builtPicker.setVisible(true)
+        // Note: Timeout will be cleared by the callback when picker opens
+        // If picker doesn't open within 10 seconds, timeout will reset loading state
+      } catch (pickerError) {
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout)
+        }
+        setIsPickerLoading(false)
+        throw new Error(`Failed to open Google Picker: ${pickerError instanceof Error ? pickerError.message : 'Unknown error'}`)
+      }
     } catch (err) {
       setIsPickerLoading(false)
       const errorMessage = err instanceof Error ? err.message : 'Failed to open Google Picker'
