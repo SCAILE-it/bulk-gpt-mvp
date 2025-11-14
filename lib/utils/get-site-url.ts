@@ -73,6 +73,8 @@ const isAllowedFallbackOrigin = (
 
     if (vercelHost && host === vercelHost) return true
     if (allowedHosts.has(host)) return true
+    // Allow production domain
+    if (host === 'bulk-gpt.com' || host === 'www.bulk-gpt.com') return true
     if (host.endsWith('.vercel.app')) return true
     if (isLocalHost(host)) return true
 

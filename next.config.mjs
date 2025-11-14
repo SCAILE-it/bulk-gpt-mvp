@@ -49,7 +49,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://*.posthog.com https://*.sentry.io https://*.vercel.app https://accounts.google.com https://*.googleapis.com",
+              "connect-src 'self' https://*.supabase.co https://*.posthog.com https://*.sentry.io https://*.vercel.app https://bulk-gpt.com https://www.bulk-gpt.com https://accounts.google.com https://*.googleapis.com",
               "frame-src 'self' https://accounts.google.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
