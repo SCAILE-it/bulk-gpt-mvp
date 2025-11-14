@@ -20,6 +20,26 @@ export async function POST(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
   console.log('[Google Sheets Export] Request received')
   
+  // CORS headers for cross-origin requests (e.g., from localhost:3000 test page)
+  const origin = request.headers.get('origin')
+  const corsHeaders: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+  
+  // Allow requests from localhost (for testing) and production domains
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://bulk-gpt.com',
+    'https://www.bulk-gpt.com',
+    'https://bulk-gpt-app.vercel.app',
+  ]
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    corsHeaders['Access-Control-Allow-Origin'] = origin
+  }
+  
   try {
     const body = (await request.json()) as CreateSheetRequest
     console.log('[Google Sheets Export] Body parsed:', {
@@ -34,7 +54,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       console.error('[Google Sheets Export] Missing access token')
       return NextResponse.json(
         { error: 'Access token required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -46,7 +66,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       })
       return NextResponse.json(
         { error: 'Title and data array required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -125,27 +145,55 @@ export async function POST(request: NextRequest): Promise<Response> {
       }
       
       const errorMessage = errorData.error?.message || errorData.error || errorData.raw || 'Failed to create spreadsheet'
+      const errorReason = errorData.error?.errors?.[0]?.reason || errorData.error?.status || ''
+      
+      // Check if the error is specifically about API not being enabled
+      const isApiNotEnabled = 
+        errorMessage.toLowerCase().includes('has not been used') ||
+        errorMessage.toLowerCase().includes('is disabled') ||
+        errorMessage.toLowerCase().includes('enable it by visiting') ||
+        errorReason === 'SERVICE_DISABLED' ||
+        errorReason === 'API_NOT_ENABLED'
       
       if (createResponse.status === 401) {
         console.error('[Google Sheets Export] 401 Unauthorized - token invalid or expired')
         return NextResponse.json(
           { error: 'Invalid or expired access token. Please re-authenticate.', details: errorMessage },
-          { status: 401 }
+          { status: 401, headers: corsHeaders }
         )
       }
       
       if (createResponse.status === 403) {
         console.error('[Google Sheets Export] 403 Forbidden - permission denied')
+        
+        if (isApiNotEnabled) {
+          // Extract project ID from error message if available
+          const projectIdMatch = errorMessage.match(/project (\d+)/i)
+          const projectId = projectIdMatch ? projectIdMatch[1] : 'your project'
+          const enableUrl = `https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=${projectId}`
+          
+          return NextResponse.json(
+            { 
+              error: 'Google Drive API is not enabled for your project.',
+              details: errorMessage,
+              code: 'API_NOT_ENABLED',
+              enableUrl,
+              projectId,
+            },
+            { status: 403, headers: corsHeaders }
+          )
+        }
+        
         return NextResponse.json(
           { error: 'Permission denied. Please ensure Google Drive API is enabled and you have granted the necessary permissions.', details: errorMessage },
-          { status: 403 }
+          { status: 403, headers: corsHeaders }
         )
       }
 
       console.error('[Google Sheets Export] API error:', errorMessage)
       return NextResponse.json(
         { error: errorMessage, details: errorData },
-        { status: createResponse.status }
+        { status: createResponse.status, headers: corsHeaders }
       )
     }
 
@@ -162,7 +210,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       console.error('[Google Sheets Export] No spreadsheet ID in response:', createData)
       return NextResponse.json(
         { error: 'Failed to get spreadsheet ID', details: createData },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -182,7 +230,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       spreadsheetId,
       spreadsheetUrl,
       rowsWritten: data.length,
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     const duration = Date.now() - startTime
     console.error('[Google Sheets Export] Exception:', {
@@ -197,8 +245,33 @@ export async function POST(request: NextRequest): Promise<Response> {
     })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
+}
+
+/**
+ * Handle OPTIONS request for CORS preflight
+ */
+export async function OPTIONS(request: NextRequest): Promise<Response> {
+  const origin = request.headers.get('origin')
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://bulk-gpt.com',
+    'https://www.bulk-gpt.com',
+    'https://bulk-gpt-app.vercel.app',
+  ]
+  
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+  }
+  
+  return new NextResponse(null, { status: 204, headers })
 }
 

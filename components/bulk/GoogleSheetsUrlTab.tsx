@@ -272,7 +272,26 @@ export function GoogleSheetsUrlTab({
 
               if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}))
-                throw new Error(errorData.error?.message || 'Failed to fetch sheet data')
+                const errorMessage = errorData.error?.message || 'Failed to fetch sheet data'
+                const errorReason = errorData.error?.errors?.[0]?.reason || errorData.error?.status || ''
+                
+                // Check if the error is specifically about API not being enabled
+                const isApiNotEnabled = 
+                  errorMessage.toLowerCase().includes('has not been used') ||
+                  errorMessage.toLowerCase().includes('is disabled') ||
+                  errorMessage.toLowerCase().includes('enable it by visiting') ||
+                  errorReason === 'SERVICE_DISABLED' ||
+                  errorReason === 'API_NOT_ENABLED'
+                
+                if (response.status === 403 && isApiNotEnabled) {
+                  // Extract project ID from error message if available
+                  const projectIdMatch = errorMessage.match(/project (\d+)/i)
+                  const projectId = projectIdMatch ? projectIdMatch[1] : 'your project'
+                  const enableUrl = `https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=${projectId}`
+                  throw new Error(`Google Sheets API is not enabled for project ${projectId}. Enable it here: ${enableUrl}`)
+                }
+                
+                throw new Error(errorMessage)
               }
 
               const sheetData = await response.json()
@@ -394,9 +413,15 @@ export function GoogleSheetsUrlTab({
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         const errorMessage = errorData.error || 'Failed to fetch Google Sheet'
+        const activationUrl = errorData.activationUrl
+        const projectId = errorData.projectId
         
+        // Check if API not enabled error (503 status)
+        if (response.status === 503 && activationUrl) {
+          setError(`Google Sheets API is not enabled for project ${projectId || 'your project'}. Enable it here: ${activationUrl}`)
+        }
         // Handle permission/access errors (private sheet)
-        if (
+        else if (
           response.status === 403 ||
           errorMessage.includes('PERMISSION_DENIED') ||
           errorMessage.includes('permission') ||

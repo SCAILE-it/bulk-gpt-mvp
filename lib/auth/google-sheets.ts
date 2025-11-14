@@ -75,9 +75,18 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
       const tokenClient = window.google!.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: SCOPES,
-        callback: (response: { access_token?: string; error?: string; expires_in?: number }) => {
+        callback: (response: { access_token?: string; error?: string; error_description?: string; expires_in?: number }) => {
           if (response.error) {
-            reject(new Error(response.error))
+            // Provide more helpful error messages
+            let errorMessage = response.error
+            if (response.error === 'redirect_uri_mismatch') {
+              errorMessage = 'OAuth configuration error: redirect_uri_mismatch. Please check Google Cloud Console OAuth consent screen and ensure the app is published. See GOOGLE_OAUTH_SETUP.md for details.'
+            } else if (response.error === 'access_denied') {
+              errorMessage = 'Access denied. The app may not be published or may not comply with Google\'s OAuth 2.0 policy. Please check the OAuth consent screen configuration.'
+            } else if (response.error_description) {
+              errorMessage = `${response.error}: ${response.error_description}`
+            }
+            reject(new Error(errorMessage))
             return
           }
           

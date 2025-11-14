@@ -910,6 +910,9 @@ export default function BulkProcessor() {
       if (!createResponse.ok) {
         const errorData = await createResponse.json().catch(() => ({}))
         const errorMessage = errorData.error || errorData.message || 'Failed to create Google Sheet'
+        const errorCode = errorData.code
+        const enableUrl = errorData.enableUrl
+        const projectId = errorData.projectId
         
         if (createResponse.status === 401) {
           // Token expired, clear and retry
@@ -918,6 +921,14 @@ export default function BulkProcessor() {
         }
         
         if (createResponse.status === 403) {
+          // Check if it's specifically about API not being enabled
+          if (errorCode === 'API_NOT_ENABLED' || enableUrl) {
+            const enableMessage = enableUrl 
+              ? `Google Drive API is not enabled for project ${projectId || 'your project'}. Enable it here: ${enableUrl}`
+              : 'Google Drive API is not enabled. Please enable it in Google Cloud Console.'
+            throw new Error(enableMessage)
+          }
+          
           throw new Error('Permission denied. Please ensure Google Drive API is enabled and you have granted the necessary permissions.')
         }
         

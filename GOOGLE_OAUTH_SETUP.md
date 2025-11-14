@@ -34,15 +34,20 @@
 
 ### Enable Required APIs
 
-**CRITICAL:** The Google Picker API must be enabled for the Picker to work!
+**CRITICAL:** The following APIs MUST be enabled for Google Sheets export to work!
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Select your project (`gtm-dashboard-launch`)
+2. Select your project (`466128555451` - the project with your OAuth client ID)
 3. Navigate to: **APIs & Services** → **Library**
-4. Search for and enable:
+4. Search for and enable (click "Enable" for each):
+   - **Google Drive API** (REQUIRED for creating Google Sheets via Drive API)
+     - Direct link: https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=466128555451
    - **Google Picker API** (REQUIRED for Picker to open)
-   - **Google Drive API** (if not already enabled)
-   - **Google Sheets API** (if not already enabled)
+     - Direct link: https://console.developers.google.com/apis/api/picker.googleapis.com/overview?project=466128555451
+   - **Google Sheets API** (optional, but recommended for reading sheets)
+     - Direct link: https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=466128555451
+
+**Note:** After enabling APIs, wait 2-5 minutes for changes to propagate before testing.
 
 ### OAuth Consent Screen
 
@@ -60,27 +65,49 @@
 
 ## Troubleshooting redirect_uri_mismatch Error
 
-If you're still getting `redirect_uri_mismatch` error:
+**IMPORTANT:** Google Identity Services (GSI) uses `storagerelay://` redirect URIs for popup flows. These are special protocol handlers that **CANNOT** be added to Google Cloud Console. The error usually indicates an OAuth consent screen configuration issue.
 
-1. **Check the exact redirect URI being sent:**
-   - When the error page appears, look at the URL in the browser address bar
-   - The URL will contain a `redirect_uri` parameter
-   - Copy that EXACT value (it will be URL-encoded)
+### Fix Steps:
 
-2. **Add the exact redirect URI to Google Cloud Console:**
-   - Go to your OAuth 2.0 Client ID settings
-   - Under "Authorized redirect URIs", add the EXACT URI from step 1
-   - Make sure it matches character-for-character (including encoding)
+1. **Verify OAuth Consent Screen Configuration:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Navigate to: **APIs & Services** → **OAuth consent screen**
+   - Ensure the app is **Published** (not in "Testing" mode)
+   - Under **App domain**, ensure `bulk-gpt.com` is listed
+   - Under **Authorized domains**, ensure `bulk-gpt.com` and `vercel.app` are listed
 
-3. **Common redirect URIs for GSI:**
-   - `https://bulk-gpt.com` (most common - just origin)
-   - `https://www.bulk-gpt.com` (if using www subdomain)
-   - `https://bulk-gpt-app.vercel.app` (for Vercel preview deployments)
+2. **Check Authorized JavaScript Origins:**
+   - Go to **APIs & Services** → **Credentials**
+   - Click on your OAuth 2.0 Client ID
+   - Under **Authorized JavaScript origins**, ensure these are listed (NO trailing slashes):
+     ```
+     https://bulk-gpt.com
+     https://www.bulk-gpt.com
+     https://bulk-gpt-app.vercel.app
+     http://localhost:3000
+     ```
 
-4. **Wait for propagation:**
-   - Changes can take 5-10 minutes to propagate
-   - Clear browser cache/cookies
+3. **For Authorized Redirect URIs (GSI popup flows):**
+   - GSI popup flows use `storagerelay://` which cannot be configured
+   - However, you should still have these origins listed (without paths):
+     ```
+     https://bulk-gpt.com
+     https://www.bulk-gpt.com
+     https://bulk-gpt-app.vercel.app
+     http://localhost:3000
+     ```
+   - **Important:** Do NOT add `storagerelay://` URIs - GSI handles these automatically
+
+4. **If still getting errors:**
+   - Clear browser cache/cookies (or use incognito mode)
+   - Wait 5-10 minutes for changes to propagate
    - Try again
+
+### Common Issues:
+
+- **"App doesn't comply with OAuth 2.0 policy"**: OAuth consent screen is not published or configured incorrectly
+- **"redirect_uri_mismatch"**: Authorized JavaScript origins or redirect URIs are missing or incorrect
+- **"Access blocked"**: App is still in "Testing" mode - publish it to production
 
 ## Testing
 

@@ -90,8 +90,11 @@ Jane Smith,jane@example.com,Inactive</textarea>
         <h2>Step 3: Test API Endpoint</h2>
         <label>
             API Base URL:
-            <input type="text" id="apiBase" value="https://bulk-gpt.com" style="width: 300px; padding: 8px; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px;">
+            <input type="text" id="apiBase" value="http://localhost:3000" style="width: 300px; padding: 8px; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px;">
         </label>
+        <p style="font-size: 12px; color: #888; margin-top: 5px;">
+            Use <code>http://localhost:3000</code> for local testing, or <code>https://bulk-gpt.com</code> for production
+        </p>
         <br><br>
         <button id="testEndpoint">Test /api/google-sheets/create-sheet</button>
         <div id="endpointStatus">Not tested</div>
@@ -243,7 +246,7 @@ Jane Smith,jane@example.com,Inactive</textarea>
                 return;
             }
             
-            const apiBase = document.getElementById('apiBase').value.trim() || 'https://bulk-gpt.com';
+            const apiBase = document.getElementById('apiBase').value.trim() || window.location.origin;
             const apiUrl = `${apiBase}/api/google-sheets/create-sheet`;
             
             log(`Testing API endpoint: ${apiUrl}`, 'info');
