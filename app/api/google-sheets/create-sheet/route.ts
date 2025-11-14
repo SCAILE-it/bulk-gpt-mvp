@@ -36,23 +36,53 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const { accessToken, title, data } = body
 
-    // Step 1: Create a new spreadsheet
-    const createResponse = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+    // Convert data to CSV format (works with drive.file scope)
+    // Drive API can import CSV files and convert them to Google Sheets
+    const csvContent = data.map(row => 
+      row.map(cell => {
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        const cellStr = String(cell || '')
+        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+          return `"${cellStr.replace(/"/g, '""')}"`
+        }
+        return cellStr
+      }).join(',')
+    ).join('\n')
+
+    // Step 1: Create spreadsheet using Drive API (works with drive.file scope)
+    // Upload CSV file and convert to Google Sheets format
+    const boundary = `----WebKitFormBoundary${Date.now()}`
+    const metadata = JSON.stringify({
+      name: title,
+      mimeType: 'application/vnd.google-apps.spreadsheet',
+    })
+    
+    const formData = [
+      `--${boundary}`,
+      'Content-Disposition: form-data; name="metadata"',
+      'Content-Type: application/json; charset=UTF-8',
+      '',
+      metadata,
+      `--${boundary}`,
+      'Content-Disposition: form-data; name="file"; filename="data.csv"',
+      'Content-Type: text/csv',
+      '',
+      csvContent,
+      `--${boundary}--`,
+    ].join('\r\n')
+
+    const createResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&convert=true', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+        'Content-Type': `multipart/related; boundary=${boundary}`,
       },
-      body: JSON.stringify({
-        properties: {
-          title,
-        },
-      }),
+      body: formData,
     })
 
     if (!createResponse.ok) {
       const errorData = await createResponse.json().catch(() => ({}))
-      const errorMessage = errorData.error?.message || 'Failed to create spreadsheet'
+      const errorMessage = errorData.error?.message || errorData.error || 'Failed to create spreadsheet'
       
       if (createResponse.status === 401) {
         return NextResponse.json(
@@ -68,7 +98,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     const createData = await createResponse.json()
-    const spreadsheetId = createData.spreadsheetId
+    const spreadsheetId = createData.id
 
     if (!spreadsheetId) {
       return NextResponse.json(
@@ -77,80 +107,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    // Step 2: Write data to the spreadsheet
-    // Google Sheets API has a limit of 10 million cells per request
-    // For large datasets, we'll write in batches if needed
-    // Calculate column count from first row
-    const columnCount = data[0]?.length || 0
-    if (columnCount === 0) {
-      return NextResponse.json(
-        { error: 'No data to write' },
-        { status: 400 }
-      )
-    }
-
-    const maxCellsPerRequest = 10000000 // Google's limit
-    const maxRowsPerBatch = Math.max(1, Math.floor(maxCellsPerRequest / columnCount))
-    
-    const batches = []
-    for (let i = 0; i < data.length; i += maxRowsPerBatch) {
-      batches.push(data.slice(i, i + maxRowsPerBatch))
-    }
-
-    // Write all batches sequentially
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex]
-      const startRow = batchIndex * maxRowsPerBatch + 1 // Sheets are 1-indexed
-      const endRow = startRow + batch.length - 1
-      // Calculate end column letter (A-Z, then AA-ZZ, etc.)
-      // Simple approach: use column count to determine range
-      let endCol = 'Z'
-      if (columnCount > 26) {
-        // For >26 columns, use AA, AB, etc.
-        const firstLetter = String.fromCharCode(64 + Math.floor((columnCount - 1) / 26))
-        const secondLetter = String.fromCharCode(65 + ((columnCount - 1) % 26))
-        endCol = firstLetter + secondLetter
-      } else if (columnCount > 0) {
-        endCol = String.fromCharCode(64 + columnCount)
-      }
-      const range = `Sheet1!A${startRow}:${endCol}${endRow}`
-
-      const updateResponse = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            values: batch,
-          }),
-        }
-      )
-
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.json().catch(() => ({}))
-        const errorMessage = errorData.error?.message || 'Failed to write data'
-        
-        // If first batch fails, fail the whole operation
-        if (batchIndex === 0) {
-          return NextResponse.json(
-            { error: `Failed to write data: ${errorMessage}` },
-            { status: updateResponse.status }
-          )
-        }
-        
-        // Log error for subsequent batches but continue
-        logError(new Error(`Failed to write batch ${batchIndex + 1}: ${errorMessage}`), {
-          context: 'googleSheetsCreateSheet',
-          spreadsheetId,
-          batchIndex,
-        })
-      }
-    }
-
-    // Step 3: Get the spreadsheet URL
+    // Get the spreadsheet URL
     const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`
 
     return NextResponse.json({

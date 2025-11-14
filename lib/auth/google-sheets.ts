@@ -13,10 +13,9 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
                          ''
 
 // Scopes needed for creating and writing to Google Sheets
-const SCOPES = [
-  'https://www.googleapis.com/auth/spreadsheets',
-  'https://www.googleapis.com/auth/drive.file',
-].join(' ')
+// Note: spreadsheets scope requires verification, so we use drive.file for now
+// drive.file allows creating files and accessing files created by the app
+const SCOPES = 'https://www.googleapis.com/auth/drive.file'
 
 interface GoogleAuthResult {
   accessToken: string

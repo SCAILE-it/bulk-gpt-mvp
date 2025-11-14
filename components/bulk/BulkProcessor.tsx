@@ -596,13 +596,19 @@ export default function BulkProcessor() {
     fileUpload.clearFile()
     setSelectedInputColumns([])
     // Clear any stored CSV file from IndexedDB
-    const csvFilename = fileUpload.file?.name
+    const csvFilename = fileUpload.file?.name || csvParser.csvData?.filename
     if (csvFilename) {
       clearCSVFile(csvFilename).catch((err) => {
         console.debug('Failed to clear CSV file from IndexedDB:', err)
       })
     }
-  }, [csvParser, fileUpload])
+    // Clear Google Sheets metadata from context
+    saveContext({
+      googleSheetsUrl: undefined,
+      googleSheetsId: undefined,
+      inputSource: 'csv',
+    })
+  }, [csvParser, fileUpload, saveContext])
 
   // === KEYBOARD SHORTCUTS ===
   // Note: CSV file input is now handled inside CSVUploadTab component

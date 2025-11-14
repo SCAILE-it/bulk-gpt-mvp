@@ -35,8 +35,9 @@ export function Logo({ className = '', showText = true, size = 'md' }: LogoProps
         />
       </div>
       {showText && (
-        <span className={`font-semibold tracking-tight ${textSizeClasses[size]} text-foreground`}>
+        <span className={`font-semibold tracking-tight ${textSizeClasses[size]} text-foreground flex items-center gap-2`}>
           Bulk GPT
+          <span className="text-xs font-normal text-muted-foreground bg-muted px-1.5 py-0.5 rounded">beta</span>
         </span>
       )}
     </Link>
