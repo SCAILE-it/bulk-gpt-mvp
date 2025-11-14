@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get("code")
-  const next = searchParams.get("next") ?? "/"
+  const next = searchParams.get("next") ?? searchParams.get("returnUrl") ?? "/"
 
   if (!code) {
     return NextResponse.redirect(`${origin}/auth?error=Missing authentication code`)
@@ -19,14 +19,17 @@ export async function GET(request: Request) {
   }
 
   const user = data?.user
-  if (user?.id && user?.email) {
+  if (user?.id) {
     // Ensure user exists in public.users table (upsert to handle existing users)
+    // LinkedIn OAuth may not provide email immediately, so use user metadata
+    const userEmail = user.email || user.user_metadata?.email || user.user_metadata?.preferred_username
+    
     try {
       await supabaseAdmin
         .from('users')
         .upsert({
           id: user.id,
-          email: user.email,
+          email: userEmail || null,
           created_at: new Date().toISOString(),
         }, {
           onConflict: 'id'
