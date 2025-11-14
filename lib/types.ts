@@ -23,6 +23,9 @@ export interface ParsedCSV {
   rows: CSVRow[]
   columns: string[]
   totalRows: number
+  // Google Sheets metadata (if imported from Google Sheets)
+  googleSheetsUrl?: string
+  googleSheetsId?: string
 }
 
 /**

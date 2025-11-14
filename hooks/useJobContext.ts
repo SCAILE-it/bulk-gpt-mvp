@@ -16,6 +16,9 @@ export interface JobContext {
   optimizeOutput: boolean
   csvFilename?: string
   csvColumnCount?: number
+  googleSheetsUrl?: string
+  googleSheetsId?: string
+  inputSource?: 'csv' | 'google_sheets'
   savedAt: number
 }
 

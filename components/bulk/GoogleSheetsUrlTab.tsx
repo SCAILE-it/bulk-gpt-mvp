@@ -240,6 +240,8 @@ export function GoogleSheetsUrlTab({
 
               // Convert to ParsedCSV format
               const parsedCSV = convertSheetsToCSV(sheetData.values, sheetName)
+              // Add Google Sheets metadata
+              parsedCSV.googleSheetsId = sheetId
               onDataLoaded(parsedCSV)
             } catch (err) {
               const errorMessage = err instanceof Error ? err.message : 'Failed to import selected sheet'
@@ -356,6 +358,9 @@ export function GoogleSheetsUrlTab({
 
       // Convert to ParsedCSV format
       const parsedCSV = convertSheetsToCSV(data.values, sheetName)
+      // Add Google Sheets metadata
+      parsedCSV.googleSheetsUrl = url
+      parsedCSV.googleSheetsId = sheetId
       
       // Clear any previous errors
       setError(null)

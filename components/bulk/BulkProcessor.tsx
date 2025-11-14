@@ -136,25 +136,90 @@ export default function BulkProcessor() {
     if (hasRestoredContext) return
 
     const restoreFileAndContext = async () => {
-      // First, try to restore CSV file from IndexedDB
+      // First, try to restore input file (CSV or Google Sheets)
       const savedContext = loadContext()
-      const csvFilename = savedContext?.csvFilename
+      const inputSource = savedContext?.inputSource || 'csv'
       
-      // Try to restore the file
-      const restoredFile = await restoreCSVFile(csvFilename)
-      
-      if (restoredFile) {
-        // File found - upload and parse it
+      if (inputSource === 'google_sheets' && savedContext?.googleSheetsId) {
+        // Restore Google Sheets
         try {
-          await fileUpload.uploadFile(restoredFile)
-          await csvParser.parseFile(restoredFile)
+          setIsUploading(true)
+          const sheetId = savedContext.googleSheetsId
+          const url = savedContext.googleSheetsUrl || `https://docs.google.com/spreadsheets/d/${sheetId}/edit`
+          
+          // Fetch sheet data from API
+          const response = await fetch('/api/google-sheets', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'fetch',
+              spreadsheetId: sheetId,
+              range: 'A1:Z1000',
+            }),
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data.values && data.values.length > 0) {
+              // Get sheet name from metadata if available
+              let sheetName = `google-sheet-${sheetId.substring(0, 8)}`
+              try {
+                const metadataResponse = await fetch('/api/google-sheets', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    action: 'getMetadata',
+                    spreadsheetId: sheetId,
+                  }),
+                })
+                
+                if (metadataResponse.ok) {
+                  const metadata = await metadataResponse.json()
+                  if (metadata.title) {
+                    sheetName = metadata.title
+                  }
+                }
+              } catch {
+                // Ignore metadata fetch errors
+              }
+
+              // Convert to ParsedCSV format
+              const { convertSheetsToCSV } = await import('@/lib/google-sheets-utils')
+              const parsedCSV = convertSheetsToCSV(data.values, sheetName)
+              parsedCSV.googleSheetsUrl = url
+              parsedCSV.googleSheetsId = sheetId
+              
+              // Set parsed data
+              csvParser.setParsedData(parsedCSV)
+            }
+          }
         } catch (err) {
-          console.debug('Failed to restore CSV file:', err)
+          console.debug('Failed to restore Google Sheets:', err)
+        } finally {
+          setIsUploading(false)
+        }
+      } else {
+        // Restore CSV file from IndexedDB
+        const csvFilename = savedContext?.csvFilename
+        const restoredFile = await restoreCSVFile(csvFilename)
+        
+        if (restoredFile) {
+          // File found - upload and parse it
+          try {
+            await fileUpload.uploadFile(restoredFile)
+            await csvParser.parseFile(restoredFile)
+          } catch (err) {
+            console.debug('Failed to restore CSV file:', err)
+          }
         }
       }
 
       // Now restore job context (after file is loaded if it exists)
-      const currentCsvFilename = fileUpload.file?.name || restoredFile?.name || csvFilename
+      const currentCsvFilename = fileUpload.file?.name || csvParser.csvData?.filename || savedContext?.csvFilename
       const currentCsvColumnCount = csvParser.csvData?.columns.length
       const restored = restoreContext(currentCsvFilename, currentCsvColumnCount)
 
@@ -328,20 +393,20 @@ export default function BulkProcessor() {
     if (optimizedPrompt) {
       setPrompt(optimizedPrompt)
     }
-    // Use AI-detected output columns
-    if (outputColumns.length > 0) {
-      setOutputFields(outputColumns.map((col) => col.name))
-    }
-    // Apply AI-suggested tools
-    if (suggestedTools.length > 0) {
-      setSelectedTools(suggestedTools)
-    }
+      // Use AI-detected output columns
+      if (outputColumns.length > 0) {
+        setOutputFields(outputColumns.map((col) => col.name))
+      }
+      // Apply AI-suggested tools
+      if (suggestedTools.length > 0) {
+        setSelectedTools(suggestedTools)
+      }
     // Apply AI-suggested input columns
     if (suggestedInputColumns.length > 0) {
       setSelectedInputColumns(suggestedInputColumns)
     }
-    clearOptimization()
-    toast.success('AI suggestion applied!')
+      clearOptimization()
+      toast.success('AI suggestion applied!')
   }, [optimizedPrompt, outputColumns, suggestedTools, suggestedInputColumns, clearOptimization])
 
   // Handle rejecting AI suggestion
@@ -380,8 +445,11 @@ export default function BulkProcessor() {
         optimizeInput,
         optimizeTask,
         optimizeOutput,
-        csvFilename: fileUpload.file?.name,
+        csvFilename: fileUpload.file?.name || csvParser.csvData?.filename,
         csvColumnCount: csvParser.csvData?.columns.length,
+        googleSheetsUrl: csvParser.csvData?.googleSheetsUrl,
+        googleSheetsId: csvParser.csvData?.googleSheetsId,
+        inputSource: csvParser.csvData?.googleSheetsId ? 'google_sheets' : 'csv',
       })
     }, 500) // Debounce 500ms
 
@@ -397,6 +465,9 @@ export default function BulkProcessor() {
     optimizeOutput,
     fileUpload.file?.name,
     csvParser.csvData?.columns.length,
+    csvParser.csvData?.filename,
+    csvParser.csvData?.googleSheetsId,
+    csvParser.csvData?.googleSheetsUrl,
     saveContext,
   ])
 
@@ -456,8 +527,8 @@ export default function BulkProcessor() {
       // Parse CSV immediately (don't check state - it hasn't updated yet!)
       const parsed = await csvParser.parseFile(uploadedFile)
 
-      // Save CSV file to IndexedDB and update context
-      if (parsed && hasRestoredContext) {
+      // Save CSV file to IndexedDB and update context (always save, not just after restoration)
+      if (parsed) {
         // Save file to IndexedDB for persistence
         await saveCSVFile(uploadedFile)
         
@@ -465,6 +536,9 @@ export default function BulkProcessor() {
         saveContext({
           csvFilename: uploadedFile.name,
           csvColumnCount: parsed.columns.length,
+          inputSource: 'csv',
+          googleSheetsUrl: undefined,
+          googleSheetsId: undefined,
         })
       }
     } catch (err) {
@@ -476,7 +550,7 @@ export default function BulkProcessor() {
     } finally {
       setIsUploading(false)
     }
-  }, [csvParser, fileUpload, hasRestoredContext, saveContext])
+  }, [csvParser, fileUpload, saveContext])
 
   // === GOOGLE SHEETS DATA LOADED ===
   const handleGoogleSheetsDataLoaded = useCallback((parsedCSV: ParsedCSV) => {
@@ -486,6 +560,15 @@ export default function BulkProcessor() {
     try {
       // Set parsed data directly (bypassing file upload)
       csvParser.setParsedData(parsedCSV)
+      
+      // Save Google Sheets metadata to context for persistence
+      saveContext({
+        googleSheetsUrl: parsedCSV.googleSheetsUrl,
+        googleSheetsId: parsedCSV.googleSheetsId,
+        csvFilename: parsedCSV.filename,
+        csvColumnCount: parsedCSV.columns.length,
+        inputSource: 'google_sheets',
+      })
       
       // Track analytics
       trackEvent(ANALYTICS_EVENTS.FILE_UPLOADED, {
@@ -505,7 +588,7 @@ export default function BulkProcessor() {
     } finally {
       setIsUploading(false)
     }
-  }, [csvParser])
+  }, [csvParser, saveContext])
 
   // === CLEAR DATA HANDLER ===
   const handleClearData = useCallback(() => {
@@ -625,10 +708,10 @@ export default function BulkProcessor() {
       // Use unified batch processor with testMode flag
       await batchProcessor.startBatch({
         csvData: testCSVData,
-        prompt,
-        context: '',
+          prompt,
+          context: '',
         outputColumns: outputFields,
-        tools: selectedTools.length > 0 ? selectedTools : undefined,
+          tools: selectedTools.length > 0 ? selectedTools : undefined,
         testMode: true, // Enable test mode to bypass batch limit
         selectedInputColumns: selectedInputColumns.length > 0 ? selectedInputColumns : undefined,
       })
@@ -741,7 +824,7 @@ export default function BulkProcessor() {
           description: 'The batch may still be processing. Please wait a few moments and try again.',
           id: `export-gsheets-${currentBatchId}`
         })
-        return
+          return
       }
 
       // Flatten results for export (same as CSV export)
@@ -882,32 +965,32 @@ export default function BulkProcessor() {
 
       // Fallback to direct database fetch if status API didn't work
       if (results.length === 0) {
-        const supabase = createClient()
-        if (!supabase) {
-          toast.error('Database Error', {
+      const supabase = createClient()
+      if (!supabase) {
+        toast.error('Database Error', {
             description: 'Supabase client not configured. Please refresh the page.',
             id: `export-${currentBatchId}`
-          })
-          return
-        }
+        })
+        return
+      }
 
         const { data: dbResults, error } = await supabase
-          .from('batch_results')
+        .from('batch_results')
           .select('input_data, output_data, status, error_message, input_tokens, output_tokens, model')
           .eq('batch_id', currentBatchId)
-          .order('id', { ascending: true })
+        .order('id', { ascending: true })
 
-        if (error) {
-          logError(new Error('Batch results fetch failed'), {
-            source: 'BulkProcessor/handleExport',
+      if (error) {
+        logError(new Error('Batch results fetch failed'), {
+          source: 'BulkProcessor/handleExport',
             batchId: currentBatchId,
-            supabaseError: error
-          })
-          toast.error('Failed to Fetch Results', {
-            description: 'Please try again or check the Dashboard for completed batches.',
+          supabaseError: error
+        })
+        toast.error('Failed to Fetch Results', {
+          description: 'Please try again or check the Dashboard for completed batches.',
             id: `export-${currentBatchId}`
-          })
-          return
+        })
+        return
         }
 
         results = dbResults || []
@@ -1182,19 +1265,19 @@ export default function BulkProcessor() {
             >
               {/* OUTPUT COLUMNS - JSON mode always enabled for structured output */}
               <div className="space-y-3">
-                <OutputFieldsSection
-                  outputFields={outputFields}
-                  newField={newField}
-                  onNewFieldChange={setNewField}
-                  onAddField={addOutputField}
-                  onRemoveField={removeOutputField}
-                />
+                  <OutputFieldsSection
+                    outputFields={outputFields}
+                    newField={newField}
+                    onNewFieldChange={setNewField}
+                    onAddField={addOutputField}
+                    onRemoveField={removeOutputField}
+                  />
 
-                {/* TOOL SELECTION */}
-                <ToolSelectionSection
-                  selectedTools={selectedTools}
-                  onToggleTool={toggleTool}
-                />
+                  {/* TOOL SELECTION */}
+                  <ToolSelectionSection
+                    selectedTools={selectedTools}
+                    onToggleTool={toggleTool}
+                  />
               </div>
 
             </CollapsibleSection>
@@ -1277,7 +1360,7 @@ export default function BulkProcessor() {
                       </>
                     )}
                   </button>
-                </div>
+          </div>
               </CollapsibleSection>
             </div>
           )}
@@ -1308,15 +1391,15 @@ export default function BulkProcessor() {
                 <TooltipProvider delayDuration={0}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
-                        onClick={handleTest}
-                        disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
+              <button
+                onClick={handleTest}
+                disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
                         className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 h-9 bg-secondary/50 border border-border/50 rounded-md text-xs font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                        aria-label="Test prompt with first CSV row"
-                      >
+                aria-label="Test prompt with first CSV row"
+              >
                         {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                        <span className="whitespace-nowrap">Test</span>
-                      </button>
+                <span className="whitespace-nowrap">Test</span>
+              </button>
                     </TooltipTrigger>
                     <TooltipContent>
                       {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : 'Test with first row (⌘T)'}
@@ -1324,11 +1407,11 @@ export default function BulkProcessor() {
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
-                        onClick={handleProcess}
-                        disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
+              <button
+                onClick={handleProcess}
+                disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
                         className="flex-[2] flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                        data-testid="run-button"
+                data-testid="run-button"
                         aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
                       >
                         {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -1342,8 +1425,8 @@ export default function BulkProcessor() {
                               )}
                             </>
                           )}
-                        </span>
-                      </button>
+                </span>
+              </button>
                     </TooltipTrigger>
                     <TooltipContent>
                       {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Run all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
