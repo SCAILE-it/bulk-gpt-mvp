@@ -6,21 +6,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { signInWithLinkedIn } from '@/lib/auth/linkedin'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import * as getSiteUrlModule from '@/lib/utils/get-site-url'
 
-// Mock window.location
-const mockWindowLocation = {
-  origin: 'https://test.example.com',
-  href: '',
-}
+// Mock getAuthCallbackUrl
+vi.mock('@/lib/utils/get-site-url', () => ({
+  getAuthCallbackUrl: vi.fn(() => 'https://test.example.com/auth/callback'),
+}))
 
 beforeEach(() => {
   vi.clearAllMocks()
-  // Reset window.location mock
-  mockWindowLocation.href = ''
-  Object.defineProperty(window, 'location', {
-    value: mockWindowLocation,
-    writable: true,
-  })
 })
 
 describe('signInWithLinkedIn', () => {
@@ -38,6 +32,7 @@ describe('signInWithLinkedIn', () => {
 
     const result = await signInWithLinkedIn(mockSupabase)
 
+    expect(getSiteUrlModule.getAuthCallbackUrl).toHaveBeenCalled()
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'linkedin_oidc',
       options: {
@@ -47,30 +42,6 @@ describe('signInWithLinkedIn', () => {
     })
 
     expect(result).toEqual({ url: 'https://linkedin.com/oauth' })
-  })
-
-  it('should use provided redirectTo URL when given', async () => {
-    const mockSignInWithOAuth = vi.fn().mockResolvedValue({
-      data: { url: 'https://linkedin.com/oauth' },
-      error: null,
-    })
-
-    const mockSupabase = {
-      auth: {
-        signInWithOAuth: mockSignInWithOAuth,
-      },
-    } as unknown as SupabaseClient
-
-    const customRedirect = 'https://custom.example.com/callback'
-    await signInWithLinkedIn(mockSupabase, customRedirect)
-
-    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'linkedin_oidc',
-      options: {
-        redirectTo: customRedirect,
-        scopes: 'openid profile email',
-      },
-    })
   })
 
   it('should throw error when supabase returns an error', async () => {
@@ -102,11 +73,8 @@ describe('signInWithLinkedIn', () => {
     await expect(signInWithLinkedIn(mockSupabase)).rejects.toThrow('Network error')
   })
 
-  it('should handle missing window.location gracefully', async () => {
-    // Mock window as undefined (SSR scenario)
-    const originalWindow = global.window
-    // @ts-expect-error - intentionally removing for test
-    global.window = undefined
+  it('should use getAuthCallbackUrl for redirect URL', async () => {
+    vi.mocked(getSiteUrlModule.getAuthCallbackUrl).mockReturnValue('https://custom.example.com/auth/callback')
 
     const mockSignInWithOAuth = vi.fn().mockResolvedValue({
       data: { url: 'https://linkedin.com/oauth' },
@@ -121,17 +89,14 @@ describe('signInWithLinkedIn', () => {
 
     await signInWithLinkedIn(mockSupabase)
 
-    // Should fallback to '/auth/callback' when window.location is undefined
+    expect(getSiteUrlModule.getAuthCallbackUrl).toHaveBeenCalled()
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'linkedin_oidc',
       options: {
-        redirectTo: '/auth/callback',
+        redirectTo: 'https://custom.example.com/auth/callback',
         scopes: 'openid profile email',
       },
     })
-
-    // Restore window
-    global.window = originalWindow
   })
 })
 

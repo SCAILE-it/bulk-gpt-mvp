@@ -1,27 +1,25 @@
 /**
  * ABOUTME: LinkedIn OAuth authentication utility
  * ABOUTME: Follows zola-aisdkv5 pattern for consistency
- * ABOUTME: Client-side only - uses window.location
  */
 
 'use client'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { logError } from '@/lib/errors'
+import { getAuthCallbackUrl } from '@/lib/utils/get-site-url'
 
 /**
  * Signs in user with LinkedIn OAuth via Supabase
+ * Accept any SupabaseClient with Database schema, regardless of SSR implementation details
  * @param supabase - Supabase client instance
- * @param redirectTo - Optional redirect URL after authentication
  * @returns OAuth URL data
  */
 export async function signInWithLinkedIn(
-  supabase: SupabaseClient,
-  redirectTo?: string
+  supabase: SupabaseClient
 ) {
   try {
-    // Client-side only - window.location is safe here
-    const redirectUrl = redirectTo || (typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback')
+    const redirectUrl = getAuthCallbackUrl()
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
@@ -35,6 +33,7 @@ export async function signInWithLinkedIn(
       throw error
     }
 
+    // Return the provider URL
     return data
   } catch (err) {
     logError(err instanceof Error ? err : new Error(String(err)), {
