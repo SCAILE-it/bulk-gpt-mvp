@@ -175,13 +175,5 @@ export function useJobContext(): UseJobContextReturn {
     clearContext,
     restoreContext,
   }
-
-  return {
-    context,
-    saveContext,
-    loadContext,
-    clearContext,
-    restoreContext,
-  }
 }
 

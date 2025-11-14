@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Fetch public sheet data using Google Sheets API (no OAuth token needed)
-        const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range || 'A1:Z1000'}?key=${GOOGLE_API_KEY}`
+        // Try a smaller range first (A1:Z100) to avoid quota issues, then expand if needed
+        const initialRange = range || 'A1:Z100'
+        const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${initialRange}?key=${GOOGLE_API_KEY}`
         
         const response = await fetch(sheetsUrl, {
           headers: {
@@ -48,23 +50,84 @@ export async function POST(request: NextRequest) {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
           const errorMessage = errorData.error?.message || errorData.error || 'Failed to fetch sheet data'
+          const errorCode = errorData.error?.code || errorData.error?.status || response.status
           
-          // Provide more helpful error messages for private sheets
-          if (
-            response.status === 403 ||
-            errorMessage.includes('PERMISSION_DENIED') ||
-            errorMessage.includes('permission') ||
-            errorMessage.includes('access denied') ||
-            errorMessage.toLowerCase().includes('forbidden')
-          ) {
+          // Log the actual error for debugging
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Google Sheets API] Error details:', {
+              status: response.status,
+              errorCode,
+              errorMessage,
+              spreadsheetId,
+              errorData,
+            })
+          }
+          
+          // Handle specific Google API error codes
+          if (errorCode === 403 || response.status === 403) {
+            // Check if it's actually a permission issue or API key issue
+            if (
+              errorMessage.includes('API key not valid') ||
+              errorMessage.includes('API_KEY_INVALID') ||
+              errorMessage.includes('API key')
+            ) {
+              return NextResponse.json(
+                { error: 'Google API key is not configured correctly. Please contact support.' },
+                { status: 500 }
+              )
+            }
+            
+            // Check for quota exceeded
+            if (
+              errorMessage.includes('quota') ||
+              errorMessage.includes('QUOTA_EXCEEDED') ||
+              errorMessage.includes('rateLimitExceeded')
+            ) {
+              return NextResponse.json(
+                { error: 'Google Sheets API quota exceeded. Please try again later.' },
+                { status: 429 }
+              )
+            }
+            
+            // Only show permission error if it's actually a permission issue
+            if (
+              errorMessage.includes('PERMISSION_DENIED') ||
+              errorMessage.includes('permission') ||
+              errorMessage.includes('access denied') ||
+              errorMessage.toLowerCase().includes('forbidden')
+            ) {
+              return NextResponse.json(
+                { error: 'Sheet is not publicly accessible. Please set sharing to "Anyone with the link can view" in Google Sheets sharing settings.' },
+                { status: 403 }
+              )
+            }
+            
+            // Generic 403 - might be other issues
             return NextResponse.json(
-              { error: 'Sheet is not publicly accessible. Please set sharing to "Anyone with the link can view" in Google Sheets sharing settings.' },
+              { error: `Access denied: ${errorMessage}. Please ensure the sheet is set to "Anyone with the link can view".` },
               { status: 403 }
             )
           }
           
+          // Handle 404 - sheet not found
+          if (response.status === 404 || errorCode === 404) {
+            return NextResponse.json(
+              { error: 'Sheet not found. Please check the URL and ensure the sheet exists.' },
+              { status: 404 }
+            )
+          }
+          
+          // Handle 400 - bad request (invalid spreadsheet ID, etc.)
+          if (response.status === 400 || errorCode === 400) {
+            return NextResponse.json(
+              { error: `Invalid request: ${errorMessage}. Please check the spreadsheet URL.` },
+              { status: 400 }
+            )
+          }
+          
+          // Generic error
           return NextResponse.json(
-            { error: errorMessage },
+            { error: errorMessage || 'Failed to fetch sheet data' },
             { status: response.status }
           )
         }
