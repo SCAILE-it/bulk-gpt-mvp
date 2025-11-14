@@ -204,11 +204,9 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
     }
     
     // Set up timeout with cleanup
-    let popupCheckInterval: NodeJS.Timeout | null = null
     timeoutId = setTimeout(() => {
       if (!callbackFired) {
         cleanup()
-        if (popupCheckInterval) clearInterval(popupCheckInterval)
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
         debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - OAuth callback never fired`, {
           elapsedSeconds: elapsed,
