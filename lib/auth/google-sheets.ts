@@ -6,6 +6,22 @@
 'use client'
 
 import { logError } from '@/lib/errors'
+import type { LogEntry } from '@/components/debug/DebugLogger'
+
+// Helper to log to DebugLogger
+const debugLog = (level: LogEntry['level'], message: string, data?: unknown) => {
+  const logEntry: LogEntry = {
+    id: `${Date.now()}-${Math.random()}`,
+    timestamp: Date.now(),
+    level,
+    message: `[Google OAuth] ${message}`,
+    data,
+  }
+  window.dispatchEvent(new CustomEvent('debug-log', { detail: logEntry }))
+  // Also log to console
+  const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'
+  console[consoleMethod](`[Google OAuth] ${message}`, data || '')
+}
 
 // Support both naming conventions for flexibility
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 
@@ -28,54 +44,115 @@ interface GoogleAuthResult {
  * Uses Google Identity Services (newer OAuth 2.0 API)
  */
 export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
+  debugLog('info', '🚀 Starting OAuth token request', { 
+    hasClientId: !!GOOGLE_CLIENT_ID,
+    clientIdLength: GOOGLE_CLIENT_ID.length,
+    scopes: SCOPES,
+  })
+
   if (!GOOGLE_CLIENT_ID) {
-    throw new Error('Google Client ID not configured. Please set NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable.')
+    const error = 'Google Client ID not configured. Please set NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable.'
+    debugLog('error', '❌ ' + error)
+    throw new Error(error)
   }
 
   if (typeof window === 'undefined') {
-    throw new Error('Not in browser environment')
+    const error = 'Not in browser environment'
+    debugLog('error', '❌ ' + error)
+    throw new Error(error)
   }
 
   // Load Google Identity Services script if not already loaded
   const loadGoogleScript = (): Promise<void> => {
     return new Promise((resolveScript, rejectScript) => {
       if (window.google?.accounts?.oauth2) {
+        debugLog('success', '✅ Google Identity Services already loaded')
         resolveScript()
         return
       }
 
+      debugLog('info', '📜 Loading Google Identity Services script...')
       const script = document.createElement('script')
       script.src = 'https://accounts.google.com/gsi/client'
       script.async = true
       script.defer = true
       script.onload = () => {
+        debugLog('info', '📜 Script loaded, waiting for initialization...')
         // Wait a bit for the script to initialize
         setTimeout(() => {
           if (window.google?.accounts?.oauth2) {
+            debugLog('success', '✅ Google Identity Services initialized')
             resolveScript()
           } else {
-            rejectScript(new Error('Google Identity Services not initialized'))
+            const error = 'Google Identity Services not initialized'
+            debugLog('error', '❌ ' + error)
+            rejectScript(new Error(error))
           }
         }, 100)
       }
-      script.onerror = () => rejectScript(new Error('Failed to load Google Identity Services'))
+      script.onerror = () => {
+        const error = 'Failed to load Google Identity Services'
+        debugLog('error', '❌ ' + error)
+        rejectScript(new Error(error))
+      }
       document.head.appendChild(script)
     })
   }
 
-  await loadGoogleScript()
-
-  if (!window.google?.accounts?.oauth2) {
-    throw new Error('Google Identity Services not available')
+  try {
+    await loadGoogleScript()
+  } catch (scriptError) {
+    debugLog('error', '❌ Failed to load script', { error: scriptError })
+    throw scriptError
   }
 
+  if (!window.google?.accounts?.oauth2) {
+    const error = 'Google Identity Services not available'
+    debugLog('error', '❌ ' + error)
+    throw new Error(error)
+  }
+
+  debugLog('info', '🔧 Initializing token client...', { clientId: GOOGLE_CLIENT_ID.substring(0, 20) + '...' })
+
   return new Promise((resolve, reject) => {
+    const startTime = Date.now()
+    let callbackFired = false
+    let popupWindow: Window | null = null
+
+    // Add timeout to detect if popup never opens or callback never fires
+    const timeout = setTimeout(() => {
+      if (!callbackFired) {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+        debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - OAuth callback never fired`, {
+          elapsedSeconds: elapsed,
+          callbackFired,
+          popupWindow: popupWindow ? 'opened' : 'never opened',
+          popupClosed: popupWindow?.closed,
+        })
+        reject(new Error(`OAuth timeout after ${elapsed}s. The popup may have been blocked or the user didn't complete authorization.`))
+      }
+    }, 60000) // 60 second timeout
+
     try {
       // Use Google Identity Services token client
+      debugLog('info', '🏗️ Creating token client...')
       const tokenClient = window.google!.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: SCOPES,
         callback: (response: { access_token?: string; error?: string; error_description?: string; expires_in?: number }) => {
+          callbackFired = true
+          clearTimeout(timeout)
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+          
+          debugLog('success', `🎉 OAuth callback fired after ${elapsed}s`, {
+            hasError: !!response.error,
+            hasAccessToken: !!response.access_token,
+            error: response.error,
+            errorDescription: response.error_description,
+            tokenLength: response.access_token?.length,
+            expiresIn: response.expires_in,
+          })
+
           if (response.error) {
             // Provide more helpful error messages
             let errorMessage = response.error
@@ -86,24 +163,60 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
             } else if (response.error_description) {
               errorMessage = `${response.error}: ${response.error_description}`
             }
+            debugLog('error', '❌ OAuth error in callback', { error: errorMessage })
             reject(new Error(errorMessage))
             return
           }
           
           if (response.access_token) {
+            debugLog('success', '✅ Access token received successfully', { 
+              tokenLength: response.access_token.length,
+              expiresIn: response.expires_in 
+            })
             resolve({
               accessToken: response.access_token,
               expiresIn: response.expires_in || 3600,
             })
           } else {
-            reject(new Error('No access token received'))
+            const error = 'No access token received'
+            debugLog('error', '❌ ' + error)
+            reject(new Error(error))
           }
         },
       })
 
-      // Request access token (will show popup if not already authorized)
-      tokenClient.requestAccessToken({ prompt: 'consent' })
+      debugLog('info', '👁️ Requesting access token (popup should open)...')
+      debugLog('info', '⚠️ If popup is blocked, check browser popup blocker settings')
+      
+      // Try to detect if popup was blocked
+      try {
+        // Request access token (will show popup if not already authorized)
+        tokenClient.requestAccessToken({ prompt: 'consent' })
+        debugLog('info', '✅ requestAccessToken() called - waiting for popup/callback...')
+        
+        // Check if popup was blocked (this is a best-effort check)
+        setTimeout(() => {
+          // If callback hasn't fired after 2 seconds, check if we can detect popup blocking
+          if (!callbackFired) {
+            debugLog('warn', '⏳ Still waiting for callback after 2s - popup may be blocked or user hasn\'t interacted', {
+              elapsedSeconds: ((Date.now() - startTime) / 1000).toFixed(1),
+            })
+          }
+        }, 2000)
+      } catch (requestError) {
+        clearTimeout(timeout)
+        debugLog('error', '❌ Error calling requestAccessToken', { 
+          error: requestError instanceof Error ? requestError.message : String(requestError),
+          stack: requestError instanceof Error ? requestError.stack : undefined,
+        })
+        reject(requestError)
+      }
     } catch (err) {
+      clearTimeout(timeout)
+      debugLog('error', '❌ Exception in getGoogleAccessToken', { 
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      })
       logError(err instanceof Error ? err : new Error(String(err)), {
         source: 'getGoogleAccessToken',
         context: 'Google OAuth',
@@ -203,4 +316,3 @@ declare global {
     }
   }
 }
-

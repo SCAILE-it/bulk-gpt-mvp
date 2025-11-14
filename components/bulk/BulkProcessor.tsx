@@ -1856,7 +1856,7 @@ export default function BulkProcessor() {
       </Modal>
 
       {/* Debug Logger - Only show in development mode */}
-      {process.env.NODE_ENV === 'development' && <DebugLogger />}
+      <DebugLogger />
     </div>
   )
 }

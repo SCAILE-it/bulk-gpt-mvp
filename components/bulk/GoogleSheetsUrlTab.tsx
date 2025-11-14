@@ -12,6 +12,22 @@ import { convertSheetsToCSV } from '@/lib/google-sheets-utils'
 import { getGoogleAccessToken, getStoredGoogleToken, storeGoogleToken, isGoogleTokenValid } from '@/lib/auth/google-sheets'
 import { logError } from '@/lib/errors'
 import type { ParsedCSV } from '@/lib/types'
+import type { LogEntry } from '@/components/debug/DebugLogger'
+
+// Helper to log to DebugLogger
+const debugLog = (level: LogEntry['level'], message: string, data?: unknown) => {
+  const logEntry: LogEntry = {
+    id: `${Date.now()}-${Math.random()}`,
+    timestamp: Date.now(),
+    level,
+    message: `[Google Picker] ${message}`,
+    data,
+  }
+  window.dispatchEvent(new CustomEvent('debug-log', { detail: logEntry }))
+  // Also log to console for immediate visibility
+  const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'
+  console[consoleMethod](`[Google Picker] ${message}`, data || '')
+}
 
 interface GoogleSheetsUrlTabProps {
   csvData: ParsedCSV | null
@@ -69,6 +85,10 @@ export function GoogleSheetsUrlTab({
     // Check if scripts are already in DOM (avoid duplicates)
     const existingGsiScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
     const existingPickerScript = document.querySelector('script[src="https://apis.google.com/js/picker.js"]')
+    debugLog('info', '📜 Checking for existing scripts', {
+      hasGsiScript: !!existingGsiScript,
+      hasPickerScript: !!existingPickerScript,
+    })
 
     // If scripts exist, wait for them to load
     if (existingGsiScript && existingPickerScript) {
@@ -176,113 +196,188 @@ export function GoogleSheetsUrlTab({
 
   // Handle Google Picker selection
   const handlePickFromDrive = useCallback(async () => {
-    console.group('[Google Picker] Starting picker flow')
-    console.log('1. Checking scripts loaded:', scriptsLoaded)
+    debugLog('info', '🚀 Starting Google Picker flow', { scriptsLoaded, timestamp: new Date().toISOString() })
     
     if (!scriptsLoaded) {
-      console.error('[Google Picker] Scripts not loaded')
+      debugLog('error', '❌ Scripts not loaded yet', { scriptsLoaded })
       setError('Google Picker API not loaded yet. Please wait a moment and try again.')
-      console.groupEnd()
       return
     }
 
     setIsPickerLoading(true)
     setError(null)
+    debugLog('info', '⏳ Loading state set to true')
 
     try {
       // Get or request Google access token
-      console.log('2. Getting access token...')
+      debugLog('info', '🔑 Step 1: Getting access token...')
       let accessToken = getStoredGoogleToken()
       const hasStoredToken = !!accessToken && isGoogleTokenValid()
-      console.log('   Stored token exists:', !!accessToken, 'Valid:', hasStoredToken)
+      debugLog('info', '📋 Token check', { 
+        hasStoredToken: !!accessToken, 
+        isValid: hasStoredToken,
+        tokenLength: accessToken?.length || 0
+      })
       
       if (!accessToken || !isGoogleTokenValid()) {
-        console.log('   Requesting new token...')
-        const authResult = await getGoogleAccessToken()
-        accessToken = authResult.accessToken
-        storeGoogleToken(authResult.accessToken, authResult.expiresIn)
-        console.log('   Token obtained, length:', accessToken.length)
+        debugLog('info', '🔄 Requesting new OAuth token...')
+        try {
+          const authResult = await getGoogleAccessToken()
+          accessToken = authResult.accessToken
+          storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+          debugLog('success', '✅ Token obtained successfully', { 
+            tokenLength: accessToken.length,
+            expiresIn: authResult.expiresIn 
+          })
+        } catch (tokenError) {
+          debugLog('error', '❌ Failed to get OAuth token', { 
+            error: tokenError instanceof Error ? tokenError.message : String(tokenError),
+            stack: tokenError instanceof Error ? tokenError.stack : undefined
+          })
+          throw tokenError
+        }
+      } else {
+        debugLog('success', '✅ Using stored token', { tokenLength: accessToken.length })
       }
 
-      console.log('3. Checking Google Picker API availability...')
-      console.log('   window.google exists:', !!window.google)
-      console.log('   window.google.picker exists:', !!window.google?.picker)
-      console.log('   window.google.accounts exists:', !!window.google?.accounts)
-      console.log('   window.google.accounts.oauth2 exists:', !!window.google?.accounts?.oauth2)
+      debugLog('info', '🔍 Step 2: Checking Google Picker API availability...')
+      const apiStatus = {
+        hasGoogle: !!window.google,
+        hasPicker: !!window.google?.picker,
+        hasAccounts: !!window.google?.accounts,
+        hasOAuth2: !!window.google?.accounts?.oauth2,
+        pickerBuilder: typeof window.google?.picker?.PickerBuilder,
+        viewId: !!window.google?.picker?.ViewId,
+        response: !!window.google?.picker?.Response,
+        action: !!window.google?.picker?.Action,
+      }
+      debugLog('info', '📊 API Status', apiStatus)
       
       if (!window.google?.picker) {
-        const errorMsg = 'Google Picker API not available. Check browser console for details.'
-        console.error('[Google Picker] API not available:', {
-          hasGoogle: !!window.google,
-          hasPicker: !!window.google?.picker,
-          hasAccounts: !!window.google?.accounts,
-          hasOAuth2: !!window.google?.accounts?.oauth2,
-        })
-        throw new Error(errorMsg)
+        const errorMsg = 'Google Picker API not available'
+        debugLog('error', '❌ API not available', apiStatus)
+        setError(errorMsg + '. Check Debug Logger (bottom right) for details.')
+        setIsPickerLoading(false)
+        return
       }
 
-      console.log('4. Building picker...')
+      debugLog('info', '🔧 Step 3: Building picker instance...')
       // Add timeout to reset loading state if picker doesn't open
       let loadingTimeout: NodeJS.Timeout | null = null
-      const timeoutDuration = 15000 // 15 seconds for production
+      const timeoutDuration = 20000 // 20 seconds for production
+      const timeoutStartTime = Date.now()
+      
       loadingTimeout = setTimeout(() => {
-        console.error('[Google Picker] Timeout after', timeoutDuration / 1000, 'seconds - picker did not open')
-        console.error('[Google Picker] Debug info:', {
+        const elapsed = ((Date.now() - timeoutStartTime) / 1000).toFixed(1)
+        debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - Picker did not open`, {
+          elapsedSeconds: elapsed,
           scriptsLoaded,
           hasGoogle: !!window.google,
           hasPicker: !!window.google?.picker,
           hasToken: !!accessToken,
           tokenLength: accessToken?.length,
           currentUrl: window.location.href,
+          userAgent: navigator.userAgent,
+          popupBlocked: false, // Can't detect, but worth noting
         })
         setIsPickerLoading(false)
-        setError(`Google Picker failed to open after ${timeoutDuration / 1000} seconds. Check: 1) Google Picker API enabled in Google Cloud Console, 2) Pop-ups not blocked, 3) Browser console (F12) for errors.`)
+        setError(`Google Picker failed to open after ${elapsed}s. Check Debug Logger (bottom right) for details.`)
       }, timeoutDuration)
+      debugLog('info', `⏱️ Timeout set for ${timeoutDuration / 1000}s`)
 
       // Open Google Picker
-      console.log('   Creating PickerBuilder...')
-      const pickerBuilder = new window.google.picker!.PickerBuilder()
-      console.log('   Setting OAuth token...')
-      const picker = pickerBuilder
-        .setOAuthToken(accessToken) as typeof pickerBuilder
-      console.log('   Adding SPREADSHEETS view...')
-      const pickerWithView = picker
-        .addView(window.google.picker!.ViewId.SPREADSHEETS) as typeof pickerBuilder
-      console.log('   Setting callback...')
-        const pickerWithCallback = pickerWithView
-        .setCallback(async (data: unknown) => {
-          console.log('[Google Picker] Callback triggered!', data)
-          console.log('[Google Picker] Callback timestamp:', new Date().toISOString())
-          console.log('[Google Picker] Callback data type:', typeof data)
-          console.log('[Google Picker] Callback data keys:', data ? Object.keys(data as object) : 'null')
-          
-          // Clear timeout since picker opened and callback was triggered
-          if (loadingTimeout) {
-            clearTimeout(loadingTimeout)
-            loadingTimeout = null
-            console.log('[Google Picker] Timeout cleared')
-          }
-          
-          const pickerData = data as PickerResponse
-          setIsPickerLoading(false)
-          
-          const action = pickerData[window.google!.picker!.Response.ACTION] as string
-          console.log('[Google Picker] Action:', action)
-          console.log('[Google Picker] Expected PICKED action:', window.google!.picker!.Action.PICKED)
+      debugLog('info', '🏗️ Creating PickerBuilder...')
+      let pickerBuilder
+      try {
+        pickerBuilder = new window.google.picker!.PickerBuilder()
+        debugLog('success', '✅ PickerBuilder created')
+      } catch (builderError) {
+        debugLog('error', '❌ Failed to create PickerBuilder', { 
+          error: builderError instanceof Error ? builderError.message : String(builderError)
+        })
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+        setIsPickerLoading(false)
+        throw builderError
+      }
+
+      debugLog('info', '🔑 Setting OAuth token...')
+      let picker
+      try {
+        picker = pickerBuilder.setOAuthToken(accessToken) as typeof pickerBuilder
+        debugLog('success', '✅ OAuth token set', { tokenLength: accessToken.length })
+      } catch (tokenError) {
+        debugLog('error', '❌ Failed to set OAuth token', { 
+          error: tokenError instanceof Error ? tokenError.message : String(tokenError)
+        })
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+        setIsPickerLoading(false)
+        throw tokenError
+      }
+
+      debugLog('info', '📋 Adding SPREADSHEETS view...')
+      let pickerWithView
+      try {
+        pickerWithView = picker.addView(window.google.picker!.ViewId.SPREADSHEETS) as typeof pickerBuilder
+        debugLog('success', '✅ SPREADSHEETS view added')
+      } catch (viewError) {
+        debugLog('error', '❌ Failed to add view', { 
+          error: viewError instanceof Error ? viewError.message : String(viewError)
+        })
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+        setIsPickerLoading(false)
+        throw viewError
+      }
+
+      debugLog('info', '📞 Setting callback...')
+      const pickerWithCallback = pickerWithView.setCallback(async (data: unknown) => {
+        const callbackTime = Date.now()
+        debugLog('success', '🎉 CALLBACK TRIGGERED!', {
+          timestamp: new Date().toISOString(),
+          elapsedMs: callbackTime - timeoutStartTime,
+          dataType: typeof data,
+          dataKeys: data ? Object.keys(data as object) : null,
+          fullData: data,
+        })
+        
+        // Clear timeout since picker opened and callback was triggered
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout)
+          loadingTimeout = null
+          debugLog('info', '✅ Timeout cleared - picker opened successfully')
+        }
+        
+        const pickerData = data as PickerResponse
+        setIsPickerLoading(false)
+        
+        const action = pickerData[window.google!.picker!.Response.ACTION] as string
+        debugLog('info', '📥 Processing callback action', { 
+          action,
+          expectedAction: window.google!.picker!.Action.PICKED,
+          isPicked: action === window.google!.picker!.Action.PICKED,
+          hasDocuments: !!pickerData.DOCUMENTS,
+          documentCount: pickerData.DOCUMENTS?.length || 0,
+        })
           if (action === window.google!.picker!.Action.PICKED && pickerData.DOCUMENTS && pickerData.DOCUMENTS.length > 0) {
             const doc = pickerData.DOCUMENTS[0]
             const sheetId = doc.id
             const sheetName = doc.name || `google-sheet-${sheetId.substring(0, 8)}`
+            debugLog('success', '📄 Sheet selected', { sheetId, sheetName })
 
             // Fetch sheet data using OAuth token
             try {
               setIsLoading(true)
+              debugLog('info', '📥 Fetching sheet data from Google Sheets API...')
               
               // Use OAuth token to fetch private sheet data
               const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z1000`, {
                 headers: {
                   'Authorization': `Bearer ${accessToken}`,
                 },
+              })
+              debugLog('info', '📡 API Response received', { 
+                status: response.status, 
+                statusText: response.statusText,
+                ok: response.ok 
               })
 
               if (!response.ok) {

@@ -250,29 +250,3 @@ export async function POST(request: NextRequest): Promise<Response> {
     )
   }
 }
-
-/**
- * Handle OPTIONS request for CORS preflight
- */
-export async function OPTIONS(request: NextRequest): Promise<Response> {
-  const origin = request.headers.get('origin')
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://bulk-gpt.com',
-    'https://www.bulk-gpt.com',
-    'https://bulk-gpt-app.vercel.app',
-  ]
-  
-  const headers: Record<string, string> = {
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  }
-  
-  if (origin && allowedOrigins.includes(origin)) {
-    headers['Access-Control-Allow-Origin'] = origin
-  }
-  
-  return new NextResponse(null, { status: 204, headers })
-}
-
