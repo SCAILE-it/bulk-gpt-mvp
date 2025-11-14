@@ -41,25 +41,11 @@ function AuthPageContent() {
   }
 
   const getTitle = (): string => {
-    switch (mode) {
-      case 'signup':
-        return 'Create your account'
-      case 'reset':
-        return 'Reset your password'
-      default:
-        return 'Welcome to Bulk GPT'
-    }
+    return 'Welcome to Bulk GPT'
   }
 
   const getDescription = (): string => {
-    switch (mode) {
-      case 'signup':
-        return 'Sign up to start processing CSV data with AI'
-      case 'reset':
-        return 'Enter your email to receive a password reset link'
-      default:
-        return 'Sign in to start processing CSV data with AI'
-    }
+    return 'Sign in with LinkedIn to start processing CSV data with AI'
   }
 
   return (
@@ -81,11 +67,6 @@ function AuthPageContent() {
             onSuccess={handleSuccess}
             returnUrl={searchParams.get('returnUrl') || '/bulk'}
           />
-          {mode === 'signin' && (
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              Demo credentials: test@bulkgpt.local / Test123456!
-            </p>
-          )}
         </div>
       </div>
     </div>

@@ -36,6 +36,15 @@ export async function GET(request: Request) {
     const userEmail = user.email || user.user_metadata?.email || user.user_metadata?.preferred_username
     
     try {
+      // Check if user already exists to determine if this is a sign-up or sign-in
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+      
+      const isNewUser = !existingUser
+      
       await supabaseAdmin
         .from('users')
         .upsert({
@@ -45,6 +54,24 @@ export async function GET(request: Request) {
         }, {
           onConflict: 'id'
         })
+      
+      // Track sign-up or sign-in event (logged for analytics)
+      // New users can be identified by checking created_at timestamp in users table
+      if (isNewUser) {
+        console.log('[Analytics] User signed up:', {
+          userId: user.id,
+          email: userEmail || undefined,
+          provider: 'linkedin',
+          timestamp: new Date().toISOString(),
+        })
+      } else {
+        console.log('[Analytics] User signed in:', {
+          userId: user.id,
+          email: userEmail || undefined,
+          provider: 'linkedin',
+          timestamp: new Date().toISOString(),
+        })
+      }
     } catch (err) {
       console.error('Error creating user record:', err)
       // Don't fail the auth flow, just log the error
