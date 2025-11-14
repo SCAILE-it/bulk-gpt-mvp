@@ -133,6 +133,13 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
     try {
       // Use Google Identity Services token client
       debugLog('info', '🏗️ Creating token client...')
+      debugLog('info', '📋 OAuth Configuration', {
+        clientId: GOOGLE_CLIENT_ID.substring(0, 20) + '...',
+        scopes: SCOPES,
+        currentOrigin: window.location.origin,
+        currentUrl: window.location.href,
+      })
+      
       const tokenClient = window.google!.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: SCOPES,
@@ -148,19 +155,25 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
             errorDescription: response.error_description,
             tokenLength: response.access_token?.length,
             expiresIn: response.expires_in,
+            fullResponse: response, // Log full response for debugging
           })
 
           if (response.error) {
             // Provide more helpful error messages
             let errorMessage = response.error
             if (response.error === 'redirect_uri_mismatch') {
-              errorMessage = 'OAuth configuration error: redirect_uri_mismatch. Please check Google Cloud Console OAuth consent screen and ensure the app is published. See GOOGLE_OAUTH_SETUP.md for details.'
+              errorMessage = 'OAuth configuration error: redirect_uri_mismatch. The redirect URI in Google Cloud Console must match the current origin. Current origin: ' + window.location.origin + '. Please check GOOGLE_OAUTH_SETUP.md for details.'
             } else if (response.error === 'access_denied') {
               errorMessage = 'Access denied. The app may not be published or may not comply with Google\'s OAuth 2.0 policy. Please check the OAuth consent screen configuration.'
+            } else if (response.error === 'popup_closed_by_user') {
+              errorMessage = 'Popup was closed before authorization completed. Please try again and complete the authorization.'
             } else if (response.error_description) {
               errorMessage = `${response.error}: ${response.error_description}`
             }
-            debugLog('error', '❌ OAuth error in callback', { error: errorMessage })
+            debugLog('error', '❌ OAuth error in callback', { 
+              error: errorMessage,
+              fullError: response,
+            })
             reject(new Error(errorMessage))
             return
           }
@@ -175,24 +188,31 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
               expiresIn: response.expires_in || 3600,
             })
           } else {
-            const error = 'No access token received'
-            debugLog('error', '❌ ' + error)
+            const error = 'No access token received in callback response'
+            debugLog('error', '❌ ' + error, { fullResponse: response })
             reject(new Error(error))
           }
         },
       })
+      
+      // Add a listener to detect if popup closes prematurely
+      // Note: This is a best-effort detection since we can't directly access the popup window
+      debugLog('info', '👂 Setting up popup monitoring...')
 
       debugLog('info', '👁️ Requesting access token (popup should open)...')
-      debugLog('info', '⚠️ If popup is blocked, check browser popup blocker settings')
+      debugLog('info', '⚠️ IMPORTANT: After clicking "Continue" in the popup, wait for it to close automatically.')
+      debugLog('info', '⚠️ Do NOT manually close the popup - let Google close it after authorization.')
       
       // Try to detect if popup was blocked
       try {
         // Request access token (will show popup if not already authorized)
         // Note: Google Identity Services uses a popup window for OAuth
-        // If popup is blocked, callback will never fire
+        // The callback fires when the popup completes authorization
+        // If user closes popup manually before completion, callback won't fire
         tokenClient.requestAccessToken({ prompt: 'consent' })
-        debugLog('info', '✅ requestAccessToken() called - waiting for popup/callback...')
-        debugLog('info', '💡 TIP: Check if a popup window opened. If not, your browser may be blocking it.')
+        debugLog('info', '✅ requestAccessToken() called - popup should open now')
+        debugLog('info', '💡 TIP: Complete the authorization in the popup and wait for it to close automatically')
+        debugLog('info', '💡 TIP: If popup closes immediately, check Google Cloud Console OAuth configuration')
         
         // Check if popup was blocked (this is a best-effort check)
         // We can't directly detect popup blocking, but we can warn after a delay
