@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Picker Minimal Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0052a3;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #log {
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        .error { color: #f44; }
+        .success { color: #4f4; }
+        .info { color: #4af; }
+    </style>
+</head>
+<body>
+    <h1>Google Picker Minimal Test</h1>
+    <p>This is a minimal test to isolate Google Picker issues.</p>
+    
+    <div>
+        <button id="loadScripts">1. Load Google Scripts</button>
+        <button id="checkStatus">2. Check Status</button>
+        <button id="getToken">3. Get OAuth Token</button>
+        <button id="openPicker">4. Open Picker</button>
+        <button id="clearLog">Clear Log</button>
+    </div>
+    
+    <div id="log"></div>
+
+    <script>
+        const GOOGLE_CLIENT_ID = '466128555451-uobrlom0thvcnfkniaacre1gbajpevpf.apps.googleusercontent.com';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        
+        let accessToken = null;
+        let scriptsLoaded = false;
+        
+        const log = (message, type = 'info') => {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logEl.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(`[${type.toUpperCase()}]`, message);
+        };
+        
+        const clearLog = () => {
+            document.getElementById('log').innerHTML = '';
+        };
+        
+        // Step 1: Load Google Scripts
+        document.getElementById('loadScripts').addEventListener('click', () => {
+            log('Loading Google Identity Services...', 'info');
+            
+            const gsiScript = document.createElement('script');
+            gsiScript.src = 'https://accounts.google.com/gsi/client';
+            gsiScript.async = true;
+            gsiScript.defer = true;
+            gsiScript.onload = () => {
+                log('✓ Google Identity Services loaded', 'success');
+                
+                // Wait a bit for initialization
+                setTimeout(() => {
+                    log('Loading Google Picker API...', 'info');
+                    const pickerScript = document.createElement('script');
+                    pickerScript.src = 'https://apis.google.com/js/picker.js';
+                    pickerScript.async = true;
+                    pickerScript.defer = true;
+                    pickerScript.onload = () => {
+                        log('✓ Google Picker API loaded', 'success');
+                        setTimeout(() => {
+                            if (window.google?.picker && window.google?.accounts?.oauth2) {
+                                scriptsLoaded = true;
+                                log('✓ All scripts loaded and APIs available', 'success');
+                            } else {
+                                log('✗ Scripts loaded but APIs not available', 'error');
+                                log(`  window.google: ${!!window.google}`, 'error');
+                                log(`  window.google.picker: ${!!window.google?.picker}`, 'error');
+                                log(`  window.google.accounts: ${!!window.google?.accounts}`, 'error');
+                                log(`  window.google.accounts.oauth2: ${!!window.google?.accounts?.oauth2}`, 'error');
+                            }
+                        }, 500);
+                    };
+                    pickerScript.onerror = () => {
+                        log('✗ Failed to load Google Picker API', 'error');
+                    };
+                    document.head.appendChild(pickerScript);
+                }, 500);
+            };
+            gsiScript.onerror = () => {
+                log('✗ Failed to load Google Identity Services', 'error');
+            };
+            document.head.appendChild(gsiScript);
+        });
+        
+        // Step 2: Check Status
+        document.getElementById('checkStatus').addEventListener('click', () => {
+            log('=== Status Check ===', 'info');
+            log(`Scripts loaded: ${scriptsLoaded}`, scriptsLoaded ? 'success' : 'error');
+            log(`window.google exists: ${!!window.google}`, window.google ? 'success' : 'error');
+            log(`window.google.picker exists: ${!!window.google?.picker}`, window.google?.picker ? 'success' : 'error');
+            log(`window.google.accounts exists: ${!!window.google?.accounts}`, window.google?.accounts ? 'success' : 'error');
+            log(`window.google.accounts.oauth2 exists: ${!!window.google?.accounts?.oauth2}`, window.google?.accounts?.oauth2 ? 'success' : 'error');
+            log(`Access token: ${accessToken ? 'Yes (' + accessToken.length + ' chars)' : 'No'}`, accessToken ? 'success' : 'error');
+            
+            if (window.google?.picker) {
+                log('Picker API methods:', 'info');
+                log(`  PickerBuilder: ${typeof window.google.picker.PickerBuilder}`, 'info');
+                log(`  ViewId.SPREADSHEETS: ${window.google.picker.ViewId?.SPREADSHEETS}`, 'info');
+                log(`  Response.ACTION: ${window.google.picker.Response?.ACTION}`, 'info');
+                log(`  Action.PICKED: ${window.google.picker.Action?.PICKED}`, 'info');
+            }
+        });
+        
+        // Step 3: Get OAuth Token
+        document.getElementById('getToken').addEventListener('click', () => {
+            if (!window.google?.accounts?.oauth2) {
+                log('✗ Google Identity Services not loaded. Click "Load Google Scripts" first.', 'error');
+                return;
+            }
+            
+            log('Requesting OAuth token...', 'info');
+            
+            const tokenClient = window.google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: SCOPES,
+                callback: (response) => {
+                    if (response.error) {
+                        log(`✗ OAuth error: ${response.error}`, 'error');
+                        return;
+                    }
+                    
+                    if (response.access_token) {
+                        accessToken = response.access_token;
+                        log(`✓ Token obtained (${accessToken.length} chars)`, 'success');
+                        log(`  Expires in: ${response.expires_in} seconds`, 'info');
+                    } else {
+                        log('✗ No access token received', 'error');
+                    }
+                },
+            });
+            
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        });
+        
+        // Step 4: Open Picker
+        document.getElementById('openPicker').addEventListener('click', () => {
+            log('=== Opening Picker ===', 'info');
+            
+            if (!scriptsLoaded) {
+                log('✗ Scripts not loaded. Click "Load Google Scripts" first.', 'error');
+                return;
+            }
+            
+            if (!window.google?.picker) {
+                log('✗ Google Picker API not available', 'error');
+                return;
+            }
+            
+            if (!accessToken) {
+                log('✗ No access token. Click "Get OAuth Token" first.', 'error');
+                return;
+            }
+            
+            try {
+                log('Creating PickerBuilder...', 'info');
+                const pickerBuilder = new window.google.picker.PickerBuilder();
+                
+                log('Setting OAuth token...', 'info');
+                const picker = pickerBuilder.setOAuthToken(accessToken);
+                
+                log('Adding SPREADSHEETS view...', 'info');
+                const pickerWithView = picker.addView(window.google.picker.ViewId.SPREADSHEETS);
+                
+                log('Setting callback...', 'info');
+                const pickerWithCallback = pickerWithView.setCallback((data) => {
+                    log('=== Picker Callback Fired ===', 'success');
+                    log(`Data: ${JSON.stringify(data, null, 2)}`, 'info');
+                    
+                    const action = data[window.google.picker.Response.ACTION];
+                    log(`Action: ${action}`, 'info');
+                    
+                    if (action === window.google.picker.Action.PICKED && data.DOCUMENTS) {
+                        log(`✓ Picked ${data.DOCUMENTS.length} document(s)`, 'success');
+                        data.DOCUMENTS.forEach((doc, i) => {
+                            log(`  Document ${i + 1}: ${doc.name} (ID: ${doc.id})`, 'success');
+                        });
+                    } else {
+                        log(`Action: ${action} (not PICKED)`, 'info');
+                    }
+                });
+                
+                log('Building picker instance...', 'info');
+                const builtPicker = pickerWithCallback.build();
+                log(`Built picker: ${!!builtPicker}`, builtPicker ? 'success' : 'error');
+                log(`setVisible method: ${typeof builtPicker.setVisible}`, typeof builtPicker.setVisible === 'function' ? 'success' : 'error');
+                
+                log('Calling setVisible(true)...', 'info');
+                builtPicker.setVisible(true);
+                log('✓ setVisible(true) called successfully', 'success');
+                log('Waiting for picker to open...', 'info');
+                
+                // Timeout check
+                setTimeout(() => {
+                    log('⚠ 10 seconds passed - picker may not have opened', 'error');
+                    log('Check: 1) Pop-ups blocked? 2) Google Picker API enabled? 3) Browser console for errors', 'error');
+                }, 10000);
+                
+            } catch (error) {
+                log(`✗ Exception: ${error.message}`, 'error');
+                log(`  Type: ${error.constructor.name}`, 'error');
+                log(`  Stack: ${error.stack}`, 'error');
+            }
+        });
+        
+        document.getElementById('clearLog').addEventListener('click', clearLog);
+        
+        // Initial log
+        log('Ready. Click buttons in order: 1 → 2 → 3 → 4', 'info');
+    </script>
+</body>
+</html>
+
