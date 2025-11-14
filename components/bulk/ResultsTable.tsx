@@ -5,7 +5,7 @@
 
 'use client'
 
-import { CheckCircle, XCircle, Loader2, Download, Sparkles } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2, Download, Sparkles, FileSpreadsheet } from 'lucide-react'
 import { BatchStatusCard } from './BatchStatusCard'
 import { formatOutputValue } from '@/lib/utils/format-output'
 
@@ -29,6 +29,7 @@ interface ResultsTableProps {
   progress?: Progress
   processingStartTime?: number
   onExport: () => void
+  onExportToGoogleSheets?: () => void
   isTesting?: boolean
   testStartTime?: number
   testEstimatedSeconds?: number
@@ -43,6 +44,7 @@ export function ResultsTable({
   progress,
   processingStartTime,
   onExport,
+  onExportToGoogleSheets,
   isTesting = false,
   testStartTime,
   testEstimatedSeconds,
@@ -98,13 +100,26 @@ export function ResultsTable({
               }
             </span>
           </div>
-          <button
-            onClick={onExport}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent transition-colors"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>Export</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {onExportToGoogleSheets && (
+              <button
+                onClick={onExportToGoogleSheets}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent transition-colors"
+                title="Export to Google Sheets"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                <span>Google Sheets</span>
+              </button>
+            )}
+            <button
+              onClick={onExport}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-secondary border border-border rounded-md text-sm text-foreground hover:bg-accent transition-colors"
+              title="Download as CSV"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>CSV</span>
+            </button>
+          </div>
         </div>
       </div>
 

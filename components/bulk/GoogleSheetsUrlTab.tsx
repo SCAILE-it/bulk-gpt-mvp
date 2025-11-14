@@ -3,12 +3,14 @@
  * Simple URL paste interface for importing public Google Sheets
  */
 
-import { useState, useCallback } from 'react'
-import { FileSpreadsheet, Loader2, AlertCircle, CheckCircle, Link2 } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { FileSpreadsheet, Loader2, AlertCircle, CheckCircle, Link2, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { extractSheetId, isValidGoogleSheetsUrl } from '@/lib/google-sheets-url-utils'
 import { convertSheetsToCSV } from '@/lib/google-sheets-utils'
+import { getGoogleAccessToken, getStoredGoogleToken, storeGoogleToken, isGoogleTokenValid } from '@/lib/auth/google-sheets'
+import { logError } from '@/lib/errors'
 import type { ParsedCSV } from '@/lib/types'
 
 interface GoogleSheetsUrlTabProps {
@@ -18,6 +20,15 @@ interface GoogleSheetsUrlTabProps {
   onDataLoaded: (data: ParsedCSV) => void
   selectedInputColumns?: string[]
   onInputColumnsChange?: (columns: string[]) => void
+}
+
+interface PickerResponse {
+  [key: string]: unknown
+  DOCUMENTS?: Array<{
+    id: string
+    name: string
+    url?: string
+  }>
 }
 
 export function GoogleSheetsUrlTab({
@@ -31,6 +42,150 @@ export function GoogleSheetsUrlTab({
   const [url, setUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isPickerLoading, setIsPickerLoading] = useState(false)
+  const [scriptsLoaded, setScriptsLoaded] = useState(false)
+
+  // Load Google Picker API script
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Check if already loaded
+    if (window.google?.picker) {
+      setScriptsLoaded(true)
+      return
+    }
+
+    // Load Google Identity Services (for OAuth)
+    const gsiScript = document.createElement('script')
+    gsiScript.src = 'https://accounts.google.com/gsi/client'
+    gsiScript.async = true
+    gsiScript.defer = true
+
+    // Load Google Picker API
+    const pickerScript = document.createElement('script')
+    pickerScript.src = 'https://apis.google.com/js/picker.js'
+    pickerScript.async = true
+    pickerScript.defer = true
+
+    let gsiLoaded = false
+    let pickerLoaded = false
+
+    const checkLoaded = () => {
+      if (gsiLoaded && pickerLoaded && window.google?.picker && window.google?.accounts?.oauth2) {
+        setScriptsLoaded(true)
+      }
+    }
+
+    gsiScript.onload = () => {
+      gsiLoaded = true
+      checkLoaded()
+    }
+
+    pickerScript.onload = () => {
+      pickerLoaded = true
+      checkLoaded()
+    }
+
+    document.head.appendChild(gsiScript)
+    document.head.appendChild(pickerScript)
+
+    return () => {
+      // Cleanup if component unmounts
+    }
+  }, [])
+
+  // Handle Google Picker selection
+  const handlePickFromDrive = useCallback(async () => {
+    if (!scriptsLoaded) {
+      setError('Google Picker API not loaded yet. Please wait a moment and try again.')
+      return
+    }
+
+    setIsPickerLoading(true)
+    setError(null)
+
+    try {
+      // Get or request Google access token
+      let accessToken = getStoredGoogleToken()
+      if (!accessToken || !isGoogleTokenValid()) {
+        const authResult = await getGoogleAccessToken()
+        accessToken = authResult.accessToken
+        storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+      }
+
+      if (!window.google?.picker) {
+        throw new Error('Google Picker API not available')
+      }
+
+      // Open Google Picker
+      const pickerBuilder = new window.google.picker!.PickerBuilder()
+      const picker = pickerBuilder
+        .setOAuthToken(accessToken) as typeof pickerBuilder
+      const pickerWithView = picker
+        .addView(window.google.picker!.ViewId.SPREADSHEETS) as typeof pickerBuilder
+      const pickerWithCallback = pickerWithView
+        .setCallback(async (data: unknown) => {
+          const pickerData = data as PickerResponse
+          setIsPickerLoading(false)
+          
+          const action = pickerData[window.google!.picker!.Response.ACTION] as string
+          if (action === window.google!.picker!.Action.PICKED && pickerData.DOCUMENTS && pickerData.DOCUMENTS.length > 0) {
+            const doc = pickerData.DOCUMENTS[0]
+            const sheetId = doc.id
+            const sheetName = doc.name || `google-sheet-${sheetId.substring(0, 8)}`
+
+            // Fetch sheet data using OAuth token
+            try {
+              setIsLoading(true)
+              
+              // Use OAuth token to fetch private sheet data
+              const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z1000`, {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                },
+              })
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                throw new Error(errorData.error?.message || 'Failed to fetch sheet data')
+              }
+
+              const sheetData = await response.json()
+              
+              if (!sheetData.values || sheetData.values.length === 0) {
+                setError('Sheet appears to be empty.')
+                setIsLoading(false)
+                return
+              }
+
+              // Convert to ParsedCSV format
+              const parsedCSV = convertSheetsToCSV(sheetData.values, sheetName)
+              onDataLoaded(parsedCSV)
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'Failed to import selected sheet'
+              setError(errorMessage)
+              logError(err instanceof Error ? err : new Error(String(err)), {
+                source: 'GoogleSheetsUrlTab/handlePickFromDrive',
+              })
+            } finally {
+              setIsLoading(false)
+            }
+          } else {
+            // User cancelled picker
+            setIsPickerLoading(false)
+          }
+        }) as typeof pickerBuilder
+      const builtPicker = pickerWithCallback.build()
+      builtPicker.setVisible(true)
+    } catch (err) {
+      setIsPickerLoading(false)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to open Google Picker'
+      setError(errorMessage)
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        source: 'GoogleSheetsUrlTab/handlePickFromDrive',
+      })
+    }
+  }, [scriptsLoaded, onDataLoaded])
 
   const handleImport = useCallback(async () => {
     if (!url.trim()) {
@@ -229,9 +384,42 @@ export function GoogleSheetsUrlTab({
     )
   }
 
-  // Show URL input form - minimal, clean design
+  // Show URL input form - minimal, clean design with two options
   return (
     <div className="space-y-3">
+      {/* Option 1: Pick from Google Drive */}
+      <Button
+        variant="brand"
+        size="sm"
+        onClick={handlePickFromDrive}
+        disabled={!scriptsLoaded || isPickerLoading || isLoading || isUploading}
+        className="w-full"
+        aria-label="Pick Google Sheet from Drive"
+      >
+        {isPickerLoading ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Opening picker...
+          </>
+        ) : (
+          <>
+            <FolderOpen className="h-3.5 w-3.5" />
+            Pick from Google Drive
+          </>
+        )}
+      </Button>
+
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border"></div>
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-2 text-muted-foreground">or</span>
+        </div>
+      </div>
+
+      {/* Option 2: Paste URL */}
       <div className="relative">
         <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
@@ -248,7 +436,7 @@ export function GoogleSheetsUrlTab({
           }}
           placeholder="Paste Google Sheets URL..."
           className="pl-9 pr-3"
-          disabled={isLoading}
+          disabled={isLoading || isUploading}
           aria-label="Google Sheets URL"
         />
       </div>
@@ -261,12 +449,12 @@ export function GoogleSheetsUrlTab({
       )}
 
       <Button
-        variant="brand"
+        variant="outline"
         size="sm"
         onClick={handleImport}
         disabled={!url.trim() || isLoading || isUploading}
         className="w-full"
-        aria-label="Import Google Sheet"
+        aria-label="Import Google Sheet from URL"
       >
         {isLoading || isUploading ? (
           <>
@@ -276,7 +464,7 @@ export function GoogleSheetsUrlTab({
         ) : (
           <>
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            Import
+            Import from URL
           </>
         )}
       </Button>

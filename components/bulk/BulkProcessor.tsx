@@ -50,6 +50,8 @@ import { generateExportFilename } from '@/lib/export-filename'
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow'
 import { TEMPLATE_CATEGORIES, type PromptTemplate } from '@/lib/constants/promptTemplates'
 import { saveCSVFile, restoreCSVFile, clearCSVFile } from '@/lib/storage/csv-storage'
+import { getGoogleAccessToken, getStoredGoogleToken, storeGoogleToken, isGoogleTokenValid, clearGoogleToken } from '@/lib/auth/google-sheets'
+import { flattenBatchResultsForExport } from '@/lib/export'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -656,6 +658,157 @@ export default function BulkProcessor() {
   }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools, selectedInputColumns])
 
   // === EXPORT ===
+  // === GOOGLE SHEETS EXPORT ===
+  const handleExportToGoogleSheets = useCallback(async () => {
+    const currentBatchId = batchProcessor.batchId
+    if (!currentBatchId) {
+      toast.error('No Batch Available', {
+        description: 'Please run a batch first before exporting results.'
+      })
+      return
+    }
+
+    try {
+      toast.loading('Preparing Google Sheets export...', { id: `export-gsheets-${currentBatchId}` })
+
+      // Fetch results (same logic as CSV export)
+      interface StatusResult {
+        id?: string
+        input?: Record<string, unknown>
+        output?: string
+        status?: string
+        error?: string
+        input_tokens?: number
+        output_tokens?: number
+        model?: string
+      }
+      interface ExportResult {
+        input_data: Record<string, unknown>
+        output_data: string
+        status: string
+        error_message: string
+        input_tokens: number
+        output_tokens: number
+        model: string
+      }
+      let results: ExportResult[] = []
+      
+      try {
+        const statusResponse = await fetch(`/api/batch/${currentBatchId}-status/status`)
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json() as { results?: StatusResult[] }
+          if (statusData.results && Array.isArray(statusData.results) && statusData.results.length > 0) {
+            results = statusData.results.map((r: StatusResult) => ({
+              input_data: r.input || {},
+              output_data: r.output || '',
+              status: r.status === 'success' ? 'success' : r.status === 'error' ? 'error' : (r.status || 'unknown'),
+              error_message: r.error || '',
+              input_tokens: r.input_tokens || 0,
+              output_tokens: r.output_tokens || 0,
+              model: r.model || ''
+            }))
+          }
+        }
+      } catch {
+        // Fallback to database
+        const supabase = createClient()
+        if (supabase) {
+          const { data: dbResults } = await supabase
+            .from('batch_results')
+            .select('input_data, output_data, status, error_message, input_tokens, output_tokens, model')
+            .eq('batch_id', currentBatchId)
+            .order('id', { ascending: true })
+          results = dbResults || []
+        }
+      }
+
+      if (!results || results.length === 0) {
+        toast.warning('No Results Available', {
+          description: 'The batch may still be processing. Please wait a few moments and try again.',
+          id: `export-gsheets-${currentBatchId}`
+        })
+        return
+      }
+
+      // Flatten results for export (same as CSV export)
+      const flattenedResults = flattenBatchResultsForExport(results.map(row => ({
+        input_data: typeof row.input_data === 'string' ? JSON.parse(row.input_data) : row.input_data,
+        output_data: row.output_data,
+        status: row.status,
+        error_message: row.error_message,
+        input_tokens: row.input_tokens,
+        output_tokens: row.output_tokens,
+        model: row.model
+      })))
+
+      // Convert to 2D array for Google Sheets
+      const headers = Object.keys(flattenedResults[0] || {})
+      const dataRows = flattenedResults.map(row => headers.map(header => {
+        const value = row[header]
+        // Convert to string, handle null/undefined
+        if (value === null || value === undefined) return ''
+        if (typeof value === 'object') return JSON.stringify(value)
+        return String(value)
+      }))
+      const sheetData = [headers, ...dataRows]
+
+      // Get or request Google access token
+      let accessToken = getStoredGoogleToken()
+      if (!accessToken || !isGoogleTokenValid()) {
+        toast.loading('Authenticating with Google...', { id: `export-gsheets-${currentBatchId}` })
+        const authResult = await getGoogleAccessToken()
+        accessToken = authResult.accessToken
+        storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+      }
+
+      // Generate sheet title
+      const sheetTitle = csvParser.csvData?.filename 
+        ? `${csvParser.csvData.filename.replace('.csv', '')} - Results`
+        : `Batch Results - ${new Date().toLocaleDateString()}`
+
+      // Create Google Sheet
+      toast.loading('Creating Google Sheet...', { id: `export-gsheets-${currentBatchId}` })
+      const createResponse = await fetch('/api/google-sheets/create-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken,
+          title: sheetTitle,
+          data: sheetData,
+        }),
+      })
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => ({}))
+        if (createResponse.status === 401) {
+          // Token expired, clear and retry
+          clearGoogleToken()
+          throw new Error('Session expired. Please try again.')
+        }
+        throw new Error(errorData.error || 'Failed to create Google Sheet')
+      }
+
+      const { spreadsheetUrl } = await createResponse.json()
+
+      // Open Google Sheet in new tab
+      window.open(spreadsheetUrl, '_blank')
+
+      toast.success('Google Sheet Created!', {
+        description: 'Opened in new tab',
+        id: `export-gsheets-${currentBatchId}`
+      })
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error('Google Sheets export failed'), {
+        source: 'BulkProcessor/handleExportToGoogleSheets',
+        batchId: batchProcessor.batchId
+      })
+      toast.error('Google Sheets Export Failed', {
+        description: err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.',
+        id: `export-gsheets-${batchProcessor.batchId}`
+      })
+    }
+  }, [batchProcessor.batchId, csvParser.csvData])
+
   const handleExport = useCallback(async () => {
     // Unified batch ID: use current batch (works for both test and full batches)
     const currentBatchId = batchProcessor.batchId
@@ -1197,6 +1350,7 @@ export default function BulkProcessor() {
               progress={batchProcessor.progress ?? undefined}
               processingStartTime={processingStartTime}
               onExport={handleExport}
+              onExportToGoogleSheets={handleExportToGoogleSheets}
               isTesting={isTesting}
               testStartTime={testStartTime}
               testEstimatedSeconds={isTesting && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
