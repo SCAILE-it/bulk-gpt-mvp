@@ -125,56 +125,61 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
       clientId: GOOGLE_CLIENT_ID.substring(0, 20) + '...',
       scopes: SCOPES,
       currentOrigin: window.location.origin,
+      currentUrl: window.location.href,
     })
     
+    // Define callback FIRST (before creating tokenClient) - matching test file pattern
+    const oauthCallback = (response: { access_token?: string; error?: string; error_description?: string; expires_in?: number }) => {
+      callbackFired = true
+      if (timeoutId) clearTimeout(timeoutId)
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+      
+      debugLog('success', `🎉 OAuth callback fired after ${elapsed}s`, {
+        hasError: !!response.error,
+        hasAccessToken: !!response.access_token,
+        error: response.error,
+        errorDescription: response.error_description,
+        tokenLength: response.access_token?.length,
+        expiresIn: response.expires_in,
+        fullResponse: response,
+      })
+
+      if (response.error) {
+        let errorMessage = response.error
+        if (response.error === 'redirect_uri_mismatch') {
+          errorMessage = `OAuth configuration error: redirect_uri_mismatch. Current origin: ${window.location.origin}. Please check GOOGLE_OAUTH_SETUP.md and ensure ${window.location.origin} is in Authorized JavaScript origins.`
+        } else if (response.error === 'access_denied') {
+          errorMessage = 'Access denied. Check OAuth consent screen configuration in Google Cloud Console. Ensure app is published (not in Testing mode).'
+        } else if (response.error_description) {
+          errorMessage = `${response.error}: ${response.error_description}`
+        }
+        debugLog('error', '❌ OAuth error in callback', { error: errorMessage, fullError: response })
+        reject(new Error(errorMessage))
+        return
+      }
+      
+      if (response.access_token) {
+        debugLog('success', '✅ Access token received successfully', { 
+          tokenLength: response.access_token.length,
+          expiresIn: response.expires_in 
+        })
+        resolve({
+          accessToken: response.access_token,
+          expiresIn: response.expires_in || 3600,
+        })
+      } else {
+        const error = 'No access token received in callback response'
+        debugLog('error', '❌ ' + error, { fullResponse: response })
+        reject(new Error(error))
+      }
+    }
+    
     try {
+      // Create token client with callback - matching test file pattern exactly
       const tokenClient = window.google!.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: SCOPES,
-        callback: (response: { access_token?: string; error?: string; error_description?: string; expires_in?: number }) => {
-          callbackFired = true
-          if (timeoutId) clearTimeout(timeoutId)
-          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-          
-          debugLog('success', `🎉 OAuth callback fired after ${elapsed}s`, {
-            hasError: !!response.error,
-            hasAccessToken: !!response.access_token,
-            error: response.error,
-            errorDescription: response.error_description,
-            tokenLength: response.access_token?.length,
-            expiresIn: response.expires_in,
-            fullResponse: response,
-          })
-
-          if (response.error) {
-            let errorMessage = response.error
-            if (response.error === 'redirect_uri_mismatch') {
-              errorMessage = `OAuth configuration error: redirect_uri_mismatch. Current origin: ${window.location.origin}. Please check GOOGLE_OAUTH_SETUP.md`
-            } else if (response.error === 'access_denied') {
-              errorMessage = 'Access denied. Check OAuth consent screen configuration in Google Cloud Console.'
-            } else if (response.error_description) {
-              errorMessage = `${response.error}: ${response.error_description}`
-            }
-            debugLog('error', '❌ OAuth error in callback', { error: errorMessage, fullError: response })
-            reject(new Error(errorMessage))
-            return
-          }
-          
-          if (response.access_token) {
-            debugLog('success', '✅ Access token received successfully', { 
-              tokenLength: response.access_token.length,
-              expiresIn: response.expires_in 
-            })
-            resolve({
-              accessToken: response.access_token,
-              expiresIn: response.expires_in || 3600,
-            })
-          } else {
-            const error = 'No access token received in callback response'
-            debugLog('error', '❌ ' + error, { fullResponse: response })
-            reject(new Error(error))
-          }
-        },
+        callback: oauthCallback,
       })
 
       // Add timeout to detect if callback never fires
@@ -183,17 +188,24 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
           const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
           debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - OAuth callback never fired`, {
             elapsedSeconds: elapsed,
-            troubleshooting: 'Check if popup completed authorization and closed automatically',
+            troubleshooting: [
+              'Popup may have closed before completing authorization',
+              'Check browser console in the popup window for errors',
+              'Verify OAuth consent screen is published (not in Testing mode)',
+              `Verify ${window.location.origin} is in Authorized JavaScript origins`,
+              'Try clearing browser cache/cookies and retry',
+            ],
           })
-          reject(new Error(`OAuth timeout after ${elapsed}s. The popup may have been blocked or authorization was not completed.`))
+          reject(new Error(`OAuth timeout after ${elapsed}s. The popup may have been blocked, closed prematurely, or there may be an OAuth configuration issue. Check Debug Logger for details.`))
         }
       }, 60000) // 60 second timeout
 
       debugLog('info', '👁️ Requesting access token (popup should open)...')
+      debugLog('info', '💡 IMPORTANT: Complete authorization in popup and wait for it to close automatically')
       
       // Request access token - matching test file pattern exactly
       tokenClient.requestAccessToken({ prompt: 'consent' })
-      debugLog('info', '✅ requestAccessToken() called - waiting for callback...')
+      debugLog('info', '✅ requestAccessToken() called - callback registered, waiting for popup...')
       
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId)
