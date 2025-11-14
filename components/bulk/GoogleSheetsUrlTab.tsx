@@ -230,10 +230,19 @@ export function GoogleSheetsUrlTab({
             expiresIn: authResult.expiresIn 
           })
         } catch (tokenError) {
+          const errorMessage = tokenError instanceof Error ? tokenError.message : String(tokenError)
           debugLog('error', '❌ Failed to get OAuth token', { 
-            error: tokenError instanceof Error ? tokenError.message : String(tokenError),
+            error: errorMessage,
             stack: tokenError instanceof Error ? tokenError.stack : undefined
           })
+          
+          // Provide user-friendly error message
+          if (errorMessage.includes('timeout') || errorMessage.includes('popup')) {
+            setError('OAuth popup did not open or was blocked. Please:\n1. Check your browser\'s popup blocker settings\n2. Allow popups for bulk-gpt.com\n3. Try clicking "Pick from Google Drive" again\n4. If the issue persists, check the Debug Logger (bottom right) for details.')
+          } else {
+            setError(`Failed to authenticate with Google: ${errorMessage}. Check Debug Logger (bottom right) for details.`)
+          }
+          
           throw tokenError
         }
       } else {

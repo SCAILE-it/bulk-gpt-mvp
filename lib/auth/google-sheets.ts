@@ -188,18 +188,44 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
       // Try to detect if popup was blocked
       try {
         // Request access token (will show popup if not already authorized)
+        // Note: Google Identity Services uses a popup window for OAuth
+        // If popup is blocked, callback will never fire
         tokenClient.requestAccessToken({ prompt: 'consent' })
         debugLog('info', '✅ requestAccessToken() called - waiting for popup/callback...')
+        debugLog('info', '💡 TIP: Check if a popup window opened. If not, your browser may be blocking it.')
         
         // Check if popup was blocked (this is a best-effort check)
+        // We can't directly detect popup blocking, but we can warn after a delay
         setTimeout(() => {
-          // If callback hasn't fired after 2 seconds, check if we can detect popup blocking
+          // If callback hasn't fired after 3 seconds, warn about popup blocking
           if (!callbackFired) {
-            debugLog('warn', '⏳ Still waiting for callback after 2s - popup may be blocked or user hasn\'t interacted', {
+            debugLog('warn', '⏳ Still waiting for callback after 3s', {
               elapsedSeconds: ((Date.now() - startTime) / 1000).toFixed(1),
+              possibleIssues: [
+                'Popup may be blocked by browser',
+                'User may not have interacted with popup',
+                'OAuth consent screen may have an error',
+                'Check browser address bar for popup blocker icon',
+              ],
             })
           }
-        }, 2000)
+        }, 3000)
+        
+        // Additional check after 10 seconds
+        setTimeout(() => {
+          if (!callbackFired) {
+            debugLog('warn', '⏳ Still waiting after 10s - likely popup issue', {
+              elapsedSeconds: ((Date.now() - startTime) / 1000).toFixed(1),
+              troubleshooting: [
+                '1. Check browser popup blocker settings',
+                '2. Look for popup blocker icon in address bar',
+                '3. Try allowing popups for bulk-gpt.com',
+                '4. Check if OAuth consent screen is published in Google Cloud Console',
+                '5. Verify redirect URIs match in Google Cloud Console',
+              ],
+            })
+          }
+        }, 10000)
       } catch (requestError) {
         clearTimeout(timeout)
         debugLog('error', '❌ Error calling requestAccessToken', { 
