@@ -224,11 +224,20 @@ export function GoogleSheetsUrlTab({
       console.log('4. Building picker...')
       // Add timeout to reset loading state if picker doesn't open
       let loadingTimeout: NodeJS.Timeout | null = null
+      const timeoutDuration = 15000 // 15 seconds for production
       loadingTimeout = setTimeout(() => {
-        console.error('[Google Picker] Timeout after 10 seconds - picker did not open')
+        console.error('[Google Picker] Timeout after', timeoutDuration / 1000, 'seconds - picker did not open')
+        console.error('[Google Picker] Debug info:', {
+          scriptsLoaded,
+          hasGoogle: !!window.google,
+          hasPicker: !!window.google?.picker,
+          hasToken: !!accessToken,
+          tokenLength: accessToken?.length,
+          currentUrl: window.location.href,
+        })
         setIsPickerLoading(false)
-        setError('Google Picker failed to open after 10 seconds. Check: 1) Google Picker API enabled in Google Cloud Console, 2) Pop-ups not blocked, 3) Browser console for errors.')
-      }, 10000) // 10 second timeout
+        setError(`Google Picker failed to open after ${timeoutDuration / 1000} seconds. Check: 1) Google Picker API enabled in Google Cloud Console, 2) Pop-ups not blocked, 3) Browser console (F12) for errors.`)
+      }, timeoutDuration)
 
       // Open Google Picker
       console.log('   Creating PickerBuilder...')
@@ -240,13 +249,18 @@ export function GoogleSheetsUrlTab({
       const pickerWithView = picker
         .addView(window.google.picker!.ViewId.SPREADSHEETS) as typeof pickerBuilder
       console.log('   Setting callback...')
-      const pickerWithCallback = pickerWithView
+        const pickerWithCallback = pickerWithView
         .setCallback(async (data: unknown) => {
           console.log('[Google Picker] Callback triggered!', data)
+          console.log('[Google Picker] Callback timestamp:', new Date().toISOString())
+          console.log('[Google Picker] Callback data type:', typeof data)
+          console.log('[Google Picker] Callback data keys:', data ? Object.keys(data as object) : 'null')
+          
           // Clear timeout since picker opened and callback was triggered
           if (loadingTimeout) {
             clearTimeout(loadingTimeout)
             loadingTimeout = null
+            console.log('[Google Picker] Timeout cleared')
           }
           
           const pickerData = data as PickerResponse
@@ -254,6 +268,7 @@ export function GoogleSheetsUrlTab({
           
           const action = pickerData[window.google!.picker!.Response.ACTION] as string
           console.log('[Google Picker] Action:', action)
+          console.log('[Google Picker] Expected PICKED action:', window.google!.picker!.Action.PICKED)
           if (action === window.google!.picker!.Action.PICKED && pickerData.DOCUMENTS && pickerData.DOCUMENTS.length > 0) {
             const doc = pickerData.DOCUMENTS[0]
             const sheetId = doc.id

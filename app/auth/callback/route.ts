@@ -95,4 +95,3 @@ export async function GET(request: Request) {
   // Supabase SSR client handles this, but we ensure redirect uses same origin
   return response
 }
-

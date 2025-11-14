@@ -797,9 +797,18 @@ export default function BulkProcessor() {
       let results: ExportResult[] = []
       
       try {
+        console.log('[Google Sheets Export] Fetching batch results from API:', `/api/batch/${currentBatchId}-status/status`)
         const statusResponse = await fetch(`/api/batch/${currentBatchId}-status/status`)
+        console.log('[Google Sheets Export] API response status:', statusResponse.status, statusResponse.statusText)
+        
         if (statusResponse.ok) {
           const statusData = await statusResponse.json() as { results?: StatusResult[] }
+          console.log('[Google Sheets Export] API response data:', {
+            hasResults: !!statusData.results,
+            resultsCount: statusData.results?.length || 0,
+            batchId: currentBatchId,
+          })
+          
           if (statusData.results && Array.isArray(statusData.results) && statusData.results.length > 0) {
             results = statusData.results.map((r: StatusResult) => ({
               input_data: r.input || {},
@@ -810,49 +819,106 @@ export default function BulkProcessor() {
               output_tokens: r.output_tokens || 0,
               model: r.model || ''
             }))
+            console.log('[Google Sheets Export] Mapped results:', results.length)
+          } else {
+            console.warn('[Google Sheets Export] API returned OK but no results array or empty array')
           }
+        } else {
+          const errorText = await statusResponse.text().catch(() => 'Unable to read error response')
+          console.error('[Google Sheets Export] API error response:', {
+            status: statusResponse.status,
+            statusText: statusResponse.statusText,
+            errorText: errorText.substring(0, 200),
+          })
         }
-      } catch {
+      } catch (fetchError) {
+        console.error('[Google Sheets Export] Fetch error:', {
+          error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+          batchId: currentBatchId,
+        })
         // Fallback to database
+        console.log('[Google Sheets Export] Falling back to database query...')
         const supabase = createClient()
         if (supabase) {
-          const { data: dbResults } = await supabase
-            .from('batch_results')
-            .select('input_data, output_data, status, error_message, input_tokens, output_tokens, model')
-            .eq('batch_id', currentBatchId)
-            .order('id', { ascending: true })
-          results = dbResults || []
+          try {
+            const { data: dbResults, error: dbError } = await supabase
+              .from('batch_results')
+              .select('input_data, output_data, status, error_message, input_tokens, output_tokens, model')
+              .eq('batch_id', currentBatchId)
+              .order('id', { ascending: true })
+            
+            if (dbError) {
+              console.error('[Google Sheets Export] Database query error:', dbError)
+            } else {
+              console.log('[Google Sheets Export] Database query success:', {
+                resultsCount: dbResults?.length || 0,
+                batchId: currentBatchId,
+              })
+            }
+            
+            results = dbResults || []
+          } catch (dbError) {
+            console.error('[Google Sheets Export] Database query exception:', dbError)
+          }
+        } else {
+          console.error('[Google Sheets Export] Supabase client not available')
         }
       }
 
       if (!results || results.length === 0) {
+        console.warn('[Google Sheets Export] No results found. Checking batch status...')
         // Check if batch actually exists and its status
         try {
-          const batchStatusResponse = await fetch(`/api/batch/${currentBatchId}/status`)
+          // Try both API path formats
+          const batchStatusUrl = `/api/batch/${currentBatchId}-status/status`
+          console.log('[Google Sheets Export] Checking batch status at:', batchStatusUrl)
+          const batchStatusResponse = await fetch(batchStatusUrl)
+          console.log('[Google Sheets Export] Batch status response:', {
+            status: batchStatusResponse.status,
+            statusText: batchStatusResponse.statusText,
+            ok: batchStatusResponse.ok,
+          })
+          
           if (batchStatusResponse.ok) {
             const batchStatus = await batchStatusResponse.json()
-            const isComplete = batchStatus.status === 'completed' || batchStatus.status === 'failed'
+            console.log('[Google Sheets Export] Batch status data:', {
+              batchId: batchStatus.batchId,
+              status: batchStatus.status,
+              totalRows: batchStatus.totalRows,
+              processedRows: batchStatus.processedRows,
+              resultsCount: batchStatus.results?.length || 0,
+            })
+            
+            const isComplete = batchStatus.status === 'completed' || batchStatus.status === 'failed' || batchStatus.status === 'completed_with_errors'
             
             if (isComplete) {
+              console.error('[Google Sheets Export] Batch completed but no results found')
               toast.error('Export Failed', {
-                description: 'Batch completed but no results were found. The batch may have failed or produced no output.',
+                description: `Batch completed (status: ${batchStatus.status}) but no results were found. The batch may have failed or produced no output. Check console for details.`,
                 id: `export-gsheets-${currentBatchId}`
               })
             } else {
+              console.warn('[Google Sheets Export] Batch still processing')
               toast.warning('No Results Available', {
-                description: 'The batch is still processing. Please wait a few moments and try again.',
+                description: `The batch is still processing (status: ${batchStatus.status}). Please wait a few moments and try again.`,
                 id: `export-gsheets-${currentBatchId}`
               })
             }
           } else {
+            const errorText = await batchStatusResponse.text().catch(() => 'Unable to read error')
+            console.error('[Google Sheets Export] Batch status check failed:', {
+              status: batchStatusResponse.status,
+              errorText: errorText.substring(0, 200),
+            })
             toast.error('Export Failed', {
-              description: 'Unable to fetch batch results. Please try refreshing the page.',
+              description: `Unable to fetch batch status (HTTP ${batchStatusResponse.status}). Check browser console (F12) for details.`,
               id: `export-gsheets-${currentBatchId}`
             })
           }
-        } catch {
+        } catch (statusError) {
+          console.error('[Google Sheets Export] Batch status check exception:', statusError)
           toast.error('Export Failed', {
-            description: 'Unable to fetch batch results. Please try refreshing the page.',
+            description: `Unable to fetch batch results. Error: ${statusError instanceof Error ? statusError.message : 'Unknown error'}. Check browser console (F12) for details.`,
             id: `export-gsheets-${currentBatchId}`
           })
         }
