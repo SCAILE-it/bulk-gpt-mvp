@@ -20,7 +20,8 @@ interface AuthFormProps {
  * Authentication form component - LinkedIn OAuth only for beta
  * Follows SOLID principles: Single Responsibility, Open/Closed
  */
-export function AuthForm({ onSuccess: _onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function AuthForm({ onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
   const [isLoadingLinkedIn, setIsLoadingLinkedIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
