@@ -161,6 +161,32 @@ export function PromptSection({
 
   const hasPreview = csvData && csvData.rows.length > 0 && prompt && filledPrompt !== prompt
 
+  // Insert variable at cursor position
+  const insertVariable = useCallback((variableName: string) => {
+    if (previewMode) return
+    
+    const textarea = textareaRef.current
+    if (!textarea) return
+    
+    const variable = `{{${variableName}}}`
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const textBefore = prompt.substring(0, start)
+    const textAfter = prompt.substring(end)
+    const newPrompt = textBefore + variable + textAfter
+    
+    onPromptChange(newPrompt)
+    
+    // Set cursor position after inserted variable
+    setTimeout(() => {
+      if (textarea) {
+        const newCursorPos = start + variable.length
+        textarea.setSelectionRange(newCursorPos, newCursorPos)
+        textarea.focus()
+      }
+    }, 0)
+  }, [prompt, previewMode, onPromptChange])
+
   // Sync highlight overlay with textarea scroll and content
   useEffect(() => {
     if (!textareaRef.current || !highlightRef.current) return
@@ -285,29 +311,37 @@ export function PromptSection({
                 const isUsed = promptVariables.includes(col)
                 
                 return (
-                  <span
+                  <button
                     key={col}
+                    type="button"
+                    onClick={() => insertVariable(col)}
+                    disabled={previewMode}
                     className={cn(
-                      "font-mono text-xs px-1.5 py-0.5 rounded",
+                      "font-mono text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer",
+                      "hover:opacity-80 active:scale-95",
+                      "disabled:cursor-not-allowed disabled:opacity-50",
                       isUsed
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-muted/50 text-muted-foreground border border-border/30'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
+                        : 'bg-muted/50 text-muted-foreground border border-border/30 hover:bg-muted/70'
                     )}
-                    title={isUsed ? 'Variable used in prompt' : 'Available variable'}
+                    title={isUsed ? 'Variable used in prompt - Click to insert' : 'Click to insert variable'}
                   >
                     {`{{${col}}}`}
-                  </span>
+                  </button>
                 )
               })}
               {/* Show missing variables (used in prompt but not in available columns) */}
               {variableValidation?.missing.map(v => (
-                <span
+                <button
                   key={v}
-                  className="font-mono text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30"
-                  title="Variable used in prompt but column is deselected"
+                  type="button"
+                  onClick={() => insertVariable(v)}
+                  disabled={previewMode}
+                  className="font-mono text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors cursor-pointer hover:opacity-80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Variable used in prompt but column is deselected - Click to insert"
                 >
                   {`{{${v}}}`}
-                </span>
+                </button>
               ))}
             </div>
           </div>
