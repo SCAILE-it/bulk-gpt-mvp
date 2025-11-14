@@ -49,6 +49,7 @@ import { DebugLogger } from '@/components/debug/DebugLogger'
 import { generateExportFilename } from '@/lib/export-filename'
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow'
 import { TEMPLATE_CATEGORIES, type PromptTemplate } from '@/lib/constants/promptTemplates'
+import { saveCSVFile, restoreCSVFile, clearCSVFile } from '@/lib/storage/csv-storage'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -62,7 +63,7 @@ export default function BulkProcessor() {
   const debugLog = useDebugLogger()
 
   // === JOB CONTEXT PERSISTENCE ===
-  const { saveContext, restoreContext, clearContext } = useJobContext()
+  const { saveContext, restoreContext, clearContext, loadContext } = useJobContext()
   const [hasRestoredContext, setHasRestoredContext] = useState(false)
 
   // === CONFIG STATE ===
@@ -128,37 +129,59 @@ export default function BulkProcessor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount
 
-  // Restore job context on mount (only once)
+  // Restore job context and CSV file on mount (only once)
   useEffect(() => {
     if (hasRestoredContext) return
 
-    const csvFilename = fileUpload.file?.name
-    const csvColumnCount = csvParser.csvData?.columns.length
-    const restored = restoreContext(csvFilename, csvColumnCount)
-
-    if (Object.keys(restored).length > 0) {
-      // Restore all context
-      if (restored.prompt) setPrompt(restored.prompt)
-      if (restored.outputFields) setOutputFields(restored.outputFields)
-      if (restored.selectedTools) setSelectedTools(restored.selectedTools)
-      if (restored.optimizeInput !== undefined) setOptimizeInput(restored.optimizeInput)
-      if (restored.optimizeTask !== undefined) setOptimizeTask(restored.optimizeTask)
-      if (restored.optimizeOutput !== undefined) setOptimizeOutput(restored.optimizeOutput)
+    const restoreFileAndContext = async () => {
+      // First, try to restore CSV file from IndexedDB
+      const savedContext = loadContext()
+      const csvFilename = savedContext?.csvFilename
       
-      // Only restore selectedInputColumns if CSV matches
-      if (restored.selectedInputColumns && csvParser.csvData) {
-        // Validate that restored columns exist in current CSV
-        const validColumns = restored.selectedInputColumns.filter(col =>
-          csvParser.csvData!.columns.includes(col)
-        )
-        if (validColumns.length > 0) {
-          setSelectedInputColumns(validColumns)
+      // Try to restore the file
+      const restoredFile = await restoreCSVFile(csvFilename)
+      
+      if (restoredFile) {
+        // File found - upload and parse it
+        try {
+          await fileUpload.uploadFile(restoredFile)
+          await csvParser.parseFile(restoredFile)
+        } catch (err) {
+          console.debug('Failed to restore CSV file:', err)
         }
-        // If no valid columns, let existing logic handle it (defaults to all columns)
       }
+
+      // Now restore job context (after file is loaded if it exists)
+      const currentCsvFilename = fileUpload.file?.name || restoredFile?.name || csvFilename
+      const currentCsvColumnCount = csvParser.csvData?.columns.length
+      const restored = restoreContext(currentCsvFilename, currentCsvColumnCount)
+
+      if (Object.keys(restored).length > 0) {
+        // Restore all context
+        if (restored.prompt) setPrompt(restored.prompt)
+        if (restored.outputFields) setOutputFields(restored.outputFields)
+        if (restored.selectedTools) setSelectedTools(restored.selectedTools)
+        if (restored.optimizeInput !== undefined) setOptimizeInput(restored.optimizeInput)
+        if (restored.optimizeTask !== undefined) setOptimizeTask(restored.optimizeTask)
+        if (restored.optimizeOutput !== undefined) setOptimizeOutput(restored.optimizeOutput)
+        
+        // Only restore selectedInputColumns if CSV matches
+        if (restored.selectedInputColumns && csvParser.csvData) {
+          // Validate that restored columns exist in current CSV
+          const validColumns = restored.selectedInputColumns.filter(col =>
+            csvParser.csvData!.columns.includes(col)
+          )
+          if (validColumns.length > 0) {
+            setSelectedInputColumns(validColumns)
+          }
+          // If no valid columns, let existing logic handle it (defaults to all columns)
+        }
+      }
+
+      setHasRestoredContext(true)
     }
 
-    setHasRestoredContext(true)
+    restoreFileAndContext()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount
 
@@ -431,8 +454,12 @@ export default function BulkProcessor() {
       // Parse CSV immediately (don't check state - it hasn't updated yet!)
       const parsed = await csvParser.parseFile(uploadedFile)
 
-      // Save CSV filename to context when file is uploaded
+      // Save CSV file to IndexedDB and update context
       if (parsed && hasRestoredContext) {
+        // Save file to IndexedDB for persistence
+        await saveCSVFile(uploadedFile)
+        
+        // Save CSV filename to context
         saveContext({
           csvFilename: uploadedFile.name,
           csvColumnCount: parsed.columns.length,
@@ -521,7 +548,7 @@ export default function BulkProcessor() {
   }, [])
 
   // === RESET CONFIGURATION ===
-  const handleResetConfiguration = useCallback(() => {
+  const handleResetConfiguration = useCallback(async () => {
     // Reset all configuration state
     setPrompt('Write a bio for {{name}} at {{company}}')
     setOutputFields([])
@@ -530,12 +557,18 @@ export default function BulkProcessor() {
     setOptimizeTask(true)
     setOptimizeOutput(true)
     
-    // Reset selected input columns to all columns if CSV exists
-    if (csvParser.csvData) {
-      setSelectedInputColumns(csvParser.csvData.columns)
-    } else {
-      setSelectedInputColumns([])
+    // Clear CSV file from IndexedDB
+    const csvFilename = fileUpload.file?.name
+    if (csvFilename) {
+      await clearCSVFile(csvFilename)
     }
+    
+    // Clear file upload state
+    fileUpload.clearFile()
+    csvParser.clearData()
+    
+    // Reset selected input columns
+    setSelectedInputColumns([])
     
     // Clear job context from localStorage
     clearContext()
@@ -549,7 +582,7 @@ export default function BulkProcessor() {
     toast.success('Configuration reset')
     
     trackEvent(ANALYTICS_EVENTS.JOB_RESET, {})
-  }, [csvParser.csvData, clearContext, clearOptimization])
+  }, [csvParser, fileUpload, clearContext, clearOptimization])
 
   // === TEST (1 ROW) - Unified with batch processor ===
   const handleTest = useCallback(async () => {
