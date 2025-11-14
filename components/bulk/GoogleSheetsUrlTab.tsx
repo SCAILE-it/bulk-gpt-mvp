@@ -176,8 +176,13 @@ export function GoogleSheetsUrlTab({
 
   // Handle Google Picker selection
   const handlePickFromDrive = useCallback(async () => {
+    console.group('[Google Picker] Starting picker flow')
+    console.log('1. Checking scripts loaded:', scriptsLoaded)
+    
     if (!scriptsLoaded) {
+      console.error('[Google Picker] Scripts not loaded')
       setError('Google Picker API not loaded yet. Please wait a moment and try again.')
+      console.groupEnd()
       return
     }
 
@@ -186,32 +191,58 @@ export function GoogleSheetsUrlTab({
 
     try {
       // Get or request Google access token
+      console.log('2. Getting access token...')
       let accessToken = getStoredGoogleToken()
+      const hasStoredToken = !!accessToken && isGoogleTokenValid()
+      console.log('   Stored token exists:', !!accessToken, 'Valid:', hasStoredToken)
+      
       if (!accessToken || !isGoogleTokenValid()) {
+        console.log('   Requesting new token...')
         const authResult = await getGoogleAccessToken()
         accessToken = authResult.accessToken
         storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+        console.log('   Token obtained, length:', accessToken.length)
       }
 
+      console.log('3. Checking Google Picker API availability...')
+      console.log('   window.google exists:', !!window.google)
+      console.log('   window.google.picker exists:', !!window.google?.picker)
+      console.log('   window.google.accounts exists:', !!window.google?.accounts)
+      console.log('   window.google.accounts.oauth2 exists:', !!window.google?.accounts?.oauth2)
+      
       if (!window.google?.picker) {
-        throw new Error('Google Picker API not available')
+        const errorMsg = 'Google Picker API not available. Check browser console for details.'
+        console.error('[Google Picker] API not available:', {
+          hasGoogle: !!window.google,
+          hasPicker: !!window.google?.picker,
+          hasAccounts: !!window.google?.accounts,
+          hasOAuth2: !!window.google?.accounts?.oauth2,
+        })
+        throw new Error(errorMsg)
       }
 
+      console.log('4. Building picker...')
       // Add timeout to reset loading state if picker doesn't open
       let loadingTimeout: NodeJS.Timeout | null = null
       loadingTimeout = setTimeout(() => {
+        console.error('[Google Picker] Timeout after 10 seconds - picker did not open')
         setIsPickerLoading(false)
-        setError('Google Picker failed to open. Please check if pop-ups are blocked and try again.')
+        setError('Google Picker failed to open after 10 seconds. Check: 1) Google Picker API enabled in Google Cloud Console, 2) Pop-ups not blocked, 3) Browser console for errors.')
       }, 10000) // 10 second timeout
 
       // Open Google Picker
+      console.log('   Creating PickerBuilder...')
       const pickerBuilder = new window.google.picker!.PickerBuilder()
+      console.log('   Setting OAuth token...')
       const picker = pickerBuilder
         .setOAuthToken(accessToken) as typeof pickerBuilder
+      console.log('   Adding SPREADSHEETS view...')
       const pickerWithView = picker
         .addView(window.google.picker!.ViewId.SPREADSHEETS) as typeof pickerBuilder
+      console.log('   Setting callback...')
       const pickerWithCallback = pickerWithView
         .setCallback(async (data: unknown) => {
+          console.log('[Google Picker] Callback triggered!', data)
           // Clear timeout since picker opened and callback was triggered
           if (loadingTimeout) {
             clearTimeout(loadingTimeout)
@@ -222,6 +253,7 @@ export function GoogleSheetsUrlTab({
           setIsPickerLoading(false)
           
           const action = pickerData[window.google!.picker!.Response.ACTION] as string
+          console.log('[Google Picker] Action:', action)
           if (action === window.google!.picker!.Action.PICKED && pickerData.DOCUMENTS && pickerData.DOCUMENTS.length > 0) {
             const doc = pickerData.DOCUMENTS[0]
             const sheetId = doc.id
@@ -275,32 +307,50 @@ export function GoogleSheetsUrlTab({
           }
         }) as typeof pickerBuilder
       
+      console.log('   Building picker instance...')
       const builtPicker = pickerWithCallback.build()
+      console.log('   Picker built successfully:', !!builtPicker)
+      console.log('   Built picker methods:', Object.keys(builtPicker))
       
       try {
-        console.log('[Google Picker] Attempting to open picker...', {
-          hasAccessToken: !!accessToken,
-          tokenLength: accessToken?.length,
-          pickerBuilder: !!builtPicker,
-        })
+        console.log('5. Calling setVisible(true)...')
+        console.log('   Access token present:', !!accessToken)
+        console.log('   Access token length:', accessToken?.length)
+        console.log('   Built picker exists:', !!builtPicker)
+        console.log('   setVisible method exists:', typeof builtPicker.setVisible === 'function')
+        
         builtPicker.setVisible(true)
-        console.log('[Google Picker] setVisible(true) called successfully')
+        console.log('   ✓ setVisible(true) called successfully')
+        console.log('   Waiting for picker to open (callback will fire when user interacts)...')
         // Note: Timeout will be cleared by the callback when picker opens
         // If picker doesn't open within 10 seconds, timeout will reset loading state
       } catch (pickerError) {
-        console.error('[Google Picker] Error opening picker:', pickerError)
+        console.error('[Google Picker] Exception thrown by setVisible:', pickerError)
+        console.error('   Error type:', pickerError instanceof Error ? pickerError.constructor.name : typeof pickerError)
+        console.error('   Error message:', pickerError instanceof Error ? pickerError.message : String(pickerError))
+        console.error('   Error stack:', pickerError instanceof Error ? pickerError.stack : 'No stack')
+        
         if (loadingTimeout) {
           clearTimeout(loadingTimeout)
         }
         setIsPickerLoading(false)
         const errorMsg = pickerError instanceof Error ? pickerError.message : 'Unknown error'
-        setError(`Failed to open Google Picker: ${errorMsg}. Please ensure Google Picker API is enabled in Google Cloud Console.`)
+        setError(`Failed to open Google Picker: ${errorMsg}. Check browser console (F12) for details. Ensure Google Picker API is enabled in Google Cloud Console.`)
+        console.groupEnd()
         throw new Error(`Failed to open Google Picker: ${errorMsg}`)
       }
+      
+      console.groupEnd()
     } catch (err) {
+      console.error('[Google Picker] Top-level error:', err)
+      console.error('   Error type:', err instanceof Error ? err.constructor.name : typeof err)
+      console.error('   Error message:', err instanceof Error ? err.message : String(err))
+      console.error('   Error stack:', err instanceof Error ? err.stack : 'No stack')
+      console.groupEnd()
+      
       setIsPickerLoading(false)
       const errorMessage = err instanceof Error ? err.message : 'Failed to open Google Picker'
-      setError(errorMessage)
+      setError(`${errorMessage}. Open browser console (F12) for detailed debugging information.`)
       logError(err instanceof Error ? err : new Error(String(err)), {
         source: 'GoogleSheetsUrlTab/handlePickFromDrive',
       })
