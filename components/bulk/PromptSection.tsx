@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { FileText, HelpCircle, XCircle, Eye, EyeOff } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 import { Textarea } from '@/components/ui/textarea'
