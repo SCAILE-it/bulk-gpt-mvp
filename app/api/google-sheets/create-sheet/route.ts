@@ -144,7 +144,8 @@ export async function POST(request: NextRequest): Promise<Response> {
         errorData = { raw: errorText.substring(0, 200) }
       }
       
-      const errorMessage = errorData.error?.message || errorData.error || errorData.raw || 'Failed to create spreadsheet'
+      const errorMessageRaw = errorData.error?.message || errorData.error || errorData.raw || 'Failed to create spreadsheet'
+      const errorMessage = typeof errorMessageRaw === 'string' ? errorMessageRaw : String(errorMessageRaw)
       const errorReason = errorData.error?.errors?.[0]?.reason || errorData.error?.status || ''
       
       // Check if the error is specifically about API not being enabled
