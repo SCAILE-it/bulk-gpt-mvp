@@ -16,6 +16,7 @@ interface DataInputTabsProps {
   isUploading: boolean
   onFileUpload: (file: File) => void
   onGoogleSheetsDataLoaded: (data: ParsedCSV) => void
+  onClearData?: () => void
   selectedInputColumns?: string[]
   onInputColumnsChange?: (columns: string[]) => void
 }
@@ -26,6 +27,7 @@ export function DataInputTabs({
   isUploading,
   onFileUpload,
   onGoogleSheetsDataLoaded,
+  onClearData,
   selectedInputColumns,
   onInputColumnsChange
 }: DataInputTabsProps) {
@@ -83,6 +85,7 @@ export function DataInputTabs({
           fileName={activeTab === 'sheets' ? fileName : undefined}
           isUploading={isUploading && activeTab === 'sheets'}
           onDataLoaded={onGoogleSheetsDataLoaded}
+          onClearData={onClearData}
           selectedInputColumns={selectedInputColumns}
           onInputColumnsChange={onInputColumnsChange}
         />

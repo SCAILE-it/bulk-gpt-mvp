@@ -507,6 +507,20 @@ export default function BulkProcessor() {
     }
   }, [csvParser])
 
+  // === CLEAR DATA HANDLER ===
+  const handleClearData = useCallback(() => {
+    csvParser.clearData()
+    fileUpload.clearFile()
+    setSelectedInputColumns([])
+    // Clear any stored CSV file from IndexedDB
+    const csvFilename = fileUpload.file?.name
+    if (csvFilename) {
+      clearCSVFile(csvFilename).catch((err) => {
+        console.debug('Failed to clear CSV file from IndexedDB:', err)
+      })
+    }
+  }, [csvParser, fileUpload])
+
   // === KEYBOARD SHORTCUTS ===
   // Note: CSV file input is now handled inside CSVUploadTab component
   // Keyboard shortcut for file upload can be handled at tab level if needed
@@ -1110,6 +1124,7 @@ export default function BulkProcessor() {
                 isUploading={isUploading}
                 onFileUpload={handleFileUpload}
                 onGoogleSheetsDataLoaded={handleGoogleSheetsDataLoaded}
+                onClearData={handleClearData}
                 selectedInputColumns={selectedInputColumns}
                 onInputColumnsChange={setSelectedInputColumns}
               />

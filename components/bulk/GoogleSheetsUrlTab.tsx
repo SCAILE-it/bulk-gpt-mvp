@@ -18,6 +18,7 @@ interface GoogleSheetsUrlTabProps {
   fileName?: string
   isUploading: boolean
   onDataLoaded: (data: ParsedCSV) => void
+  onClearData?: () => void
   selectedInputColumns?: string[]
   onInputColumnsChange?: (columns: string[]) => void
 }
@@ -36,6 +37,7 @@ export function GoogleSheetsUrlTab({
   fileName,
   isUploading,
   onDataLoaded,
+  onClearData,
   selectedInputColumns,
   onInputColumnsChange
 }: GoogleSheetsUrlTabProps) {
@@ -338,6 +340,10 @@ export function GoogleSheetsUrlTab({
             onClick={() => {
               setUrl('')
               setError(null)
+              // Clear the loaded CSV data so user can import a different sheet
+              if (onClearData) {
+                onClearData()
+              }
             }}
             title="Import a different Google Sheet"
             aria-label="Import a different Google Sheet"
