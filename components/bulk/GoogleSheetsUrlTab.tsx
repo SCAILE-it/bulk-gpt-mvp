@@ -66,17 +66,41 @@ export function GoogleSheetsUrlTab({
       return
     }
 
+    // Check if scripts are already in DOM (avoid duplicates)
+    const existingGsiScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
+    const existingPickerScript = document.querySelector('script[src="https://apis.google.com/js/picker.js"]')
+
+    // If scripts exist, wait for them to load
+    if (existingGsiScript && existingPickerScript) {
+      let checkAttempts = 0
+      const maxAttempts = 50 // 5 seconds max wait
+      const checkExisting = () => {
+        checkAttempts++
+        if (window.google?.picker && window.google?.accounts?.oauth2) {
+          setScriptsLoaded(true)
+        } else if (checkAttempts < maxAttempts) {
+          setTimeout(checkExisting, 100)
+        } else {
+          console.error('[Google Sheets] Existing scripts found but APIs not initialized')
+        }
+      }
+      checkExisting()
+      return
+    }
+
     // Load Google Identity Services (for OAuth)
     const gsiScript = document.createElement('script')
     gsiScript.src = 'https://accounts.google.com/gsi/client'
     gsiScript.async = true
     gsiScript.defer = true
+    gsiScript.id = 'google-gsi-script'
 
     // Load Google Picker API
     const pickerScript = document.createElement('script')
     pickerScript.src = 'https://apis.google.com/js/picker.js'
     pickerScript.async = true
     pickerScript.defer = true
+    pickerScript.id = 'google-picker-script'
 
     let gsiLoaded = false
     let pickerLoaded = false
@@ -98,7 +122,10 @@ export function GoogleSheetsUrlTab({
         if (checkAttempts < maxAttempts) {
           setTimeout(checkLoaded, 100)
         } else {
-          console.error('[Google Sheets] Scripts loaded but APIs not initialized')
+          console.error('[Google Sheets] Scripts loaded but APIs not initialized', {
+            hasPicker: !!window.google?.picker,
+            hasOAuth2: !!window.google?.accounts?.oauth2,
+          })
           setError('Google Sheets integration failed to initialize. Please refresh the page.')
         }
       }
@@ -109,9 +136,9 @@ export function GoogleSheetsUrlTab({
       checkLoaded()
     }
     
-    gsiScript.onerror = () => {
-      console.error('[Google Sheets] Failed to load Google Identity Services')
-      setError('Failed to load Google authentication. Please check your internet connection and try again.')
+    gsiScript.onerror = (err) => {
+      console.error('[Google Sheets] Failed to load Google Identity Services', err)
+      setError('Failed to load Google authentication. Please check your browser settings or try refreshing the page.')
     }
 
     pickerScript.onload = () => {
@@ -119,16 +146,31 @@ export function GoogleSheetsUrlTab({
       checkLoaded()
     }
     
-    pickerScript.onerror = () => {
-      console.error('[Google Sheets] Failed to load Google Picker API')
-      setError('Failed to load Google Picker. Please check your internet connection and try again.')
+    pickerScript.onerror = (err) => {
+      console.error('[Google Sheets] Failed to load Google Picker API', err)
+      setError('Failed to load Google Picker. This may be blocked by your browser or security settings. Please try refreshing the page.')
     }
 
-    document.head.appendChild(gsiScript)
-    document.head.appendChild(pickerScript)
+    // Only append if not already in DOM
+    if (!existingGsiScript) {
+      document.head.appendChild(gsiScript)
+    } else {
+      gsiLoaded = true
+    }
+
+    if (!existingPickerScript) {
+      document.head.appendChild(pickerScript)
+    } else {
+      pickerLoaded = true
+    }
+
+    // If both scripts already existed, check immediately
+    if (existingGsiScript && existingPickerScript) {
+      checkLoaded()
+    }
 
     return () => {
-      // Cleanup if component unmounts
+      // Don't remove scripts on unmount as they may be needed by other components
     }
   }, [])
 
