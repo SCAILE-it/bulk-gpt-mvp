@@ -275,9 +275,7 @@ export function GoogleSheetsUrlTab({
           }
         }) as typeof pickerBuilder
       
-      // Set origin for better compatibility
-      const pickerWithOrigin = pickerWithCallback.setOrigin(window.location.origin) as typeof pickerBuilder
-      const builtPicker = pickerWithOrigin.build()
+      const builtPicker = pickerWithCallback.build()
       
       try {
         builtPicker.setVisible(true)
