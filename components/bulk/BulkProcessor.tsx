@@ -826,11 +826,37 @@ export default function BulkProcessor() {
       }
 
       if (!results || results.length === 0) {
-        toast.warning('No Results Available', {
-          description: 'The batch may still be processing. Please wait a few moments and try again.',
-          id: `export-gsheets-${currentBatchId}`
-        })
-          return
+        // Check if batch actually exists and its status
+        try {
+          const batchStatusResponse = await fetch(`/api/batch/${currentBatchId}/status`)
+          if (batchStatusResponse.ok) {
+            const batchStatus = await batchStatusResponse.json()
+            const isComplete = batchStatus.status === 'completed' || batchStatus.status === 'failed'
+            
+            if (isComplete) {
+              toast.error('Export Failed', {
+                description: 'Batch completed but no results were found. The batch may have failed or produced no output.',
+                id: `export-gsheets-${currentBatchId}`
+              })
+            } else {
+              toast.warning('No Results Available', {
+                description: 'The batch is still processing. Please wait a few moments and try again.',
+                id: `export-gsheets-${currentBatchId}`
+              })
+            }
+          } else {
+            toast.error('Export Failed', {
+              description: 'Unable to fetch batch results. Please try refreshing the page.',
+              id: `export-gsheets-${currentBatchId}`
+            })
+          }
+        } catch {
+          toast.error('Export Failed', {
+            description: 'Unable to fetch batch results. Please try refreshing the page.',
+            id: `export-gsheets-${currentBatchId}`
+          })
+        }
+        return
       }
 
       // Flatten results for export (same as CSV export)
@@ -883,21 +909,37 @@ export default function BulkProcessor() {
 
       if (!createResponse.ok) {
         const errorData = await createResponse.json().catch(() => ({}))
+        const errorMessage = errorData.error || errorData.message || 'Failed to create Google Sheet'
+        
         if (createResponse.status === 401) {
           // Token expired, clear and retry
           clearGoogleToken()
-          throw new Error('Session expired. Please try again.')
+          throw new Error('Google authentication expired. Please try again to re-authenticate.')
         }
-        throw new Error(errorData.error || 'Failed to create Google Sheet')
+        
+        if (createResponse.status === 403) {
+          throw new Error('Permission denied. Please ensure Google Drive API is enabled and you have granted the necessary permissions.')
+        }
+        
+        if (createResponse.status === 400) {
+          throw new Error(`Invalid request: ${errorMessage}`)
+        }
+        
+        throw new Error(errorMessage)
       }
 
-      const { spreadsheetUrl } = await createResponse.json()
+      const responseData = await createResponse.json()
+      const spreadsheetUrl = responseData.spreadsheetUrl || responseData.url
+
+      if (!spreadsheetUrl) {
+        throw new Error('Google Sheet was created but no URL was returned. Please check your Google Drive.')
+      }
 
       // Open Google Sheet in new tab
       window.open(spreadsheetUrl, '_blank')
 
       toast.success('Google Sheet Created!', {
-        description: 'Opened in new tab',
+        description: `Opened in new tab (${responseData.rowsWritten || sheetData.length - 1} rows)`,
         id: `export-gsheets-${currentBatchId}`
       })
     } catch (err) {
