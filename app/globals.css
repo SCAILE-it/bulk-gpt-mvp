@@ -231,3 +231,22 @@
 .animation-delay-300 {
   animation-delay: 300ms;
 }
+
+/* Override Radix UI tooltip animations - tooltips appear instantly on hover without flying animation */
+[data-radix-tooltip-content] {
+  animation: none !important;
+  transform: none !important;
+  transition: opacity 100ms ease-in-out !important;
+}
+
+[data-radix-tooltip-content][data-state="delayed-open"] {
+  animation: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+[data-radix-tooltip-content][data-state="closed"] {
+  animation: none !important;
+  transform: none !important;
+  opacity: 0 !important;
+}

@@ -20,8 +20,13 @@ const TooltipContent = React.forwardRef<
     sideOffset={sideOffset}
     className={cn(
       "z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground shadow-md",
+      "!animate-none !transform-none",
       className
     )}
+    style={{
+      animation: 'none',
+      transform: 'none',
+    }}
     {...props}
   />
 ))
