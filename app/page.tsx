@@ -27,7 +27,18 @@ export default function HomePage() {
           return
         }
 
-        const { data: { user }, error } = await supabase.auth.getUser()
+        // Add timeout to prevent hanging
+        const authPromise = supabase.auth.getUser()
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Auth check timeout')), 3000)
+        )
+
+        const result = await Promise.race([
+          authPromise,
+          timeoutPromise
+        ])
+        
+        const { data: { user }, error } = result
         
         if (error) {
           console.error('Auth check error:', error)
@@ -42,6 +53,7 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error('Error checking auth:', err)
+        // On timeout or error, redirect to auth page
         router.replace('/auth')
       }
     }
