@@ -51,8 +51,9 @@ export function Nav() {
   }
 
   const navLinks = [
-    { href: '/bulk', label: 'RUN' },
-    { href: '/dashboard', label: 'EXECUTIONS' },
+    { href: '/context', label: 'Context' },
+    { href: '/bulk', label: 'Bulk Agent' },
+    { href: '/dashboard', label: 'Executions' },
   ]
 
   return (

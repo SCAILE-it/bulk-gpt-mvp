@@ -20,6 +20,16 @@ export async function signInWithLinkedIn(
 ) {
   try {
     const redirectUrl = getAuthCallbackUrl()
+    
+    // Debug logging for localhost development
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      console.log('[LinkedIn OAuth] 🔍 Debug Info:', {
+        redirectUrl,
+        currentOrigin: window.location.origin,
+        currentUrl: window.location.href,
+        note: 'Make sure http://localhost:3000/auth/callback is added to Supabase → Authentication → Providers → LinkedIn → Redirect URLs'
+      })
+    }
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
@@ -30,6 +40,11 @@ export async function signInWithLinkedIn(
     })
 
     if (error) {
+      // Provide helpful error message for localhost development
+      if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+        console.error('[LinkedIn OAuth] ❌ Error:', error)
+        console.error('[LinkedIn OAuth] 💡 Fix: Add http://localhost:3000/auth/callback to Supabase Dashboard → Authentication → Providers → LinkedIn → Redirect URLs')
+      }
       throw error
     }
 
@@ -39,6 +54,7 @@ export async function signInWithLinkedIn(
     logError(err instanceof Error ? err : new Error(String(err)), {
       source: 'signInWithLinkedIn',
       context: 'LinkedIn OAuth',
+      redirectUrl: typeof window !== 'undefined' ? getAuthCallbackUrl() : 'unknown',
     })
     throw err
   }

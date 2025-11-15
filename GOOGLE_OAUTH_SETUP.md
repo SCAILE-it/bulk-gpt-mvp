@@ -116,3 +116,4 @@ After updating the configuration:
 2. Clear browser cache/cookies (or use incognito mode)
 3. Try "Pick from Drive" button again
 4. The OAuth popup should work without `redirect_uri_mismatch` error
+

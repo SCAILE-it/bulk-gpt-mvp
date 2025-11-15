@@ -6,6 +6,7 @@ import type { ParsedCSV } from '@/lib/types'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useContextStorage } from '@/hooks/useContextStorage'
 
 interface PromptSectionProps {
   prompt: string
@@ -75,6 +76,7 @@ export function PromptSection({
   const [previewMode, setPreviewMode] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
+  const { context } = useContextStorage()
 
   // Filter available columns based on selectedInputColumns
   const availableColumns = useMemo(() => {
@@ -90,6 +92,18 @@ export function PromptSection({
     const matches = Array.from(prompt.matchAll(variablePattern))
     return Array.from(new Set(matches.map(m => m[1].trim())))
   }, [prompt])
+
+  // Get context variable names that are set
+  const contextVariableNames = useMemo(() => {
+    const names: string[] = []
+    if (context.tone) names.push('context.tone')
+    if (context.targetCountries) names.push('context.targetCountries')
+    if (context.productDescription) names.push('context.productDescription')
+    if (context.competitors) names.push('context.competitors')
+    if (context.targetIndustries) names.push('context.targetIndustries')
+    if (context.complianceFlags) names.push('context.complianceFlags')
+    return names
+  }, [context])
 
   // Fill variables with first row data (only from selected columns)
   const filledPrompt = useMemo(() => {
@@ -186,6 +200,11 @@ export function PromptSection({
       }
     }, 0)
   }, [prompt, previewMode, onPromptChange])
+
+  // Check if context variable is used in prompt
+  const isContextVariableUsed = useCallback((varName: string) => {
+    return promptVariables.includes(varName)
+  }, [promptVariables])
 
   // Sync highlight overlay with textarea scroll and content
   useEffect(() => {
@@ -302,12 +321,13 @@ export function PromptSection({
 
       {/* Variables and character count */}
       <div className="flex items-start justify-between gap-4 text-xs pt-1">
-        {csvData && (
+        {(csvData || contextVariableNames.length > 0) && (
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-muted-foreground text-xs font-medium">Variables:</span>
-              {/* Show available columns */}
-              {availableColumns.map(col => {
+              
+              {/* CSV Variables */}
+              {csvData && availableColumns.map(col => {
                 const isUsed = promptVariables.includes(col)
                 
                 return (
@@ -330,6 +350,39 @@ export function PromptSection({
                   </button>
                 )
               })}
+              
+              {/* Context Variables */}
+              {contextVariableNames.length > 0 && (
+                <>
+                  {csvData && availableColumns.length > 0 && (
+                    <span className="text-muted-foreground/50 mx-1">•</span>
+                  )}
+                  {contextVariableNames.map(varName => {
+                    const isUsed = isContextVariableUsed(varName)
+                    
+                    return (
+                      <button
+                        key={varName}
+                        type="button"
+                        onClick={() => insertVariable(varName)}
+                        disabled={previewMode}
+                        className={cn(
+                          "font-mono text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer",
+                          "hover:opacity-80 active:scale-95",
+                          "disabled:cursor-not-allowed disabled:opacity-50",
+                          isUsed
+                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30'
+                            : 'bg-blue-500/10 text-blue-300 border border-blue-500/20 hover:bg-blue-500/20'
+                        )}
+                        title={isUsed ? 'Context variable used in prompt - Click to insert' : 'Click to insert context variable'}
+                      >
+                        {`{{${varName}}}`}
+                      </button>
+                    )
+                  })}
+                </>
+              )}
+              
               {/* Show missing variables (used in prompt but not in available columns) */}
               {variableValidation?.missing.map(v => (
                 <button

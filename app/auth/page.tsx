@@ -45,7 +45,7 @@ function AuthPageContent() {
   }
 
   const getDescription = (): string => {
-    return 'Sign in with LinkedIn to start processing CSV data with AI'
+    return 'Sign in with email/password or LinkedIn to start processing CSV data with AI'
   }
 
   return (

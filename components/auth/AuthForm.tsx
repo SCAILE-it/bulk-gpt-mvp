@@ -1,6 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
@@ -11,20 +13,62 @@ export type AuthMode = 'signin' | 'signup' | 'reset'
 
 interface AuthFormProps {
   mode: AuthMode
-  onModeChange: (mode: AuthMode) => void
+  onModeChange?: (mode: AuthMode) => void
   onSuccess: () => void
   returnUrl?: string
 }
 
 /**
- * Authentication form component - LinkedIn OAuth only for beta
+ * Authentication form component - Email/Password for testing, LinkedIn OAuth for production
  * Follows SOLID principles: Single Responsibility, Open/Closed
  */
-export function AuthForm({ returnUrl = '/bulk' }: AuthFormProps) {
+export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isLoadingEmail, setIsLoadingEmail] = useState(false)
   const [isLoadingLinkedIn, setIsLoadingLinkedIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const supabase = createClient()
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!supabase) {
+      const missingVars = []
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missingVars.push('NEXT_PUBLIC_SUPABASE_URL')
+      if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) missingVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+      setError(`Authentication service unavailable. Missing environment variables: ${missingVars.join(', ')}. Please create a .env.local file with your Supabase credentials.`)
+      console.error('[Auth] Missing Supabase environment variables:', missingVars)
+      return
+    }
+
+    try {
+      setIsLoadingEmail(true)
+      setError(null)
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        throw signInError
+      }
+
+      if (data?.user) {
+        onSuccess()
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid login credentials'
+      setError(errorMessage)
+      logError(err instanceof Error ? err : new Error(errorMessage), {
+        source: 'AuthForm',
+        action: 'emailSignIn',
+      })
+    } finally {
+      setIsLoadingEmail(false)
+    }
+  }
 
   const handleSignInWithLinkedIn = async () => {
     if (!supabase) {
@@ -71,8 +115,71 @@ export function AuthForm({ returnUrl = '/bulk' }: AuthFormProps) {
         </div>
       )}
 
+      {/* Email/Password Form - For local testing */}
+      {mode === 'signin' && (
+        <form onSubmit={handleEmailSignIn} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-xs">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="test@bulkgpt.local"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoadingEmail}
+              autocomplete="email"
+              className="h-9 text-xs"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-xs">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoadingEmail}
+              autocomplete="current-password"
+              className="h-9 text-xs"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={isLoadingEmail}
+            className="w-full h-9 text-xs"
+          >
+            {isLoadingEmail ? (
+              <>
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" aria-hidden="true" />
+                Signing in...
+              </>
+            ) : (
+              'Sign in'
+            )}
+          </Button>
+        </form>
+      )}
 
-      {/* LinkedIn OAuth Button - Only authentication method for beta */}
+      {/* Divider */}
+      {mode === 'signin' && (
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">Or</span>
+          </div>
+        </div>
+      )}
+
+      {/* LinkedIn OAuth Button */}
       <Button
         type="button"
         onClick={handleSignInWithLinkedIn}
@@ -101,10 +208,11 @@ export function AuthForm({ returnUrl = '/bulk' }: AuthFormProps) {
         )}
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground mt-4">
-        Beta access only. Sign in with LinkedIn to get started.
-      </p>
+      {mode === 'signin' && (
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          Demo: test@bulkgpt.local / Test123456!
+        </p>
+      )}
     </div>
   )
 }
-

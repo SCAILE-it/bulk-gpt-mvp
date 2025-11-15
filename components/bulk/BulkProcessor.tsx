@@ -25,6 +25,7 @@ import { useBetaBanner } from '@/hooks/useBetaBanner'
 import { useTemplateFilter } from '@/hooks/useTemplateFilter'
 import { useCollapsibleState } from '@/hooks/useCollapsibleState'
 import { useJobContext } from '@/hooks/useJobContext'
+import { useContextStorage } from '@/hooks/useContextStorage'
 import { PromptSection } from './PromptSection'
 import { JobPreview } from './JobPreview'
 import { ResultsTable } from './ResultsTable'
@@ -67,6 +68,9 @@ export default function BulkProcessor() {
   // === JOB CONTEXT PERSISTENCE ===
   const { saveContext, restoreContext, clearContext, loadContext } = useJobContext()
   const [hasRestoredContext, setHasRestoredContext] = useState(false)
+
+  // === COMPANY CONTEXT ===
+  const { context: contextVariables } = useContextStorage()
 
   // === CONFIG STATE ===
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
@@ -419,6 +423,20 @@ export default function BulkProcessor() {
   // === VARIABLE VALIDATION ===
   const variableValidation = useVariableValidation(prompt, csvParser.csvData, selectedInputColumns)
 
+  // === FORMAT CONTEXT FOR API ===
+  const formatContextString = useCallback((): string => {
+    const parts: string[] = []
+    
+    if (contextVariables.tone) parts.push(`Tone: ${contextVariables.tone}`)
+    if (contextVariables.targetCountries) parts.push(`Target Countries: ${contextVariables.targetCountries}`)
+    if (contextVariables.productDescription) parts.push(`Product: ${contextVariables.productDescription}`)
+    if (contextVariables.competitors) parts.push(`Competitors: ${contextVariables.competitors}`)
+    if (contextVariables.targetIndustries) parts.push(`Target Industries: ${contextVariables.targetIndustries}`)
+    if (contextVariables.complianceFlags) parts.push(`Compliance: ${contextVariables.complianceFlags}`)
+    
+    return parts.join('\n')
+  }, [contextVariables])
+
   // === TIME ESTIMATION ===
   const timeEstimate = useMemo(() => {
     if (!csvParser.csvData || !prompt || !variableValidation.isValid) {
@@ -715,7 +733,7 @@ export default function BulkProcessor() {
       await batchProcessor.startBatch({
         csvData: testCSVData,
           prompt,
-          context: '',
+          context: formatContextString(),
         outputColumns: outputFields,
           tools: selectedTools.length > 0 ? selectedTools : undefined,
         testMode: true, // Enable test mode to bypass batch limit
@@ -732,7 +750,7 @@ export default function BulkProcessor() {
       setIsTesting(false)
       setTestStartTime(undefined)
     }
-  }, [csvParser.csvData, prompt, outputFields, variableValidation, batchProcessor, selectedTools, selectedInputColumns, debugLog])
+  }, [csvParser.csvData, prompt, outputFields, variableValidation, batchProcessor, selectedTools, selectedInputColumns, debugLog, formatContextString])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
@@ -752,13 +770,13 @@ export default function BulkProcessor() {
     await batchProcessor.startBatch({
       csvData: csvParser.csvData,
       prompt,
-      context: '',
+      context: formatContextString(),
       outputColumns: outputFields, // Always use JSON mode for structured output
       tools: selectedTools.length > 0 ? selectedTools : undefined,
       testMode: false, // Full batch
       selectedInputColumns: selectedInputColumns.length > 0 ? selectedInputColumns : undefined,
     })
-  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools, selectedInputColumns])
+  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools, selectedInputColumns, formatContextString])
 
   // === EXPORT ===
   // === GOOGLE SHEETS EXPORT ===
@@ -1541,7 +1559,7 @@ export default function BulkProcessor() {
                       >
                         {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
                         <span className="whitespace-nowrap flex items-center gap-1.5">
-                          <span>Run All</span>
+                          <span>Bulk Agent</span>
                           {csvParser.csvData && (
                             <>
                               <span className="inline">({csvParser.csvData.totalRows})</span>
@@ -1554,7 +1572,7 @@ export default function BulkProcessor() {
               </button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Run all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
+                      {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Process all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1759,7 +1777,7 @@ export default function BulkProcessor() {
                 <div className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-md">
                   <div className="flex items-center gap-3">
                     <Play className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-foreground">Run all rows</span>
+                    <span className="text-sm text-foreground">Bulk Agent (process all rows)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">⌘</kbd>

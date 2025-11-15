@@ -3,14 +3,14 @@
  * Simple URL paste interface for importing public Google Sheets
  */
 
-import { useState, useCallback, useEffect } from 'react'
-import { FileSpreadsheet, Loader2, AlertCircle, CheckCircle, Link2, FolderOpen } from 'lucide-react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { FileSpreadsheet, Loader2, AlertCircle, CheckCircle, Link2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { extractSheetId, isValidGoogleSheetsUrl } from '@/lib/google-sheets-url-utils'
 import { convertSheetsToCSV } from '@/lib/google-sheets-utils'
 import { getGoogleAccessToken, getStoredGoogleToken, storeGoogleToken, isGoogleTokenValid } from '@/lib/auth/google-sheets'
-import { logError } from '@/lib/errors'
 import type { ParsedCSV } from '@/lib/types'
 import type { LogEntry } from '@/components/debug/DebugLogger'
 
@@ -20,13 +20,13 @@ const debugLog = (level: LogEntry['level'], message: string, data?: unknown) => 
     id: `${Date.now()}-${Math.random()}`,
     timestamp: Date.now(),
     level,
-    message: `[Google Picker] ${message}`,
+    message: `[Google Sheets] ${message}`,
     data,
   }
   window.dispatchEvent(new CustomEvent('debug-log', { detail: logEntry }))
   // Also log to console for immediate visibility
   const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'
-  console[consoleMethod](`[Google Picker] ${message}`, data || '')
+  console[consoleMethod](`[Google Sheets] ${message}`, data || '')
 }
 
 interface GoogleSheetsUrlTabProps {
@@ -39,15 +39,6 @@ interface GoogleSheetsUrlTabProps {
   onInputColumnsChange?: (columns: string[]) => void
 }
 
-interface PickerResponse {
-  [key: string]: unknown
-  DOCUMENTS?: Array<{
-    id: string
-    name: string
-    url?: string
-  }>
-}
-
 export function GoogleSheetsUrlTab({
   csvData,
   fileName,
@@ -57,11 +48,33 @@ export function GoogleSheetsUrlTab({
   selectedInputColumns,
   onInputColumnsChange
 }: GoogleSheetsUrlTabProps) {
-  const [url, setUrl] = useState('')
+  const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isPickerLoading, setIsPickerLoading] = useState(false)
-  const [scriptsLoaded, setScriptsLoaded] = useState(false)
+  // Note: scriptsLoaded state kept for potential future use, but currently only set, never read
+  const [, setScriptsLoaded] = useState(false)
+  const [allFiles, setAllFiles] = useState<Array<{ id: string; name: string; modifiedTime?: string }>>([])
+  const [filteredFiles, setFilteredFiles] = useState<Array<{ id: string; name: string; modifiedTime?: string }>>([])
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [sortBy, setSortBy] = useState<'modifiedTime' | 'name' | 'createdTime' | 'viewedByMeTime'>('modifiedTime')
+  const [isGoogleLoggedIn, setIsGoogleLoggedIn] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Check Google auth state
+  useEffect(() => {
+    const checkAuthState = () => {
+      const token = getStoredGoogleToken()
+      const isValid = isGoogleTokenValid()
+      setIsGoogleLoggedIn(!!token && isValid)
+    }
+    checkAuthState()
+    // Check periodically
+    const interval = setInterval(checkAuthState, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Load Google Picker API script
   useEffect(() => {
@@ -194,330 +207,48 @@ export function GoogleSheetsUrlTab({
     }
   }, [])
 
-  // Handle Google Picker selection
-  const handlePickFromDrive = useCallback(async () => {
-    debugLog('info', '🚀 Starting Google Picker flow', { scriptsLoaded, timestamp: new Date().toISOString() })
-    
-    if (!scriptsLoaded) {
-      debugLog('error', '❌ Scripts not loaded yet', { scriptsLoaded })
-      setError('Google Picker API not loaded yet. Please wait a moment and try again.')
-      return
-    }
+  // Handle Google Picker selection (unused - removed Google Picker button)
+  // Removed _handlePickFromDrive function - no longer needed after replacing Picker with search dropdown
 
-    setIsPickerLoading(true)
-    setError(null)
-    debugLog('info', '⏳ Loading state set to true')
-
-    try {
-      // Get or request Google access token
-      debugLog('info', '🔑 Step 1: Getting access token...')
-      let accessToken = getStoredGoogleToken()
-      const hasStoredToken = !!accessToken && isGoogleTokenValid()
-      debugLog('info', '📋 Token check', { 
-        hasStoredToken: !!accessToken, 
-        isValid: hasStoredToken,
-        tokenLength: accessToken?.length || 0
-      })
-      
-      if (!accessToken || !isGoogleTokenValid()) {
-        debugLog('info', '🔄 Requesting new OAuth token...')
-        try {
-          const authResult = await getGoogleAccessToken()
-          accessToken = authResult.accessToken
-          storeGoogleToken(authResult.accessToken, authResult.expiresIn)
-          debugLog('success', '✅ Token obtained successfully', { 
-            tokenLength: accessToken.length,
-            expiresIn: authResult.expiresIn 
-          })
-        } catch (tokenError) {
-          const errorMessage = tokenError instanceof Error ? tokenError.message : String(tokenError)
-          debugLog('error', '❌ Failed to get OAuth token', { 
-            error: errorMessage,
-            stack: tokenError instanceof Error ? tokenError.stack : undefined
-          })
-          
-          // Provide user-friendly error message
-          if (errorMessage.includes('timeout') || errorMessage.includes('popup')) {
-            setError('OAuth popup did not open or was blocked. Please:\n1. Check your browser\'s popup blocker settings\n2. Allow popups for bulk-gpt.com\n3. Try clicking "Pick from Google Drive" again\n4. If the issue persists, check the Debug Logger (bottom right) for details.')
-          } else {
-            setError(`Failed to authenticate with Google: ${errorMessage}. Check Debug Logger (bottom right) for details.`)
-          }
-          
-          throw tokenError
-        }
-      } else {
-        debugLog('success', '✅ Using stored token', { tokenLength: accessToken.length })
-      }
-
-      debugLog('info', '🔍 Step 2: Checking Google Picker API availability...')
-      const apiStatus = {
-        hasGoogle: !!window.google,
-        hasPicker: !!window.google?.picker,
-        hasAccounts: !!window.google?.accounts,
-        hasOAuth2: !!window.google?.accounts?.oauth2,
-        pickerBuilder: typeof window.google?.picker?.PickerBuilder,
-        viewId: !!window.google?.picker?.ViewId,
-        response: !!window.google?.picker?.Response,
-        action: !!window.google?.picker?.Action,
-      }
-      debugLog('info', '📊 API Status', apiStatus)
-      
-      if (!window.google?.picker) {
-        const errorMsg = 'Google Picker API not available'
-        debugLog('error', '❌ API not available', apiStatus)
-        setError(errorMsg + '. Check Debug Logger (bottom right) for details.')
-        setIsPickerLoading(false)
-        return
-      }
-
-      debugLog('info', '🔧 Step 3: Building picker instance...')
-      // Add timeout to reset loading state if picker doesn't open
-      let loadingTimeout: NodeJS.Timeout | null = null
-      const timeoutDuration = 20000 // 20 seconds for production
-      const timeoutStartTime = Date.now()
-      
-      loadingTimeout = setTimeout(() => {
-        const elapsed = ((Date.now() - timeoutStartTime) / 1000).toFixed(1)
-        debugLog('error', `⏱️ TIMEOUT after ${elapsed}s - Picker did not open`, {
-          elapsedSeconds: elapsed,
-          scriptsLoaded,
-          hasGoogle: !!window.google,
-          hasPicker: !!window.google?.picker,
-          hasToken: !!accessToken,
-          tokenLength: accessToken?.length,
-          currentUrl: window.location.href,
-          userAgent: navigator.userAgent,
-          popupBlocked: false, // Can't detect, but worth noting
-        })
-        setIsPickerLoading(false)
-        setError(`Google Picker failed to open after ${elapsed}s. Check Debug Logger (bottom right) for details.`)
-      }, timeoutDuration)
-      debugLog('info', `⏱️ Timeout set for ${timeoutDuration / 1000}s`)
-
-      // Open Google Picker
-      debugLog('info', '🏗️ Creating PickerBuilder...')
-      let pickerBuilder
-      try {
-        pickerBuilder = new window.google.picker!.PickerBuilder()
-        debugLog('success', '✅ PickerBuilder created')
-      } catch (builderError) {
-        debugLog('error', '❌ Failed to create PickerBuilder', { 
-          error: builderError instanceof Error ? builderError.message : String(builderError)
-        })
-        if (loadingTimeout) clearTimeout(loadingTimeout)
-        setIsPickerLoading(false)
-        throw builderError
-      }
-
-      debugLog('info', '🔑 Setting OAuth token...')
-      let picker
-      try {
-        picker = pickerBuilder.setOAuthToken(accessToken) as typeof pickerBuilder
-        debugLog('success', '✅ OAuth token set', { tokenLength: accessToken.length })
-      } catch (tokenError) {
-        debugLog('error', '❌ Failed to set OAuth token', { 
-          error: tokenError instanceof Error ? tokenError.message : String(tokenError)
-        })
-        if (loadingTimeout) clearTimeout(loadingTimeout)
-        setIsPickerLoading(false)
-        throw tokenError
-      }
-
-      debugLog('info', '📋 Adding SPREADSHEETS view...')
-      let pickerWithView
-      try {
-        pickerWithView = picker.addView(window.google.picker!.ViewId.SPREADSHEETS) as typeof pickerBuilder
-        debugLog('success', '✅ SPREADSHEETS view added')
-      } catch (viewError) {
-        debugLog('error', '❌ Failed to add view', { 
-          error: viewError instanceof Error ? viewError.message : String(viewError)
-        })
-        if (loadingTimeout) clearTimeout(loadingTimeout)
-        setIsPickerLoading(false)
-        throw viewError
-      }
-
-      debugLog('info', '📞 Setting callback...')
-      const pickerWithCallback = pickerWithView.setCallback(async (data: unknown) => {
-        const callbackTime = Date.now()
-        debugLog('success', '🎉 CALLBACK TRIGGERED!', {
-          timestamp: new Date().toISOString(),
-          elapsedMs: callbackTime - timeoutStartTime,
-          dataType: typeof data,
-          dataKeys: data ? Object.keys(data as object) : null,
-          fullData: data,
-        })
-        
-        // Clear timeout since picker opened and callback was triggered
-        if (loadingTimeout) {
-          clearTimeout(loadingTimeout)
-          loadingTimeout = null
-          debugLog('info', '✅ Timeout cleared - picker opened successfully')
-        }
-        
-        const pickerData = data as PickerResponse
-        setIsPickerLoading(false)
-        
-        const action = pickerData[window.google!.picker!.Response.ACTION] as string
-        debugLog('info', '📥 Processing callback action', { 
-          action,
-          expectedAction: window.google!.picker!.Action.PICKED,
-          isPicked: action === window.google!.picker!.Action.PICKED,
-          hasDocuments: !!pickerData.DOCUMENTS,
-          documentCount: pickerData.DOCUMENTS?.length || 0,
-        })
-          if (action === window.google!.picker!.Action.PICKED && pickerData.DOCUMENTS && pickerData.DOCUMENTS.length > 0) {
-            const doc = pickerData.DOCUMENTS[0]
-            const sheetId = doc.id
-            const sheetName = doc.name || `google-sheet-${sheetId.substring(0, 8)}`
-            debugLog('success', '📄 Sheet selected', { sheetId, sheetName })
-
-            // Fetch sheet data using OAuth token
-            try {
-              setIsLoading(true)
-              debugLog('info', '📥 Fetching sheet data from Google Sheets API...')
-              
-              // Use OAuth token to fetch private sheet data
-              const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z1000`, {
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                },
-              })
-              debugLog('info', '📡 API Response received', { 
-                status: response.status, 
-                statusText: response.statusText,
-                ok: response.ok 
-              })
-
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}))
-                const errorMessage = errorData.error?.message || 'Failed to fetch sheet data'
-                const errorReason = errorData.error?.errors?.[0]?.reason || errorData.error?.status || ''
-                
-                // Check if the error is specifically about API not being enabled
-                const isApiNotEnabled = 
-                  errorMessage.toLowerCase().includes('has not been used') ||
-                  errorMessage.toLowerCase().includes('is disabled') ||
-                  errorMessage.toLowerCase().includes('enable it by visiting') ||
-                  errorReason === 'SERVICE_DISABLED' ||
-                  errorReason === 'API_NOT_ENABLED'
-                
-                if (response.status === 403 && isApiNotEnabled) {
-                  // Extract project ID from error message if available
-                  const projectIdMatch = errorMessage.match(/project (\d+)/i)
-                  const projectId = projectIdMatch ? projectIdMatch[1] : 'your project'
-                  const enableUrl = `https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=${projectId}`
-                  throw new Error(`Google Sheets API is not enabled for project ${projectId}. Enable it here: ${enableUrl}`)
-                }
-                
-                throw new Error(errorMessage)
-              }
-
-              const sheetData = await response.json()
-              
-              if (!sheetData.values || sheetData.values.length === 0) {
-                setError('Sheet appears to be empty.')
-                setIsLoading(false)
-                return
-              }
-
-              // Convert to ParsedCSV format
-              const parsedCSV = convertSheetsToCSV(sheetData.values, sheetName)
-              // Add Google Sheets metadata
-              parsedCSV.googleSheetsId = sheetId
-              onDataLoaded(parsedCSV)
-            } catch (err) {
-              const errorMessage = err instanceof Error ? err.message : 'Failed to import selected sheet'
-              setError(errorMessage)
-              logError(err instanceof Error ? err : new Error(String(err)), {
-                source: 'GoogleSheetsUrlTab/handlePickFromDrive',
-              })
-            } finally {
-              setIsLoading(false)
-            }
-          } else {
-            // User cancelled picker or other action (CANCEL, etc.)
-            // Note: Action.CANCEL might not be available in all Picker API versions
-            setIsPickerLoading(false)
-            if (action !== window.google!.picker!.Action.PICKED) {
-              console.log('[Google Picker] Action:', action, pickerData)
-            }
-          }
-        }) as typeof pickerBuilder
-      
-      console.log('   Building picker instance...')
-      const builtPicker = pickerWithCallback.build()
-      console.log('   Picker built successfully:', !!builtPicker)
-      console.log('   Built picker methods:', Object.keys(builtPicker))
-      
-      try {
-        console.log('5. Calling setVisible(true)...')
-        console.log('   Access token present:', !!accessToken)
-        console.log('   Access token length:', accessToken?.length)
-        console.log('   Built picker exists:', !!builtPicker)
-        console.log('   setVisible method exists:', typeof builtPicker.setVisible === 'function')
-        
-        builtPicker.setVisible(true)
-        console.log('   ✓ setVisible(true) called successfully')
-        console.log('   Waiting for picker to open (callback will fire when user interacts)...')
-        // Note: Timeout will be cleared by the callback when picker opens
-        // If picker doesn't open within 10 seconds, timeout will reset loading state
-      } catch (pickerError) {
-        console.error('[Google Picker] Exception thrown by setVisible:', pickerError)
-        console.error('   Error type:', pickerError instanceof Error ? pickerError.constructor.name : typeof pickerError)
-        console.error('   Error message:', pickerError instanceof Error ? pickerError.message : String(pickerError))
-        console.error('   Error stack:', pickerError instanceof Error ? pickerError.stack : 'No stack')
-        
-        if (loadingTimeout) {
-          clearTimeout(loadingTimeout)
-        }
-        setIsPickerLoading(false)
-        const errorMsg = pickerError instanceof Error ? pickerError.message : 'Unknown error'
-        setError(`Failed to open Google Picker: ${errorMsg}. Check browser console (F12) for details. Ensure Google Picker API is enabled in Google Cloud Console.`)
-        console.groupEnd()
-        throw new Error(`Failed to open Google Picker: ${errorMsg}`)
-      }
-      
-      console.groupEnd()
-    } catch (err) {
-      console.error('[Google Picker] Top-level error:', err)
-      console.error('   Error type:', err instanceof Error ? err.constructor.name : typeof err)
-      console.error('   Error message:', err instanceof Error ? err.message : String(err))
-      console.error('   Error stack:', err instanceof Error ? err.stack : 'No stack')
-      console.groupEnd()
-      
-      setIsPickerLoading(false)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to open Google Picker'
-      setError(`${errorMessage}. Open browser console (F12) for detailed debugging information.`)
-      logError(err instanceof Error ? err : new Error(String(err)), {
-        source: 'GoogleSheetsUrlTab/handlePickFromDrive',
-      })
-    }
-  }, [scriptsLoaded, onDataLoaded])
-
+  // Handle importing from URL or file selection
   const handleImport = useCallback(async () => {
-    if (!url.trim()) {
-      setError('Please enter a Google Sheets URL')
-      return
-    }
-
-    if (!isValidGoogleSheetsUrl(url)) {
-      setError('Invalid Google Sheets URL. Please paste a valid Google Sheets link.')
-      return
-    }
-
-    const sheetId = extractSheetId(url)
-    if (!sheetId) {
-      setError('Could not extract sheet ID from URL. Please check the URL format.')
+    const value = inputValue.trim()
+    if (!value) {
+      setError('Please enter a Google Sheets URL or select a file')
       return
     }
 
     setIsLoading(true)
     setError(null)
+    setShowDropdown(false)
+
+    let sheetId: string | null = null
+    let sheetName: string | null = null
+
+    // Check if it's a URL
+    if (isValidGoogleSheetsUrl(value)) {
+      sheetId = extractSheetId(value)
+      if (!sheetId) {
+        setError('Could not extract sheet ID from URL. Please check the URL format.')
+        setIsLoading(false)
+        return
+      }
+    } else {
+      // It's a file name - find matching file
+      const matchingFile = allFiles.find(f => f.name === value || f.id === value)
+      if (matchingFile) {
+        sheetId = matchingFile.id
+        sheetName = matchingFile.name
+      } else {
+        setError('File not found. Please select from the dropdown or paste a valid URL.')
+        setIsLoading(false)
+        return
+      }
+    }
 
     try {
-      // Fetch sheet data from API
-      const response = await fetch('/api/google-sheets', {
+      // Try public API first (works for public sheets)
+      let response = await fetch('/api/google-sheets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -529,26 +260,61 @@ export function GoogleSheetsUrlTab({
         }),
       })
 
+      // If public API fails with 403, try with OAuth token
+      if (!response.ok && response.status === 403) {
+        const errorData = await response.json().catch(() => ({}))
+        const isPermissionError = 
+          errorData.error?.includes('PERMISSION_DENIED') ||
+          errorData.error?.includes('permission') ||
+          errorData.error?.includes('access denied') ||
+          errorData.error?.includes('not publicly accessible')
+
+        if (isPermissionError) {
+          // Try with OAuth token if user is logged in
+          const accessToken = getStoredGoogleToken()
+          if (accessToken && isGoogleTokenValid()) {
+            debugLog('info', '🔄 Retrying with OAuth token (private sheet)')
+            response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z1000`, {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+              },
+            })
+            
+            // If OAuth token also fails with 401, it's expired
+            if (!response.ok && response.status === 401) {
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('google_access_token')
+                sessionStorage.removeItem('google_token_expires_at')
+              }
+              setIsGoogleLoggedIn(false)
+              setError('Authentication expired. Please sign in again using the "Sign in to search" button.')
+              setIsLoading(false)
+              return
+            }
+          } else {
+            // Not logged in - error will show buttons for sign in or make public
+            setError('Sheet is private. Sign in to Google to access it, or make the sheet public.')
+            setIsLoading(false)
+            return
+          }
+        }
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         const errorMessage = errorData.error || 'Failed to fetch Google Sheet'
-        const activationUrl = errorData.activationUrl
-        const projectId = errorData.projectId
         
-        // Check if API not enabled error (503 status)
-        if (response.status === 503 && activationUrl) {
-          setError(`Google Sheets API is not enabled for project ${projectId || 'your project'}. Enable it here: ${activationUrl}`)
-        }
-        // Handle permission/access errors (private sheet)
-        else if (
-          response.status === 403 ||
-          errorMessage.includes('PERMISSION_DENIED') ||
-          errorMessage.includes('permission') ||
-          errorMessage.includes('access denied') ||
-          errorMessage.includes('not publicly accessible') ||
-          errorMessage.toLowerCase().includes('forbidden')
-        ) {
-          setError('Sheet is not publicly accessible. Please make sure the sheet is set to "Anyone with the link can view" in Google Sheets sharing settings.')
+        // Check if API not enabled error
+        if (response.status === 503 && errorData.activationUrl) {
+          setError(`Google Sheets API is not enabled. Enable it here: ${errorData.activationUrl}`)
+        } else if (response.status === 403) {
+          // Check if user is signed in but still got 403 (no access)
+          const accessToken = getStoredGoogleToken()
+          if (accessToken && isGoogleTokenValid()) {
+            setError('Sheet is private. You don\'t have access. Ask the owner to share it with you or make it public.')
+          } else {
+            setError('Sheet is private. Sign in to Google to access it, or make the sheet public.')
+          }
         } else {
           setError(errorMessage)
         }
@@ -564,37 +330,39 @@ export function GoogleSheetsUrlTab({
         return
       }
 
-      // Get sheet name from metadata if available
-      let sheetName = `google-sheet-${sheetId.substring(0, 8)}`
-      try {
-        const metadataResponse = await fetch('/api/google-sheets', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'getMetadata',
-            spreadsheetId: sheetId,
-          }),
-        })
-        
-        if (metadataResponse.ok) {
-          const metadata = await metadataResponse.json()
-          if (metadata.title) {
-            sheetName = metadata.title
+      // Use provided name or fetch metadata
+      let finalSheetName = sheetName || `google-sheet-${sheetId.substring(0, 8)}`
+      if (!sheetName) {
+        try {
+          const accessToken = getStoredGoogleToken()
+          if (accessToken && isGoogleTokenValid()) {
+            const metadataResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${sheetId}?fields=name`, {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+              },
+            })
+            if (metadataResponse.ok) {
+              const metadata = await metadataResponse.json()
+              if (metadata.name) {
+                finalSheetName = metadata.name
+              }
+            }
           }
+        } catch {
+          // Ignore metadata fetch errors
         }
-      } catch {
-        // Ignore metadata fetch errors, use default name
       }
 
       // Convert to ParsedCSV format
-      const parsedCSV = convertSheetsToCSV(data.values, sheetName)
+      const parsedCSV = convertSheetsToCSV(data.values, finalSheetName)
       // Add Google Sheets metadata
-      parsedCSV.googleSheetsUrl = url
+      if (isValidGoogleSheetsUrl(value)) {
+        parsedCSV.googleSheetsUrl = value
+      }
       parsedCSV.googleSheetsId = sheetId
       
-      // Clear any previous errors
+      // Clear input and errors
+      setInputValue('')
       setError(null)
       
       // Notify parent
@@ -602,13 +370,316 @@ export function GoogleSheetsUrlTab({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to import Google Sheet'
       setError(errorMessage)
-      console.error('Google Sheets import error:', err)
+      debugLog('error', 'Failed to import sheet', { error: err })
     } finally {
       setIsLoading(false)
     }
-  }, [url, onDataLoaded])
+  }, [inputValue, allFiles, onDataLoaded])
 
-  // Show CSV Preview if data is loaded (same as CSV tab)
+  // Filter files based on input (client-side filtering)
+  const filterFiles = useCallback((files: Array<{ id: string; name: string; modifiedTime?: string }>, query: string) => {
+    // If it looks like a URL, don't filter
+    if (query.includes('docs.google.com') || query.includes('drive.google.com')) {
+      setFilteredFiles([])
+      return
+    }
+    
+    if (!query.trim()) {
+      setFilteredFiles(files)
+      return
+    }
+
+    const lowerQuery = query.toLowerCase()
+    const filtered = files.filter(file => 
+      file.name.toLowerCase().includes(lowerQuery)
+    )
+    setFilteredFiles(filtered)
+  }, [])
+
+  // Update dropdown position when input changes or window scrolls/resizes
+  const updateDropdownPosition = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      })
+    }
+  }, [])
+
+  // Load recent Google Sheets files
+  const loadRecentFiles = useCallback(async () => {
+    try {
+      setIsLoadingFiles(true)
+      let accessToken = getStoredGoogleToken()
+      
+      // If no valid token, request one
+      if (!accessToken || !isGoogleTokenValid()) {
+        try {
+          const authResult = await getGoogleAccessToken()
+          accessToken = authResult.accessToken
+          storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+          setIsGoogleLoggedIn(true)
+        } catch (authError) {
+          debugLog('error', 'Failed to authenticate', { error: authError })
+          setError('Please sign in to Google to search your files')
+          setIsGoogleLoggedIn(false)
+          return
+        }
+      }
+
+      // Get recent Google Sheets files (sorted by various options)
+      // API Reference: https://developers.google.com/drive/api/v3/reference/files/list
+      // Valid orderBy options: modifiedTime, name, createdTime, viewedByMeTime, etc.
+      const orderByMap: Record<string, string> = {
+        modifiedTime: 'modifiedTime desc',
+        name: 'name asc',
+        createdTime: 'createdTime desc',
+        viewedByMeTime: 'viewedByMeTime desc',
+      }
+      const orderBy = orderByMap[sortBy] || 'modifiedTime desc'
+      const queryParams = new URLSearchParams({
+        q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+        fields: 'files(id,name,modifiedTime,createdTime,viewedByMeTime)',
+        orderBy: orderBy,
+        pageSize: '50', // Limit to 50 files for performance
+      })
+      
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?${queryParams.toString()}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        debugLog('error', '❌ Drive API error', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText,
+          url: response.url,
+        })
+        
+        // Check for specific error types
+        if (response.status === 401) {
+          setError('Authentication expired. Please sign in again.')
+          setIsGoogleLoggedIn(false)
+          // Clear invalid token
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('google_access_token')
+            sessionStorage.removeItem('google_token_expires_at')
+          }
+        } else if (response.status === 403) {
+          setError('Permission denied. Make sure you granted access to Google Drive.')
+        } else {
+          setError(`Failed to load files (${response.status}). Check Debug Logger for details.`)
+        }
+        throw new Error(`Failed to load Google Drive files: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      
+      debugLog('info', '📥 Files loaded from Drive API', {
+        fileCount: data.files?.length || 0,
+        hasNextPage: !!data.nextPageToken,
+        responseStatus: response.status,
+        fullResponse: data,
+      })
+      
+      if (!data.files || data.files.length === 0) {
+        debugLog('warn', '⚠️ No files returned from Drive API', {
+          response: data,
+          query: queryParams.toString(),
+          accessTokenLength: accessToken?.length || 0,
+        })
+        
+        // If we got 0 files but API call succeeded, might be scope issue
+        if (data.files && Array.isArray(data.files) && data.files.length === 0) {
+          setError('No Google Sheets found. If you have sheets, try clicking "Refresh" next to "Signed in" to re-authenticate with full access.')
+        }
+        
+        setAllFiles([])
+        setFilteredFiles([])
+        setIsLoadingFiles(false)
+        return
+      }
+      
+      const files = data.files.map((file: { id: string; name: string; modifiedTime?: string }) => ({
+        id: file.id,
+        name: file.name,
+        modifiedTime: file.modifiedTime,
+      }))
+      
+      debugLog('info', '✅ Files processed', {
+        fileCount: files.length,
+        fileNames: files.map((f: { id: string; name: string; modifiedTime?: string }) => f.name).slice(0, 5), // First 5 names
+      })
+      
+      setAllFiles(files)
+      setIsGoogleLoggedIn(true)
+      // Filter files based on current input value
+      filterFiles(files, inputValue)
+    } catch (err) {
+      debugLog('error', 'Failed to load Drive files', { error: err })
+      setAllFiles([])
+      setFilteredFiles([])
+    } finally {
+      setIsLoadingFiles(false)
+    }
+  }, [sortBy, filterFiles, inputValue])
+
+  // Handle input change - filter client-side or detect URL
+  useEffect(() => {
+    const value = inputValue.trim()
+    
+    // If it's a URL, don't show dropdown
+    if (value.includes('docs.google.com') || value.includes('drive.google.com')) {
+      setShowDropdown(false)
+      return
+    }
+    
+    // If it's empty or just whitespace, show all files
+    if (!value) {
+      filterFiles(allFiles, '')
+      if (showDropdown && allFiles.length > 0) {
+        setShowDropdown(true)
+      }
+      return
+    }
+    
+    // Filter files as user types
+    filterFiles(allFiles, value)
+    if (allFiles.length > 0) {
+      setShowDropdown(true)
+    }
+  }, [inputValue, allFiles, filterFiles, showDropdown])
+
+  // Load files when dropdown opens
+  useEffect(() => {
+    if (showDropdown && allFiles.length === 0 && !isLoadingFiles) {
+      loadRecentFiles()
+    }
+  }, [showDropdown, allFiles.length, isLoadingFiles, loadRecentFiles])
+
+  // Reload files when sort changes
+  useEffect(() => {
+    if (showDropdown && allFiles.length > 0) {
+      loadRecentFiles()
+    }
+  }, [sortBy]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update position on scroll/resize
+  useEffect(() => {
+    if (!showDropdown) return
+
+    const handleUpdate = () => {
+      updateDropdownPosition()
+    }
+
+    window.addEventListener('scroll', handleUpdate, true)
+    window.addEventListener('resize', handleUpdate)
+    updateDropdownPosition()
+
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, true)
+      window.removeEventListener('resize', handleUpdate)
+    }
+  }, [showDropdown, updateDropdownPosition])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false)
+      }
+    }
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+    return undefined
+  }, [showDropdown])
+
+  // Handle selecting a file from dropdown
+  const handleSelectFile = useCallback(async (fileId: string, fileName: string) => {
+    setShowDropdown(false)
+    setInputValue('')
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      let accessToken = getStoredGoogleToken()
+      if (!accessToken || !isGoogleTokenValid()) {
+        const authResult = await getGoogleAccessToken()
+        accessToken = authResult.accessToken
+        storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+        setIsGoogleLoggedIn(true)
+      }
+
+      // Fetch sheet data
+      const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${fileId}/values/A1:Z1000`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === 401) {
+          // Token expired - clear it and ask user to sign in again
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('google_access_token')
+            sessionStorage.removeItem('google_token_expires_at')
+          }
+          setIsGoogleLoggedIn(false)
+          setError('Authentication expired. Please sign in again using the "Sign in to search" button.')
+          setIsLoading(false)
+          return
+        } else if (response.status === 403) {
+          setError('You don\'t have access to this sheet. Ask the owner to share it with you.')
+          setIsLoading(false)
+          return
+        } else if (response.status === 404) {
+          setError('Sheet not found. It may have been deleted or the ID is incorrect.')
+          setIsLoading(false)
+          return
+        }
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error?.message || 'Failed to fetch sheet data'
+        throw new Error(errorMessage)
+      }
+
+      const sheetData = await response.json()
+      
+      if (!sheetData.values || sheetData.values.length === 0) {
+        setError('Sheet appears to be empty.')
+        setIsLoading(false)
+        return
+      }
+
+      const parsedCSV = convertSheetsToCSV(sheetData.values, fileName)
+      parsedCSV.googleSheetsId = fileId
+      onDataLoaded(parsedCSV)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to import selected sheet'
+      setError(errorMessage)
+      debugLog('error', 'Failed to import sheet', { error: err })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [onDataLoaded])
+
+  // Show CSV Preview if data is loaded (same as CSV tab) - MUST be after all hooks
   if (csvData && !isUploading) {
     return (
       <div className="space-y-3">
@@ -617,7 +688,7 @@ export function GoogleSheetsUrlTab({
             variant="ghost"
             size="sm"
             onClick={() => {
-              setUrl('')
+              setInputValue('')
               setError(null)
               // Clear the loaded CSV data so user can import a different sheet
               if (onClearData) {
@@ -705,77 +776,308 @@ export function GoogleSheetsUrlTab({
     )
   }
 
-  // Show URL input form - minimal, clean design with two options
+  // Unified input field - handles both URL paste and file search
   return (
     <div className="space-y-3">
-      {/* Option 1: Pick from Google Drive */}
-      <Button
-        variant="brand"
-        size="sm"
-        onClick={handlePickFromDrive}
-        disabled={!scriptsLoaded || isPickerLoading || isLoading || isUploading}
-        className="w-full"
-        aria-label="Pick Google Sheet from Drive"
-      >
-        {isPickerLoading ? (
-          <>
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Opening picker...
-          </>
+      {/* Unified input: URL or search */}
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 z-10">
+          {inputValue.includes('docs.google.com') || inputValue.includes('drive.google.com') ? (
+            <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <Search className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+        </div>
+        
+        {/* Auth status indicator or Sign in button */}
+        {isGoogleLoggedIn ? (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center gap-2 group">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded text-[10px] text-green-600 dark:text-green-400">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+              Signed in
+            </div>
+            {allFiles.length <= 1 && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  // Clear old token and re-authenticate
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('google_access_token')
+                    sessionStorage.removeItem('google_token_expires_at')
+                  }
+                  setIsGoogleLoggedIn(false)
+                  setAllFiles([])
+                  setFilteredFiles([])
+                  // Use setTimeout to avoid hook issues
+                  setTimeout(async () => {
+                    try {
+                      const authResult = await getGoogleAccessToken()
+                      storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+                      setIsGoogleLoggedIn(true)
+                      // Reload files
+                      loadRecentFiles()
+                    } catch (err) {
+                      setError('Failed to re-authenticate. Please try again.')
+                    }
+                  }, 0)
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-muted-foreground hover:text-foreground underline"
+                title="Re-authenticate to see all files"
+              >
+                Refresh
+              </button>
+            )}
+          </div>
         ) : (
-          <>
-            <FolderOpen className="h-3.5 w-3.5" />
-            Pick from Google Drive
-          </>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={async (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsLoading(true)
+                setError(null)
+                try {
+                  const authResult = await getGoogleAccessToken()
+                  storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+                  setIsGoogleLoggedIn(true)
+                  // Load files after sign in
+                  await loadRecentFiles()
+                } catch (err) {
+                  setError('Failed to sign in. Please try again.')
+                  debugLog('error', 'Sign in failed', { error: err })
+                } finally {
+                  setIsLoading(false)
+                }
+              }}
+              disabled={isLoading}
+              className="h-7 px-2 text-[10px]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <Search className="h-3 w-3 mr-1" />
+                  Sign in to search
+                </>
+              )}
+            </Button>
+          </div>
         )}
-      </Button>
-
-      {/* Divider */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border"></div>
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-2 text-muted-foreground">or</span>
-        </div>
-      </div>
-
-      {/* Option 2: Paste URL */}
-      <div className="relative">
-        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        
         <Input
-          type="url"
-          value={url}
+          ref={inputRef}
+          type="text"
+          value={inputValue}
           onChange={(e) => {
-            setUrl(e.target.value)
+            setInputValue(e.target.value)
             setError(null)
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !isLoading) {
-              handleImport()
+          onFocus={() => {
+            // Only show dropdown if user is already signed in
+            if (isGoogleLoggedIn && !inputValue.includes('docs.google.com') && !inputValue.includes('drive.google.com')) {
+              updateDropdownPosition()
+              setShowDropdown(true)
+              if (allFiles.length === 0 && !isLoadingFiles) {
+                loadRecentFiles()
+              }
             }
           }}
-          placeholder="Paste Google Sheets URL..."
-          className="pl-9 pr-3"
+          placeholder={isGoogleLoggedIn ? "Paste Google Sheets URL or search your files..." : "Paste Google Sheets URL or sign in to search files..."}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !isLoading && inputValue.trim()) {
+              handleImport()
+            } else if (e.key === 'Escape') {
+              setShowDropdown(false)
+            }
+          }}
+          className={`pl-9 ${isGoogleLoggedIn ? 'pr-20' : 'pr-3'}`}
           disabled={isLoading || isUploading}
-          aria-label="Google Sheets URL"
+          aria-label="Google Sheets URL or search"
         />
+        
+        {/* Dropdown with files (only show when signed in and not a URL) - rendered via Portal to avoid clipping */}
+        {showDropdown && isGoogleLoggedIn && !inputValue.includes('docs.google.com') && !inputValue.includes('drive.google.com') && dropdownPosition && typeof window !== 'undefined' && createPortal(
+          <div
+            ref={dropdownRef}
+            className="fixed z-[9999] bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-hidden flex flex-col"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              width: `${dropdownPosition.width}px`,
+            }}
+          >
+            {/* Sort options */}
+            <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/30">
+              <span className="text-xs text-muted-foreground">Sort by:</span>
+              <div className="flex gap-1 flex-wrap">
+                <button
+                  onClick={() => setSortBy('modifiedTime')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                    sortBy === 'modifiedTime'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent text-muted-foreground'
+                  }`}
+                >
+                  Recent
+                </button>
+                <button
+                  onClick={() => setSortBy('name')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                    sortBy === 'name'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent text-muted-foreground'
+                  }`}
+                >
+                  Name
+                </button>
+                <button
+                  onClick={() => setSortBy('createdTime')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                    sortBy === 'createdTime'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent text-muted-foreground'
+                  }`}
+                >
+                  Created
+                </button>
+                <button
+                  onClick={() => setSortBy('viewedByMeTime')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                    sortBy === 'viewedByMeTime'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent text-muted-foreground'
+                  }`}
+                >
+                  Viewed
+                </button>
+              </div>
+            </div>
+
+            {/* Files list */}
+            <div className="overflow-y-auto max-h-[240px]">
+              {isLoadingFiles ? (
+                <div className="px-3 py-4 text-xs text-muted-foreground flex items-center justify-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading files...
+                </div>
+              ) : filteredFiles.length === 0 ? (
+                <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+                  {inputValue.trim() ? 'No sheets found matching your search' : 'No sheets found'}
+                </div>
+              ) : (
+                filteredFiles.map((file) => (
+                  <button
+                    key={file.id}
+                    onClick={() => handleSelectFile(file.id, file.name)}
+                    className="w-full px-3 py-2 text-left text-xs hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-b border-border last:border-0 transition-colors"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate flex-1">{file.name}</span>
+                    {file.modifiedTime && sortBy === 'modifiedTime' && (
+                      <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                        {new Date(file.modifiedTime).toLocaleDateString()}
+                      </span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
 
+      {/* Error message */}
       {error && (
         <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-2.5 py-2">
           <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
+          <div className="flex-1">
+            <span>{error}</span>
+            {(error.includes('private') || error.includes('PERMISSION_DENIED') || error.includes('permission')) && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  This sheet is private. Choose an option:
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {!isGoogleLoggedIn && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          setIsLoading(true)
+                          setError(null)
+                          const authResult = await getGoogleAccessToken()
+                          storeGoogleToken(authResult.accessToken, authResult.expiresIn)
+                          setIsGoogleLoggedIn(true)
+                          // Retry import after sign in
+                          await handleImport()
+                        } catch (err) {
+                          setError('Failed to sign in. Please try again.')
+                          setIsLoading(false)
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="h-7 text-[10px] px-3"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="h-3 w-3 mr-1" />
+                          Sign in to access
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Open Google Sheets sharing settings
+                      const sheetId = extractSheetId(inputValue) || allFiles.find(f => f.name === inputValue)?.id
+                      if (sheetId) {
+                        window.open(`https://docs.google.com/spreadsheets/d/${sheetId}/edit#gid=0`, '_blank')
+                      } else {
+                        // Fallback: show instructions
+                        setError('To make the sheet public: 1) Open the sheet in Google Sheets, 2) Click "Share" → "Change to anyone with the link" → "Viewer", 3) Try importing again.')
+                      }
+                    }}
+                    className="h-7 text-[10px] px-3"
+                  >
+                    <Link2 className="h-3 w-3 mr-1" />
+                    Make public
+                  </Button>
+                </div>
+                {isGoogleLoggedIn && (
+                  <p className="text-xs text-muted-foreground">
+                    You&apos;re signed in but don&apos;t have access. The sheet owner needs to share it with you or make it public.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
+      {/* Import button */}
       <Button
         variant="outline"
         size="sm"
         onClick={handleImport}
-        disabled={!url.trim() || isLoading || isUploading}
+        disabled={!inputValue.trim() || isLoading || isUploading}
         className="w-full"
-        aria-label="Import Google Sheet from URL"
+        aria-label="Import Google Sheet"
       >
         {isLoading || isUploading ? (
           <>
@@ -785,7 +1087,7 @@ export function GoogleSheetsUrlTab({
         ) : (
           <>
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            Import from URL
+            Import Sheet
           </>
         )}
       </Button>

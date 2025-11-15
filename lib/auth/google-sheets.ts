@@ -28,10 +28,11 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
                          process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || 
                          ''
 
-// Scopes needed for creating and writing to Google Sheets
-// Note: spreadsheets scope requires verification, so we use drive.file for now
-// drive.file allows creating files and accessing files created by the app
-const SCOPES = 'https://www.googleapis.com/auth/drive.file'
+// Scopes needed for Google Sheets integration
+// drive.readonly: Read-only access to list/search user's files (needed for file picker/search)
+// drive.file: Create and access files created by the app (needed for creating new sheets)
+// Note: Using space-separated scopes - Google OAuth supports multiple scopes
+const SCOPES = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file'
 
 interface GoogleAuthResult {
   accessToken: string
@@ -238,6 +239,11 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
       debugLog('info', '🔍 DEBUG: If callback never fires, check popup console (right-click popup → Inspect)')
       debugLog('info', `🔍 DEBUG: Verify ${window.location.origin} is in Google Cloud Console → Credentials → Authorized JavaScript origins`)
       debugLog('info', `🔍 DEBUG: Current URL: ${window.location.href}`)
+      debugLog('info', '🔍 DEBUG: For GSI popup flow, redirect URIs are NOT needed - only JavaScript origins matter')
+      debugLog('info', '🔍 DEBUG: If popup shows error, right-click popup → Inspect → Console to see Google error')
+      
+      // Add manual callback trigger for debugging
+      debugLog('info', '🔧 Manual callback available: window.__googleOAuthCallback({ access_token: "test" })')
       
       // Note: We can't directly monitor popup window due to CORS restrictions
       // But postMessage listener above will catch any messages from Google
@@ -248,18 +254,38 @@ export async function getGoogleAccessToken(): Promise<GoogleAuthResult> {
         debugLog('info', '✅ requestAccessToken() called - callback registered, waiting for popup...')
         debugLog('info', '⏳ Waiting for OAuth callback... (check popup window console if it takes > 10s)')
         
-        // Try to detect popup window (may not always be accessible due to CORS)
-        setTimeout(() => {
-          try {
-            // This might fail due to CORS, but worth trying
-            const windows = window.open('', '_blank')
-            if (windows) {
-              windows.close()
-            }
-          } catch (e) {
-            // Expected - can't access popup due to CORS
+        // Add periodic check to see if callback is still registered
+        let checkCount = 0
+        const callbackCheckInterval = setInterval(() => {
+          checkCount++
+          const callbackStillExists = typeof (window as unknown as Record<string, unknown>).__googleOAuthCallback === 'function'
+          if (checkCount % 10 === 0) { // Log every 5 seconds
+            debugLog('info', `⏱️ Still waiting... (${checkCount * 0.5}s elapsed)`, {
+              callbackStillRegistered: callbackStillExists,
+              instruction: 'If popup closed, RIGHT-CLICK POPUP → Inspect → Console to see Google errors',
+            })
           }
-        }, 1000)
+          if (!callbackStillExists && callbackFired === false) {
+            debugLog('warn', '⚠️ Callback function was removed but callback never fired!', {
+              elapsedSeconds: checkCount * 0.5,
+            })
+            clearInterval(callbackCheckInterval)
+          }
+        }, 500)
+        
+        // Wrap callback to clear interval when it fires
+        const originalCallback = oauthCallback
+        const wrappedCallback = (response: { access_token?: string; error?: string; error_description?: string; expires_in?: number }) => {
+          clearInterval(callbackCheckInterval)
+          originalCallback(response)
+        }
+        
+        // Update the global callback reference to use wrapped version
+        if (typeof window !== 'undefined') {
+          (window as unknown as Record<string, unknown>).__googleOAuthCallback = wrappedCallback
+        }
+        
+        // Note: We can't update tokenClient callback after creation, but the global reference helps with debugging
       } catch (requestError) {
         debugLog('error', '❌ Error calling requestAccessToken', {
           error: requestError instanceof Error ? requestError.message : String(requestError),
@@ -369,8 +395,11 @@ declare global {
         }
         Action: {
           PICKED: string
+          LOADED: string
+          CANCEL: string
         }
       }
     }
   }
 }
+

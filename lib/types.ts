@@ -139,3 +139,18 @@ export interface AppState {
   isProcessing: boolean
   progress: Progress
 }
+
+/**
+ * Company context variables for use in prompts
+ */
+export interface ContextVariables {
+  tone?: string
+  targetCountries?: string
+  productDescription?: string
+  companyName?: string
+  industry?: string
+  complianceRequirements?: string
+  complianceFlags?: string
+  competitors?: string
+  targetIndustries?: string
+}
