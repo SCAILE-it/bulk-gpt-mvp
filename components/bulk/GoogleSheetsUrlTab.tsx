@@ -247,126 +247,179 @@ export function GoogleSheetsUrlTab({
     }
 
     try {
-      // Try public API first (works for public sheets)
-      let response = await fetch('/api/google-sheets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'fetch',
-          spreadsheetId: sheetId,
-          range: 'A1:Z1000',
-        }),
-      })
+      // Step 1: Try CSV export URL first (works for public sheets, no API needed)
+      debugLog('info', '📥 Trying CSV export URL (public sheets, no API needed)')
+      const csvExportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`
+      let csvResponse = await fetch(csvExportUrl)
+      
+      // If CSV export works, parse it directly
+      if (csvResponse.ok) {
+        debugLog('info', '✅ CSV export successful (public sheet)')
+        const csvText = await csvResponse.text()
+        
+        if (!csvText || csvText.trim().length === 0) {
+          setError('Sheet appears to be empty or no data found.')
+          setIsLoading(false)
+          return
+        }
 
-      // If public API fails with 403, try with OAuth token
-      if (!response.ok && response.status === 403) {
-        const errorData = await response.json().catch(() => ({}))
-        const isPermissionError = 
-          errorData.error?.includes('PERMISSION_DENIED') ||
-          errorData.error?.includes('permission') ||
-          errorData.error?.includes('access denied') ||
-          errorData.error?.includes('not publicly accessible')
-
-        if (isPermissionError) {
-          // Try with OAuth token if user is logged in
-          const accessToken = getStoredGoogleToken()
-          if (accessToken && isGoogleTokenValid()) {
-            debugLog('info', '🔄 Retrying with OAuth token (private sheet)')
-            response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z1000`, {
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-              },
-            })
-            
-            // If OAuth token also fails with 401, it's expired
-            if (!response.ok && response.status === 401) {
-              if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('google_access_token')
-                sessionStorage.removeItem('google_token_expires_at')
-              }
-              setIsGoogleLoggedIn(false)
-              setError('Authentication expired. Please sign in again using the "Sign in to search" button.')
-              setIsLoading(false)
-              return
+        // Parse CSV text to array of arrays
+        const lines = csvText.split('\n').filter(line => line.trim())
+        const values = lines.map(line => {
+          // Simple CSV parsing (handles quoted fields)
+          const result: string[] = []
+          let current = ''
+          let inQuotes = false
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i]
+            if (char === '"') {
+              inQuotes = !inQuotes
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim())
+              current = ''
+            } else {
+              current += char
             }
-          } else {
-            // Not logged in - error will show buttons for sign in or make public
-            setError('Sheet is private. Sign in to Google to access it, or make the sheet public.')
+          }
+          result.push(current.trim())
+          return result
+        })
+
+        // Use provided name or default
+        let finalSheetName = sheetName || `google-sheet-${sheetId.substring(0, 8)}`
+        if (!sheetName) {
+          try {
+            const accessToken = getStoredGoogleToken()
+            if (accessToken && isGoogleTokenValid()) {
+              const metadataResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${sheetId}?fields=name`, {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                },
+              })
+              if (metadataResponse.ok) {
+                const metadata = await metadataResponse.json()
+                if (metadata.name) {
+                  finalSheetName = metadata.name
+                }
+              }
+            }
+          } catch {
+            // Ignore metadata fetch errors
+          }
+        }
+
+        // Convert to ParsedCSV format
+        const parsedCSV = convertSheetsToCSV(values, finalSheetName)
+        
+        // Add Google Sheets metadata
+        if (isValidGoogleSheetsUrl(value)) {
+          parsedCSV.googleSheetsUrl = value
+        }
+        parsedCSV.googleSheetsId = sheetId
+        
+        // Clear input and errors
+        setInputValue('')
+        setError(null)
+        
+        // Notify parent
+        onDataLoaded(parsedCSV)
+        setIsLoading(false)
+        return
+      }
+
+      // Step 2: CSV export failed (403 = private sheet)
+      if (csvResponse.status === 403) {
+        debugLog('info', '🔒 Sheet is private, checking OAuth token')
+        const accessToken = getStoredGoogleToken()
+        
+        if (accessToken && isGoogleTokenValid()) {
+          // Try with OAuth token using Sheets API
+          debugLog('info', '🔄 Retrying with OAuth token (private sheet)')
+          const apiResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z1000`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          })
+          
+          // If OAuth token fails with 401, it's expired
+          if (!apiResponse.ok && apiResponse.status === 401) {
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('google_access_token')
+              sessionStorage.removeItem('google_token_expires_at')
+            }
+            setIsGoogleLoggedIn(false)
+            setError('Authentication expired. Please sign in again using the "Sign in to search" button.')
             setIsLoading(false)
             return
           }
-        }
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || 'Failed to fetch Google Sheet'
-        
-        // Check if API not enabled error
-        if (response.status === 503 && errorData.activationUrl) {
-          setError(`Google Sheets API is not enabled. Enable it here: ${errorData.activationUrl}`)
-        } else if (response.status === 403) {
-          // Check if user is signed in but still got 403 (no access)
-          const accessToken = getStoredGoogleToken()
-          if (accessToken && isGoogleTokenValid()) {
+          
+          // If OAuth token fails with 403, user doesn't have access
+          if (!apiResponse.ok && apiResponse.status === 403) {
             setError('Sheet is private. You don\'t have access. Ask the owner to share it with you or make it public.')
-          } else {
-            setError('Sheet is private. Sign in to Google to access it, or make the sheet public.')
+            setIsLoading(false)
+            return
           }
-        } else {
-          setError(errorMessage)
-        }
-        setIsLoading(false)
-        return
-      }
+          
+          if (apiResponse.ok) {
+            const data = await apiResponse.json()
+            
+            if (!data.values || data.values.length === 0) {
+              setError('Sheet appears to be empty or no data found.')
+              setIsLoading(false)
+              return
+            }
 
-      const data = await response.json()
-      
-      if (!data.values || data.values.length === 0) {
-        setError('Sheet appears to be empty or no data found.')
-        setIsLoading(false)
-        return
-      }
-
-      // Use provided name or fetch metadata
-      let finalSheetName = sheetName || `google-sheet-${sheetId.substring(0, 8)}`
-      if (!sheetName) {
-        try {
-          const accessToken = getStoredGoogleToken()
-          if (accessToken && isGoogleTokenValid()) {
-            const metadataResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${sheetId}?fields=name`, {
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-              },
-            })
-            if (metadataResponse.ok) {
-              const metadata = await metadataResponse.json()
-              if (metadata.name) {
-                finalSheetName = metadata.name
+            // Use provided name or fetch metadata
+            let finalSheetName = sheetName || `google-sheet-${sheetId.substring(0, 8)}`
+            if (!sheetName) {
+              try {
+                const metadataResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${sheetId}?fields=name`, {
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                  },
+                })
+                if (metadataResponse.ok) {
+                  const metadata = await metadataResponse.json()
+                  if (metadata.name) {
+                    finalSheetName = metadata.name
+                  }
+                }
+              } catch {
+                // Ignore metadata fetch errors
               }
             }
+
+            // Convert to ParsedCSV format
+            const parsedCSV = convertSheetsToCSV(data.values, finalSheetName)
+            
+            // Add Google Sheets metadata
+            if (isValidGoogleSheetsUrl(value)) {
+              parsedCSV.googleSheetsUrl = value
+            }
+            parsedCSV.googleSheetsId = sheetId
+            
+            // Clear input and errors
+            setInputValue('')
+            setError(null)
+            
+            // Notify parent
+            onDataLoaded(parsedCSV)
+            setIsLoading(false)
+            return
           }
-        } catch {
-          // Ignore metadata fetch errors
+        } else {
+          // Not logged in - show error with options
+          setError('Sheet is private. Sign in to Google to access it, or make the sheet public.')
+          setIsLoading(false)
+          return
         }
       }
 
-      // Convert to ParsedCSV format
-      const parsedCSV = convertSheetsToCSV(data.values, finalSheetName)
-      // Add Google Sheets metadata
-      if (isValidGoogleSheetsUrl(value)) {
-        parsedCSV.googleSheetsUrl = value
-      }
-      parsedCSV.googleSheetsId = sheetId
-      
-      // Clear input and errors
-      setInputValue('')
-      setError(null)
-      
-      // Notify parent
-      onDataLoaded(parsedCSV)
+      // Step 3: Other errors from CSV export
+      setError('Failed to fetch Google Sheet. Please check the URL and ensure the sheet exists.')
+      setIsLoading(false)
+      return
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to import Google Sheet'
       setError(errorMessage)
