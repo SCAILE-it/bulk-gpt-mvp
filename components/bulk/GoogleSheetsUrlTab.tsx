@@ -250,7 +250,7 @@ export function GoogleSheetsUrlTab({
       // Step 1: Try CSV export URL first (works for public sheets, no API needed)
       debugLog('info', '📥 Trying CSV export URL (public sheets, no API needed)')
       const csvExportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`
-      let csvResponse = await fetch(csvExportUrl)
+      const csvResponse = await fetch(csvExportUrl)
       
       // If CSV export works, parse it directly
       if (csvResponse.ok) {
