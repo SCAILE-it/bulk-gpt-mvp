@@ -10,10 +10,12 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search, RefreshCw, AlertCircle, X } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Activity, Plus, TrendingUp, Clock, CheckCircle2, XCircle, Loader2, Download, Search, RefreshCw, AlertCircle, X, BarChart3 } from 'lucide-react'
 import { logError } from '@/lib/errors'
 import { toast } from 'sonner'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
+import { AnalyticsDashboard } from '@/components/dashboard/AnalyticsDashboard'
 import { flattenBatchResultsForExport, exportToCSV, type BatchResultRow } from '@/lib/export'
 import { generateExportFilenameFromBatch, generateExportFilename } from '@/lib/export-filename'
 
@@ -349,7 +351,7 @@ export default function DashboardPage() {
               Executions
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Overview of your batch processing activity
+              Overview of your batch processing activity and usage analytics
             </p>
           </div>
           <Button 
@@ -363,38 +365,59 @@ export default function DashboardPage() {
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-secondary/40 border border-border rounded-lg p-4">
-            <div className="text-xs font-medium text-muted-foreground mb-2">Total Batches</div>
-            <div className="text-base font-semibold text-foreground">{stats.totalBatches}</div>
-          </div>
+        {/* Tabs */}
+        <Tabs defaultValue="executions" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-3.5 w-3.5" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="executions" className="flex items-center gap-2">
+              <Activity className="h-3.5 w-3.5" />
+              Executions
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="bg-secondary/40 border border-border rounded-lg p-4">
-            <div className="text-xs font-medium text-muted-foreground mb-2">Completed</div>
-            <div className="text-base font-semibold text-green-400">
-              {stats.completedBatches}
+          <TabsContent value="analytics" className="mt-4">
+            <div className="bg-secondary/40 border border-border rounded-lg p-6">
+              <AnalyticsDashboard />
             </div>
-          </div>
+          </TabsContent>
 
-          <div className="bg-secondary/40 border border-border rounded-lg p-4">
-            <div className="text-xs font-medium text-muted-foreground mb-2">Failed</div>
-            <div className="text-base font-semibold text-red-400">
-              {stats.failedBatches}
-            </div>
-          </div>
+          <TabsContent value="executions" className="mt-4">
+            <div className="space-y-6">
+              {/* Stats Cards */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="bg-secondary/40 border border-border rounded-lg p-4">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Total Batches</div>
+                  <div className="text-base font-semibold text-foreground">{stats.totalBatches}</div>
+                </div>
 
-          <div className="bg-secondary/40 border border-border rounded-lg p-4">
-            <div className="text-xs font-medium text-muted-foreground mb-2">Success Rate</div>
-            <div className="text-base font-semibold flex items-center gap-2 text-foreground">
-              <TrendingUp className="h-4 w-4 text-green-400" aria-hidden="true" />
-              <span>{stats.successRate}%</span>
-            </div>
-          </div>
-        </div>
+                <div className="bg-secondary/40 border border-border rounded-lg p-4">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Completed</div>
+                  <div className="text-base font-semibold text-green-400">
+                    {stats.completedBatches}
+                  </div>
+                </div>
 
-        {/* Recent Batches */}
-        <div className="bg-secondary/40 border border-border rounded-lg overflow-hidden">
+                <div className="bg-secondary/40 border border-border rounded-lg p-4">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Failed</div>
+                  <div className="text-base font-semibold text-red-400">
+                    {stats.failedBatches}
+                  </div>
+                </div>
+
+                <div className="bg-secondary/40 border border-border rounded-lg p-4">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Success Rate</div>
+                  <div className="text-base font-semibold flex items-center gap-2 text-foreground">
+                    <TrendingUp className="h-4 w-4 text-green-400" aria-hidden="true" />
+                    <span>{stats.successRate}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Batches */}
+              <div className="bg-secondary/40 border border-border rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -531,6 +554,9 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
