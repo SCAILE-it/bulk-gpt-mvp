@@ -1,20 +1,24 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function HomePage() {
   const router = useRouter()
   const pathname = usePathname()
+  const hasRedirected = useRef(false)
 
   useEffect(() => {
-    // Prevent redirect loop - if we're already on /auth or /bulk, don't redirect
-    if (pathname !== '/') {
+    // Prevent redirect loop - only redirect once and only from root path
+    if (pathname !== '/' || hasRedirected.current) {
       return
     }
 
     async function checkAuth() {
+      // Mark as redirected immediately to prevent multiple calls
+      hasRedirected.current = true
+
       try {
         const supabase = createClient()
         if (!supabase) {
