@@ -190,7 +190,7 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormPro
               onBlur={passwordValidation.setTouched}
               required
               disabled={isLoadingEmail}
-              autoComplete="current-password"
+              autocomplete="current-password"
               aria-label="Password"
               aria-describedby={error ? "form-error" : passwordValidation.touched && passwordValidation.errors[0] ? "password-error" : undefined}
               aria-invalid={passwordValidation.touched && !passwordValidation.isValid}

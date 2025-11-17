@@ -1,0 +1,273 @@
+================================================================================
+FEATURE ARCHIVE - QUICK REFERENCE GUIDE
+================================================================================
+
+PROJECT: bulk-gpt-mvp-code
+LOCATION: /Users/federicodeponte/bulk-gpt-mvp-code
+
+================================================================================
+FEATURES TO ARCHIVE
+================================================================================
+
+1. RESOURCES PAGE
+   - Full page deletion: /app/(authenticated)/resources/page.tsx
+   - 9 component files in /components/resources/
+   - 4 API route files in /app/api/resources/
+   - Navigation link: Remove from nav.tsx line 113
+
+2. API KEYS TAB (in Profile/Settings)
+   - Tab removal from: /app/(authenticated)/profile/page.tsx (lines 277-280)
+   - 2 component files in /components/api-keys/
+   - 1 hook file: /hooks/useApiKeys.ts
+   - Tab definition: Lines 277-280 in profile page
+
+3. ANALYTICS TAB (in Home/Dashboard - NOT Executions)
+   - Tab removal from: /app/(authenticated)/home/page.tsx (lines 845-852)
+   - Main component: /components/dashboard/AnalyticsDashboard.tsx
+   - Multiple supporting components and utilities
+   - NOTE: Keep Executions tab (lines 853-858)
+
+================================================================================
+FILE COUNTS BY FEATURE
+================================================================================
+
+RESOURCES PAGE:
+  - Page files: 1
+  - Components: 9
+  - API routes: 4
+  - Types: 1 (resources.ts)
+  - Total: 15 files
+
+API KEYS:
+  - Components: 2
+  - Hooks: 1
+  - API routes: 1 (presumed)
+  - Total: ~4 files
+
+ANALYTICS:
+  - Components: 3 (Dashboard, DateRanger, Insights, Comparison)
+  - Chart components: 3
+  - Hooks: 2 (Dashboard, SavedFilters)
+  - Utilities: ~5 (cost-calculator, chart-export, annotations, etc)
+  - API routes: 2
+  - Total: ~15 files
+
+TOTAL TO ARCHIVE: ~33 files
+
+================================================================================
+EXACT FILE PATHS
+================================================================================
+
+RESOURCES PAGE - FILES TO DELETE:
+  /app/(authenticated)/resources/page.tsx
+  /components/resources/ResourcesList.tsx
+  /components/resources/ResourceCard.tsx
+  /components/resources/ResourceDetail.tsx
+  /components/resources/CreateResourceModal.tsx
+  /components/resources/ContentEditor.tsx
+  /components/resources/ResourceFilters.tsx
+  /components/resources/BulkActionsBar.tsx
+  /components/resources/ResourceLinker.tsx
+  /components/resources/AnalyticsDataDisplay.tsx
+  /app/api/resources/route.ts
+  /app/api/resources/bulk/route.ts
+  /app/api/resources/[id]/route.ts
+  /app/api/resources/[id]/link/route.ts
+  /lib/types/resources.ts
+
+API KEYS - FILES TO DELETE:
+  /components/api-keys/ApiKeyList.tsx
+  /components/api-keys/CreateApiKeyModal.tsx
+  /hooks/useApiKeys.ts
+
+ANALYTICS - FILES TO DELETE:
+  /components/dashboard/AnalyticsDashboard.tsx
+  /components/dashboard/DateRangePicker.tsx
+  /components/dashboard/InsightsPanel.tsx
+  /components/dashboard/ComparisonWidget.tsx
+  /components/charts/LazyChartComponents.ts
+  /components/charts/CustomTooltip.tsx
+  /components/charts/ChartModal.tsx
+  /hooks/useDashboardPreferences.ts
+  /hooks/useSavedFilters.ts
+  /lib/utils/cost-calculator.ts
+  /lib/utils/chart-export.ts
+  /lib/utils/chart-annotations.ts
+  /lib/utils/model-utils.ts
+  /app/api/dashboard/stats/route.ts
+  /app/api/dashboard/recent-runs/route.ts
+
+FILES TO EDIT (NOT DELETE):
+  /components/layout/nav.tsx - Remove Resources link & prefetch
+  /app/(authenticated)/profile/page.tsx - Remove API Keys tab
+  /app/(authenticated)/home/page.tsx - Remove Analytics tab, keep Executions
+
+================================================================================
+WHAT STAYS (DO NOT ARCHIVE)
+================================================================================
+
+EXECUTIONS TAB:
+  - Keep all batch/execution related code
+  - Keep batch history table
+  - Keep download functionality
+  - Keep status badges
+  - Keep progress displays
+  - Location: /app/(authenticated)/home/page.tsx lines 477-841
+
+DASHBOARD STATS:
+  - Keep batch statistics display (Total, Completed, Failed, Success Rate)
+  - Location: Lines 481-508 in home page
+
+PROFILE PAGE STRUCTURE:
+  - Keep Account, Usage, Billing tabs
+  - Remove only API Keys tab
+  - Keep all other profile functionality
+
+CONTEXT, AGENTS, SCHEDULES:
+  - All remain untouched
+
+================================================================================
+NAVIGATION CHANGES REQUIRED
+================================================================================
+
+FILE: /components/layout/nav.tsx
+
+CHANGE 1 - Remove Resources Link (Line 113)
+  BEFORE: { href: '/resources', label: 'RESOURCES' },
+  AFTER:  (remove entire line)
+
+CHANGE 2 - Remove Analytics Link (Line 114, which becomes 113 after above)
+  BEFORE: { href: '/analytics', label: 'ANALYTICS' },
+  AFTER:  (remove entire line - note: /analytics is actually a tab, not a page)
+
+CHANGE 3 - Remove Resources Prefetch (Lines 102-103)
+  BEFORE: 
+    } else if (href === '/resources') {
+      mutate('/api/resources') // Prefetch resources data
+  AFTER: (delete these 2 lines)
+
+FILE: /app/(authenticated)/profile/page.tsx
+
+CHANGE 1 - Remove API Keys Import (Line 16)
+  BEFORE: import { ApiKeyList } from '@/components/api-keys/ApiKeyList'
+  AFTER:  (remove this line)
+
+CHANGE 2 - Remove API Keys Content Variable (Lines 199-210)
+  BEFORE: const apiKeysContent = ( ... )
+  AFTER:  (remove entire variable definition)
+
+CHANGE 3 - Remove API Keys Tab from Array (Lines 277-280)
+  BEFORE: 
+    {
+      value: 'api-keys',
+      label: 'API Keys',
+      icon: <Key className="h-3.5 w-3.5" />,
+      content: apiKeysContent,
+    },
+  AFTER: (remove this entire object from tabs array)
+
+FILE: /app/(authenticated)/home/page.tsx
+
+CHANGE 1 - Remove AnalyticsDashboard Import (Lines 22-32)
+  BEFORE: const AnalyticsDashboard = dynamic(...)
+  AFTER:  (remove entire dynamic import)
+
+CHANGE 2 - Remove Analytics Content Variable (Lines 473-475)
+  BEFORE: const analyticsContent = ( <AnalyticsDashboard /> )
+  AFTER:  (remove this variable)
+
+CHANGE 3 - Remove Analytics Tab & Change Default (Lines 843-862)
+  BEFORE: defaultValue="analytics", first tab is analytics
+  AFTER:  defaultValue="executions", only tab is executions
+
+CHANGE 4 - Update Tabs Array (Lines 846-859)
+  BEFORE: 
+    tabs={[
+      { value: 'analytics', ... content: analyticsContent },
+      { value: 'executions', ... content: executionsContent },
+    ]}
+  AFTER:
+    tabs={[
+      { value: 'executions', ... content: executionsContent },
+    ]}
+
+================================================================================
+DIRECTORY STRUCTURE CLEANUP
+================================================================================
+
+After archiving, these directories should be EMPTY and can be deleted:
+  /components/resources/
+  /components/api-keys/
+  /app/api/resources/
+
+OR moved to /archive/ for backup:
+  /archive/components/resources/
+  /archive/components/api-keys/
+  /archive/api/resources/
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+After changes:
+  [ ] Navigation renders without Resources link
+  [ ] Navigation renders without Analytics link
+  [ ] Profile page shows 3 tabs (Account, Usage, Billing)
+  [ ] Home page shows 1 tab (Executions)
+  [ ] Executions tab displays batch history
+  [ ] Download functionality works
+  [ ] Search/filter on executions works
+  [ ] No console errors about missing components
+  [ ] No broken imports
+  [ ] Direct access to /resources shows 404
+  [ ] Mobile menu also shows updated nav
+
+================================================================================
+RISK ASSESSMENT
+================================================================================
+
+RISK LEVEL: MEDIUM-HIGH
+
+REASONS:
+  1. Analytics is deeply integrated with Dashboard layout
+  2. Multiple interdependent components and utilities
+  3. Database tables still contain data (resources, api_keys)
+  4. Need to verify no other pages reference removed features
+
+DEPENDENCIES TO CHECK:
+  - Check for any imports of AnalyticsDashboard elsewhere
+  - Check for any imports of ResourcesList elsewhere
+  - Check for any imports of ApiKeyList elsewhere
+  - Verify cost-calculator not used elsewhere
+  - Verify chart components not used elsewhere
+
+MITIGATION:
+  1. Create backup archive before deletion
+  2. Run grep for all references before deleting
+  3. Test all navigation paths
+  4. Keep database tables intact (optional cleanup later)
+
+================================================================================
+ESTIMATED EFFORT
+================================================================================
+
+Time: 1-2 hours
+  - File preparation: 15 min
+  - Code modification: 30 min
+  - Testing & verification: 30 min
+  - Troubleshooting (if needed): 15 min
+
+Code Lines Changed: ~50 lines across 3 files
+
+================================================================================
+DOCUMENTS PROVIDED
+================================================================================
+
+1. ARCHIVE_ANALYSIS.md - Comprehensive feature analysis
+2. ARCHIVE_DETAILED_FILE_LIST.md - Exact paths and execution steps
+3. NAVIGATION_STRUCTURE.md - Visual navigation maps
+4. ARCHIVE_QUICK_REFERENCE.txt - This file
+
+All documents are in: /Users/federicodeponte/bulk-gpt-mvp-code/
+
+================================================================================
