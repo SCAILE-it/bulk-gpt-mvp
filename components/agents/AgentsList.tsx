@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { cn } from '@/lib/utils'
-import type { Agent, AgentStatus } from '@/lib/types/agents'
+import type { Agent, AgentStatus, AgentType } from '@/lib/types/agents'
 import type { AgentDefinition } from '@/lib/types/agent-definitions'
 import { toast } from 'sonner'
 import { AgentRunModal } from './AgentRunModal'
