@@ -123,6 +123,9 @@ export default function AEOProcessor() {
       const data = await response.json()
 
       // Fetch the created analytics resources
+      if (!supabase) {
+        throw new Error('Supabase client not initialized')
+      }
       const { data: analyticsResources, error: resourcesError } = await supabase
         .from('resources')
         .select('*')
