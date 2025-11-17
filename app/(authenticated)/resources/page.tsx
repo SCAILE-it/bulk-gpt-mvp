@@ -5,13 +5,13 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PageWithTabs } from '@/components/layout/PageWithTabs'
 import { Database, Search, FileText, Megaphone } from 'lucide-react'
 import { ResourcesList } from '@/components/resources/ResourcesList'
 
-export default function ResourcesPage() {
+function ResourcesPageContent() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
   const [defaultTab, setDefaultTab] = useState<'leads' | 'keywords' | 'content' | 'campaigns'>('leads')
@@ -73,4 +73,11 @@ export default function ResourcesPage() {
   )
 }
 
+export default function ResourcesPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <ResourcesPageContent />
+    </Suspense>
+  )
+}
 
