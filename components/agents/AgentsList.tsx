@@ -191,7 +191,7 @@ export function AgentsList() {
         // Note: AgentDefinition uses category/input_type/output_type, Agent uses type/inputSchema/outputSchema
         return {
           id: def.id,
-          type: def.category as 'lead' | 'keyword' | 'content' | 'campaign', // Map category to type for compatibility
+          type: (def.id === 'bulk' ? 'bulk' : def.id === 'aeo_analytics' ? 'market-analytics' : 'bulk') as AgentType, // Map category to type for compatibility
           name: def.name,
           description: def.description || '',
           status,
