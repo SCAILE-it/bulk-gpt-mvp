@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Clock } from 'lucide-react'
 import { format, addHours, startOfTomorrow, addWeeks, addMonths } from 'date-fns'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { DisabledButtonTooltip } from '@/components/ui/disabled-button-tooltip'
 import type { CreateScheduleInput, ScheduleConfig, CSVDataSource } from '@/lib/types/schedules'
 import { scheduleToCron, formatSchedule, type ScheduleType, type RecurrenceUnit } from '@/lib/utils/schedule-to-cron'

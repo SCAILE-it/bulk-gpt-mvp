@@ -61,7 +61,7 @@ export async function exportSVGAsPNG(
           reject(err)
         }
       }
-      img.onerror = (err) => reject(new Error('Failed to load SVG image'))
+      img.onerror = () => reject(new Error('Failed to load SVG image'))
       img.src = url
     })
 

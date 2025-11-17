@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LogOut, User, ChevronDown, Menu, X, Moon, Sun, Monitor, Building2, FileText } from 'lucide-react'
+import { LogOut, User, ChevronDown, Menu, X, Moon, Sun, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/brand/Logo'
 import { useTheme } from 'next-themes'

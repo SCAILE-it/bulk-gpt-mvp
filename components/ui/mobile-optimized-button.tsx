@@ -10,7 +10,7 @@
 import React from 'react'
 import { Button, ButtonProps } from '@/components/ui/button'
 import { useResponsive } from '@/hooks/useResponsive'
-import { getTouchTargetClasses, getTouchIconSize } from '@/lib/utils/touch-targets'
+import { getTouchTargetClasses } from '@/lib/utils/touch-targets'
 import { cn } from '@/lib/utils'
 
 interface MobileOptimizedButtonProps extends ButtonProps {

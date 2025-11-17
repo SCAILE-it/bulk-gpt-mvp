@@ -39,7 +39,6 @@ export function PageWithTabs({
   defaultValue,
   tabs,
   breadcrumbItems,
-  className,
   maxWidth = 'max-w-3xl',
   value,
   onValueChange,

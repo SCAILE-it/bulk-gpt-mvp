@@ -151,7 +151,7 @@ export function ComponentShowcase() {
         <CardHeader>
           <CardTitle>4. Progress Calculator (P1)</CardTitle>
           <CardDescription>
-            Accurate progress formatting (fixes "100.0%" when incomplete)
+            Accurate progress formatting (fixes &quot;100.0%&quot; when incomplete)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

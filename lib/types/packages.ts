@@ -5,7 +5,7 @@
 
 export interface AgentConfig {
   agent_id: string
-  config: Record<string, any>
+  config: Record<string, unknown>
   schedule?: string
 }
 
@@ -40,7 +40,7 @@ export interface PackageRun {
   package_id: string
   agent_id: string
   batch_id?: string
-  config: Record<string, any>
+  config: Record<string, unknown>
   status: 'pending' | 'running' | 'completed' | 'failed'
   created_at: string
   updated_at: string

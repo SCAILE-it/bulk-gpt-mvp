@@ -7,8 +7,6 @@
 
 import React, { ReactNode } from 'react'
 import { Label } from './label'
-import { Input } from './input'
-import { Textarea } from './textarea'
 import { cn } from '@/lib/utils'
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 

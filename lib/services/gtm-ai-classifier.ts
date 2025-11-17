@@ -171,7 +171,7 @@ Return ONLY valid JSON in this exact format:
     });
 
     const responseText = result.response.text();
-    let parsed: any;
+    let parsed: Record<string, unknown>;
     
     try {
       parsed = JSON.parse(responseText);

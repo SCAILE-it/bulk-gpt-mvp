@@ -1,7 +1,6 @@
 /**
- * ABOUTME: Single-page bulk processing interface - power-user optimized
- * ABOUTME: Full-width, left-aligned, keyboard shortcuts, inline results
- * Routes: /agents/bulk (same as old /bulk/page.tsx)
+ * ABOUTME: Single-page agent interfaces - dedicated pages for specific agents
+ * ABOUTME: Routes: /agents/bulk, /agents/aeo_analytics, etc.
  */
 
 'use client'
@@ -9,16 +8,26 @@
 import { useParams } from 'next/navigation'
 import { BulkProcessorErrorBoundary } from '@/components/ErrorBoundary'
 import BulkProcessor from '@/components/bulk/BulkProcessor'
+import AEOProcessor from '@/components/agents/AEOProcessor'
 
 export default function AgentPage() {
   const params = useParams()
   const agentId = params?.agentId as string
 
-  // For bulk agent, render the exact same page as before
+  // Bulk agent - render the bulk processor
   if (agentId === 'bulk') {
     return (
       <BulkProcessorErrorBoundary>
         <BulkProcessor />
+      </BulkProcessorErrorBoundary>
+    )
+  }
+
+  // AEO Analytics agent - render the AEO processor
+  if (agentId === 'aeo_analytics') {
+    return (
+      <BulkProcessorErrorBoundary>
+        <AEOProcessor />
       </BulkProcessorErrorBoundary>
     )
   }

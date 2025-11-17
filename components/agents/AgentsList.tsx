@@ -113,7 +113,7 @@ export function AgentsList() {
   const [isRunModalOpen, setIsRunModalOpen] = useState(false)
   
   // Agents that have dedicated full-page interfaces
-  const agentsWithDedicatedPages = ['bulk']
+  const agentsWithDedicatedPages = ['bulk', 'aeo_analytics']
 
   const fetchAgents = useCallback(async () => {
     try {
@@ -263,7 +263,7 @@ export function AgentsList() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [agents])
 
   useEffect(() => {
     fetchAgents()

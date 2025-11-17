@@ -60,7 +60,7 @@ export interface AgentDefinition {
   output_type: 'leads' | 'keywords' | 'content' | 'analytics' | 'campaign' | null
   can_schedule: boolean
   default_schedule: string | null
-  config_schema: Record<string, any> | null
+  config_schema: Record<string, unknown> | null
   created_at: string
   updated_at: string
 }
@@ -68,7 +68,7 @@ export interface AgentDefinition {
 export interface AgentRunRequest {
   agent_id: string
   input_resource_ids?: string[]
-  config?: Record<string, any>
+  config?: Record<string, unknown>
   schedule?: {
     cron: string
     enabled: boolean

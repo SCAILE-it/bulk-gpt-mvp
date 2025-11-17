@@ -57,7 +57,7 @@ export function formatResourceData(resource: Resource): {
   secondary?: string
   email?: string
 } {
-  const data = resource.data as Record<string, any>
+  const data = resource.data as Record<string, unknown>
   
   switch (resource.type) {
     case 'lead':

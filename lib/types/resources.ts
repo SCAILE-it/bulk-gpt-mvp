@@ -10,7 +10,7 @@ export interface Resource {
   id: string
   user_id: string
   type: ResourceType
-  data: Record<string, any>
+  data: Record<string, unknown>
   source_type: SourceType
   source_name: string
   source_id?: string
@@ -35,7 +35,7 @@ export interface ResourceFilters {
 
 export interface ResourceCreate {
   type: ResourceType
-  data: Record<string, any>
+  data: Record<string, unknown>
   source_type: SourceType
   source_name: string
   source_id?: string

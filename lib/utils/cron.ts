@@ -84,14 +84,14 @@ export function calculateNextRuns(
  * @param timezone Timezone
  * @returns Human-readable description
  */
-export function formatCronExpression(cronExpr: string, timezone: string = 'UTC'): string {
+export function formatCronExpression(cronExpr: string): string {
   try {
     const parts = cronExpr.split(' ')
     if (parts.length !== 5) {
       return cronExpr
     }
     
-    const [minute, hour, dayOfMonth, month, dayOfWeek] = parts
+    const [minute, hour, dayOfMonth, , dayOfWeek] = parts
     
     // Common patterns
     if (cronExpr === '0 0 * * *') {

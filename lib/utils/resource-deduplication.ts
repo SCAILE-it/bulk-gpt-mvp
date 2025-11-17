@@ -53,10 +53,11 @@ async function checkResourceExists(
   userId: string,
   resourceType: ResourceType,
   uniqueIdentifier: string,
-  resourceData: Record<string, unknown>
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _resourceData: Record<string, unknown>
 ): Promise<{ exists: boolean; existingId?: string }> {
   try {
-    let query = supabaseAdmin
+    const query = supabaseAdmin
       .from('resources')
       .select('id')
       .eq('user_id', userId)
@@ -137,7 +138,7 @@ async function checkResourceExists(
         
         // If type is specified, filter by type in memory
         if (type) {
-          const match = candidates.find((c: any) => {
+          const match = candidates.find((c: { data?: { type?: unknown } }) => {
             const candidateType = (c.data?.type || '').toLowerCase().trim()
             return candidateType === type
           })

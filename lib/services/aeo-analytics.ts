@@ -91,7 +91,6 @@ export async function analyzeAEOKeywords(
   request: AEOAnalyticsRequest,
   authToken: string
 ): Promise<AEOAnalyticsResult[]> {
-  const startTime = Date.now()
   const gtmClient = new GTMAPIClient({ authToken })
   
   const results: AEOAnalyticsResult[] = []
@@ -171,7 +170,7 @@ export async function analyzeAEOKeywords(
       // Extract intelligence metrics
       if (intelligenceResult?.success && intelligenceResult.data) {
         toolsUsed.push('keyword-intelligence')
-        const intelData = intelligenceResult.data as any
+        const intelData = intelligenceResult.data as Record<string, unknown>
         metrics.intelligence = {
           seo_potential: intelData.seo_potential || intelData.potential_score || 0,
           competition_level: intelData.competition_level || intelData.competition || 'unknown',
@@ -182,31 +181,31 @@ export async function analyzeAEOKeywords(
       // Extract volume
       if (volumeResult?.success && volumeResult.data) {
         toolsUsed.push('keyword-volume')
-        const volumeData = volumeResult.data as any
+        const volumeData = volumeResult.data as Record<string, unknown>
         metrics.search_volume = volumeData.search_volume || volumeData.volume || null
       }
       
       // Extract difficulty
       if (difficultyResult?.success && difficultyResult.data) {
         toolsUsed.push('keyword-difficulty')
-        const diffData = difficultyResult.data as any
+        const diffData = difficultyResult.data as Record<string, unknown>
         metrics.difficulty = diffData.difficulty || diffData.difficulty_score || null
       }
       
       // Extract intent
       if (intentResult?.success && intentResult.data) {
         toolsUsed.push('keyword-intent')
-        const intentData = intentResult.data as any
+        const intentData = intentResult.data as Record<string, unknown>
         metrics.intent = {
-          type: intentData.intent_type || intentData.intent || 'informational',
-          confidence: intentData.confidence || intentData.confidence_score || 0.5,
-        } as any
+          type: (intentData.intent_type || intentData.intent || 'informational') as string,
+          confidence: (intentData.confidence || intentData.confidence_score || 0.5) as number,
+        }
       }
       
       // Extract SERP features
       if (serpResult?.success && serpResult.data) {
         toolsUsed.push('serp-features')
-        const serpData = serpResult.data as any
+        const serpData = serpResult.data as Record<string, unknown>
         metrics.serp_features = {
           featured_snippet: serpData.featured_snippet || serpData.has_featured_snippet || false,
           people_also_ask: serpData.people_also_ask || serpData.has_paa || false,
@@ -218,7 +217,7 @@ export async function analyzeAEOKeywords(
       // Extract ranking
       if (rankingResult?.success && rankingResult.data) {
         toolsUsed.push('keyword-ranking')
-        const rankData = rankingResult.data as any
+        const rankData = rankingResult.data as Record<string, unknown>
         metrics.current_ranking = {
           position: rankData.position || rankData.ranking || null,
           url: rankData.url || null,
