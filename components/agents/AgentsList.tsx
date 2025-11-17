@@ -132,7 +132,7 @@ export function AgentsList() {
       ])
 
       if (!definitionsResponse.ok) {
-        console.error('Failed to fetch agents:', definitionsResponse.status)
+        console.error('Failed to fetch agents:', 'status' in definitionsResponse ? definitionsResponse.status : 'unknown')
         setAgents([])
         setIsLoading(false)
         return
