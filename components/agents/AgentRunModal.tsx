@@ -301,7 +301,7 @@ export function AgentRunModal({ agent, open, onClose }: AgentRunModalProps) {
                 <Checkbox
                   id="enable_schedule"
                   checked={enableSchedule}
-                  onCheckedChange={setEnableSchedule}
+                  onCheckedChange={(checked) => setEnableSchedule(checked === true)}
                 />
                 <Label htmlFor="enable_schedule" className="cursor-pointer">
                   Schedule Recurring Runs
