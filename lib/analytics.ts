@@ -131,6 +131,10 @@ export function trackEvent(event: string, properties?: Record<string, unknown>) 
 export const ANALYTICS_EVENTS = {
   // File events
   FILE_UPLOADED: 'file_uploaded',
+  // Agent events
+  AGENT_RUN_STARTED: 'agent_run_started',
+  AGENT_RUN_COMPLETED: 'agent_run_completed',
+  AGENT_RUN_FAILED: 'agent_run_failed',
   FILE_PARSE_ERROR: 'file_parse_error',
   
   // Processing events
