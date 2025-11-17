@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Save, X } from 'lucide-react'
+import { Plus, Trash2, Save, X, Box } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -247,7 +247,7 @@ export function PackageManager() {
       {/* Packages List */}
       {packages.length === 0 ? (
         <EmptyState
-          icon={Package}
+          icon={Box}
           title="No packages yet"
           description="Create your first package to get started"
         />
