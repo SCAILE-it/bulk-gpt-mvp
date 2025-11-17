@@ -105,7 +105,7 @@ export async function POST(
           })
           return result
         })
-        csvFilename = csvData.filename || csvFilename
+        // csvFilename already set from schedule.csv_filename above
       } else if (schedule.csv_file_path) {
         // Load from context file (would need to implement file loading)
         return NextResponse.json(

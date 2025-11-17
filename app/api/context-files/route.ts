@@ -77,7 +77,9 @@ export async function GET(request: NextRequest): Promise<Response> {
           metadata = file.metadata
         }
         
-        fileType = metadata.fileType || 'manual'
+        fileType = (metadata.fileType && ['input', 'output', 'manual'].includes(metadata.fileType as string)) 
+          ? (metadata.fileType as 'input' | 'output' | 'manual')
+          : 'manual'
         tags = Array.isArray(metadata.tags) ? metadata.tags : []
       }
       

@@ -289,6 +289,7 @@ function HomePageContent() {
       setTypewriterText('')
       setTypewriterRowId(null)
       setThroughput({ rowsPerSecond: 0, tokensUsed: 0 })
+      return undefined
     }
   }, [hasBatches, summaries, demoRows, replayRows.length, isLoadingReplay])
 

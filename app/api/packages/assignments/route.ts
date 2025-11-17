@@ -60,18 +60,43 @@ export async function GET() {
     }
 
     // Transform response to include package details
-    const formattedAssignments = (assignments || []).map((assignment: { id: string; agency_packages?: unknown; [key: string]: unknown }) => ({
-      id: assignment.id,
-      package_id: assignment.package_id,
-      package_name: assignment.agency_packages?.name || 'Unknown Package',
-      package_description: assignment.agency_packages?.description || null,
-      status: assignment.status,
-      agent_configs: assignment.agency_packages?.agent_configs || [],
-      monthly_cost: parseFloat(assignment.agency_packages?.monthly_cost || '0'),
-      included_self_service_credits: parseFloat(assignment.included_self_service_credits || '0'),
-      used_self_service_credits: parseFloat(assignment.used_self_service_credits || '0'),
-      billing_period_start: assignment.billing_period_start,
-    }))
+    const formattedAssignments = (assignments || []).map((assignment: unknown) => {
+      const a = assignment as {
+        id: string
+        package_id: string
+        status: string
+        included_self_service_credits?: string | number
+        used_self_service_credits?: string | number
+        billing_period_start?: string
+        agency_packages?: {
+          name?: string
+          description?: string
+          agent_configs?: unknown[]
+          monthly_cost?: string | number
+        } | null | Array<{
+          name?: string
+          description?: string
+          agent_configs?: unknown[]
+          monthly_cost?: string | number
+        }>
+        [key: string]: unknown 
+      }
+      const pkg = Array.isArray(a.agency_packages) 
+        ? a.agency_packages[0] 
+        : a.agency_packages
+      return {
+        id: a.id,
+        package_id: a.package_id,
+        package_name: pkg?.name || 'Unknown Package',
+        package_description: pkg?.description || null,
+        status: a.status,
+        agent_configs: pkg?.agent_configs || [],
+        monthly_cost: parseFloat(String(pkg?.monthly_cost || '0')),
+        included_self_service_credits: parseFloat(String(a.included_self_service_credits || '0')),
+        used_self_service_credits: parseFloat(String(a.used_self_service_credits || '0')),
+        billing_period_start: a.billing_period_start,
+      }
+    })
 
     return NextResponse.json({ assignments: formattedAssignments })
   } catch (error) {

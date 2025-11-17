@@ -188,7 +188,9 @@ export async function POST(
             billing_amount: estimatedTokens * 0.0001, // 10x markup
             covered_by_credits: false,
           })
-          .catch((err) => logError('Error tracking usage', err))
+          .then(({ error }) => {
+            if (error) logError('Error tracking usage', error)
+          })
 
         // Handle scheduling (REUSE existing pattern)
         if (schedule?.enabled && schedule.cron) {
@@ -203,7 +205,9 @@ export async function POST(
               name: `Scheduled AEO Analytics`,
               config: agentConfig,
             })
-            .catch((err) => logError('Error creating schedule', err))
+            .then(({ error }) => {
+              if (error) logError('Error creating schedule', error)
+            })
         }
 
         logDebug('[AEO] AEO analytics complete', {

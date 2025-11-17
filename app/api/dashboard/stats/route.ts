@@ -123,7 +123,7 @@ export async function GET() {
     }
 
     // Fetch agent definitions to get names/icons
-    const agentIds = [...new Set(allBatches.map(b => b.agent_id).filter(Boolean))]
+    const agentIds = Array.from(new Set(allBatches.map(b => b.agent_id).filter(Boolean)))
     const { data: agentDefinitions } = agentIds.length > 0
       ? await supabase
           .from('agent_definitions')

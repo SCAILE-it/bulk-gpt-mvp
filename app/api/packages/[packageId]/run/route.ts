@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logError } from '@/lib/utils/logger'
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { packageId: string } }
 ) {
   try {
@@ -46,11 +46,14 @@ export async function POST(
       )
     }
 
-    const packageData = assignment.agency_packages as { agent_configs?: Array<{
-      agent_id: string
-      config: Record<string, unknown>
-      schedule?: string
-    }> }
+    const packageData = assignment.agency_packages as { 
+      name?: string
+      agent_configs?: Array<{
+        agent_id: string
+        config: Record<string, unknown>
+        schedule?: string
+      }>
+    }
     const agentConfigs = packageData.agent_configs || []
 
     // Create package runs for each agent config

@@ -54,7 +54,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -85,7 +85,7 @@ export async function DELETE(
 
 // Increment usage count and update last_used_at
 export async function PATCH(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -96,10 +96,18 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Fetch current usage_count first
+    const { data: current } = await supabase
+      .from('saved_prompts')
+      .select('usage_count')
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .single()
+
     const { error } = await supabase
       .from('saved_prompts')
       .update({
-        usage_count: supabase.raw('usage_count + 1'),
+        usage_count: (current?.usage_count || 0) + 1,
         last_used_at: new Date().toISOString(),
       })
       .eq('id', params.id)

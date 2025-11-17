@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logError } from '@/lib/utils/logger'
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { packageId: string } }
 ) {
   try {
