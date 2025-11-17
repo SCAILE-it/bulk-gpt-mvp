@@ -195,14 +195,14 @@ export function AgentsList() {
           name: def.name,
           description: def.description || '',
           status,
-          lastRunAt: agentStats.lastRunAt,
+          lastRunAt: agentStats.lastRunAt || null,
           // Note: nextRunAt will be populated when scheduled_runs integration is complete
           // For now, scheduled runs are tracked separately in scheduled_runs table
           nextRunAt: null,
-          runsCount: agentStats.runsCount,
-          successRate: agentStats.successRate,
-          averageExecutionTime: agentStats.averageExecutionTime,
-          currentJobId: agentStats.currentJobId,
+          runsCount: agentStats.runsCount || 0,
+          successRate: agentStats.successRate || 0,
+          averageExecutionTime: agentStats.averageExecutionTime || null,
+          currentJobId: agentStats.currentJobId || null,
           inputSchema: {
             required: def.input_type === 'none' ? [] : [def.input_type],
             optional: [],
