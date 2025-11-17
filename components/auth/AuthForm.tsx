@@ -192,7 +192,7 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormPro
               disabled={isLoadingEmail}
               autoComplete="current-password"
               aria-label="Password"
-              aria-describedby={error ? "form-error password-error" : passwordValidation.touched && passwordValidation.errors[0] ? "password-error" : undefined}
+              aria-describedby={error ? "form-error" : passwordValidation.touched && passwordValidation.errors[0] ? "password-error" : undefined}
               aria-invalid={passwordValidation.touched && !passwordValidation.isValid}
               className="h-9 text-xs"
             />
