@@ -65,7 +65,7 @@ export async function PATCH(request: NextRequest): Promise<Response> {
 
     const file = fileData[0]
     const currentMetadata = typeof file.metadata === 'object' 
-      ? (file.metadata as any) 
+      ? (file.metadata as Record<string, unknown>) 
       : file.metadata 
         ? JSON.parse(file.metadata as string)
         : {}

@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { validateGTMPlaybook, validateProductType } from '@/lib/validation/gtm-validation';
 import { classifyGTMWithAI } from '@/lib/services/gtm-ai-classifier';
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -132,7 +132,7 @@ export async function PUT(request: NextRequest) {
       .single();
 
     // Transform frontend format to database format
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     
     // Context Variables
     if (tone !== undefined) updateData.tone = tone || null;

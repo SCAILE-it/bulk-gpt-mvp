@@ -40,6 +40,41 @@ export const BatchStatusCard = memo(function BatchStatusCard({
 }: BatchStatusCardProps) {
   const testEstimatedDuration = estimatedSeconds ? estimatedSeconds * 1000 : 60000 // Use provided estimate or default 60s
 
+  // Calculate pending as remaining rows (total minus success minus errors)
+  // All hooks must be called before any conditional returns
+  const pendingCount = useMemo(() => {
+    if (!progress) return 0
+    return progress.total - successCount - errorCount
+  }, [progress, successCount, errorCount])
+  // Use progress.completed from EventSource for real-time updates (most accurate)
+  // Fallback to successCount + errorCount if progress.completed is not available
+  const actualCompleted = useMemo(() => {
+    if (!progress) return 0
+    return progress.completed !== undefined ? progress.completed : (successCount + errorCount)
+  }, [progress, successCount, errorCount])
+  // Calculate percentage - ensure it never exceeds 100% and shows accurate progress
+  const progressPercentage = useMemo(() => {
+    if (!progress || progress.total === 0) return 0
+    // Only show up to 100% - don't show misleading percentages
+    return Math.min(100, (actualCompleted / progress.total) * 100)
+  }, [progress, actualCompleted])
+  // Format percentage using utility function for consistency
+  const formattedPercentage = useMemo(() => {
+    if (!progress) return '0'
+    if (actualCompleted >= progress.total) return '100'
+    // Use formatProgress utility, but without the % sign since we'll add it separately
+    const percentage = formatProgress(actualCompleted, progress.total, true)
+    return percentage.replace('%', '')
+  }, [progress, actualCompleted])
+  
+  // Calculate processing rate (rows per second)
+  const processingRate = useMemo(() => {
+    if (!processingStartTime || actualCompleted === 0) return null
+    const elapsed = (Date.now() - processingStartTime) / 1000 // seconds
+    if (elapsed === 0) return null
+    return actualCompleted / elapsed
+  }, [processingStartTime, actualCompleted])
+
   // For testing mode, show loading state with progress bar
   if (isTesting && !progress) {
     return (
@@ -67,35 +102,6 @@ export const BatchStatusCard = memo(function BatchStatusCard({
   }
 
   if (!progress) return null
-
-  // Calculate pending as remaining rows (total minus success minus errors)
-  const pendingCount = useMemo(() => progress.total - successCount - errorCount, [progress.total, successCount, errorCount])
-  // Use progress.completed from EventSource for real-time updates (most accurate)
-  // Fallback to successCount + errorCount if progress.completed is not available
-  const actualCompleted = useMemo(() => {
-    return progress.completed !== undefined ? progress.completed : (successCount + errorCount)
-  }, [progress.completed, successCount, errorCount])
-  // Calculate percentage - ensure it never exceeds 100% and shows accurate progress
-  const progressPercentage = useMemo(() => {
-    if (progress.total === 0) return 0
-    // Only show up to 100% - don't show misleading percentages
-    return Math.min(100, (actualCompleted / progress.total) * 100)
-  }, [progress.total, actualCompleted])
-  // Format percentage using utility function for consistency
-  const formattedPercentage = useMemo(() => {
-    if (actualCompleted >= progress.total) return '100'
-    // Use formatProgress utility, but without the % sign since we'll add it separately
-    const percentage = formatProgress(actualCompleted, progress.total, true)
-    return percentage.replace('%', '')
-  }, [actualCompleted, progress.total])
-  
-  // Calculate processing rate (rows per second)
-  const processingRate = useMemo(() => {
-    if (!processingStartTime || actualCompleted === 0) return null
-    const elapsed = (Date.now() - processingStartTime) / 1000 // seconds
-    if (elapsed === 0) return null
-    return actualCompleted / elapsed
-  }, [processingStartTime, actualCompleted])
 
   return (
     <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-gradient-to-br from-secondary/50 to-background/50 animate-slide-in-up">

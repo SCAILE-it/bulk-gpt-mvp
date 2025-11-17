@@ -11,6 +11,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     
     // Initialize analytics on mount (async) if available
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { analytics } = require('@/lib/analytics')
       if (analytics?.init) {
         analytics.init().catch((error: unknown) => {

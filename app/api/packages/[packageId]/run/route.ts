@@ -46,12 +46,12 @@ export async function POST(
       )
     }
 
-    const packageData = assignment.agency_packages as any
-    const agentConfigs = packageData.agent_configs as Array<{
+    const packageData = assignment.agency_packages as { agent_configs?: Array<{
       agent_id: string
-      config: Record<string, any>
+      config: Record<string, unknown>
       schedule?: string
-    }>
+    }> }
+    const agentConfigs = packageData.agent_configs || []
 
     // Create package runs for each agent config
     const packageRuns = []
@@ -59,7 +59,7 @@ export async function POST(
       // STUBBED: Create batch record (actual execution will be handled by Modal backend later)
       const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      const { data: batch, error: batchError } = await supabase
+      const { error: batchError } = await supabase
         .from('batches')
         .insert({
           id: batchId,

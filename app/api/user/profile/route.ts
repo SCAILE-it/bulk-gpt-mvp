@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest) {
 
     // Users can only update onboarding_link (if they're a client)
     // user_type and agency_id are managed by admins
-    const updateData: Record<string, any> = {}
+    const updateData: Record<string, unknown> = {}
     if (onboarding_link !== undefined) {
       updateData.onboarding_link = onboarding_link
     }

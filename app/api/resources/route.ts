@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     }
     
     const filters: ResourceFilters = {
-      type: searchParams.get('type') as any,
-      source_type: searchParams.get('source_type') as any,
+      type: searchParams.get('type') as ResourceFilters['type'],
+      source_type: searchParams.get('source_type') as ResourceFilters['source_type'],
       source_name: searchParams.get('source_name') || undefined,
       agent_id: searchParams.get('agent_id') || undefined,
       batch_id: searchParams.get('batch_id') || undefined,

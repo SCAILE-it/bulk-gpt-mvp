@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { AgentRunRequest } from '@/lib/types/agents'
 import { logError, logDebug } from '@/lib/utils/logger'
-import { GTMAPIClient } from '@/lib/api/gtm-client'
 import { analyzeAEOKeywords } from '@/lib/services/aeo-analytics'
 import { supabaseAdmin } from '@/lib/supabase'
 
@@ -106,7 +105,7 @@ export async function POST(
           {
             keywords: keywordResources.map((r) => ({
               id: r.id,
-              keyword: (r.data as any).keyword || '',
+              keyword: (r.data as { keyword?: string }).keyword || '',
               domain: (config?.domain as string) || undefined,
             })),
             businessContext: {

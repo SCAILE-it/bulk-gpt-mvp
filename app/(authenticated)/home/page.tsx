@@ -8,7 +8,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  ArrowRight, CheckCircle2, BarChart3
+  CheckCircle2, BarChart3
 } from 'lucide-react'
 import { useHomeStats } from '@/hooks/useHomeStats'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -290,7 +290,7 @@ function HomePageContent() {
       setTypewriterRowId(null)
       setThroughput({ rowsPerSecond: 0, tokensUsed: 0 })
     }
-  }, [hasBatches, summaries, demoRows.length, replayRows.length, isLoadingReplay])
+  }, [hasBatches, summaries, demoRows, replayRows.length, isLoadingReplay])
 
   // Group batches by status (must be before useEffect that uses them)
   const processingBatches = safeStats?.recentBatches?.filter(b => 
@@ -463,7 +463,7 @@ function HomePageContent() {
           
           // Try multiple field name variations for name/identifier
           const inputValues = typeof input === 'object' && input !== null ? Object.values(input) : []
-          const firstStringValue = inputValues.find((v: any) => typeof v === 'string' && v.length > 0 && v.length < 100) as string | undefined
+          const firstStringValue = inputValues.find((v: unknown) => typeof v === 'string' && v.length > 0 && v.length < 100) as string | undefined
           
           const name = input.name || input.Name || input.NAME || input['Full Name'] || 
                       input.subreddit || input.Subreddit || input.title || input.Title ||
@@ -502,7 +502,7 @@ function HomePageContent() {
     }
 
     fetchReplayData()
-  }, [hasBatches, safeStats?.recentBatches, completedBatches])
+  }, [hasBatches, safeStats?.recentBatches, completedBatches, isLoadingReplay, replayRows.length])
 
   // Replay animation (runs even when processing batches exist)
   // Use refs to track animation state and prevent re-running on state updates
@@ -528,16 +528,12 @@ function HomePageContent() {
     let isRunning = true
     let typeInterval: NodeJS.Timeout | null = null
     let processingTimeout: NodeJS.Timeout | null = null
-    let completionTimeout: NodeJS.Timeout | null = null
     let nextRowTimeout: NodeJS.Timeout | null = null
-    let cycleTimeout: NodeJS.Timeout | null = null
     
     const cleanup = () => {
       if (typeInterval) clearInterval(typeInterval)
       if (processingTimeout) clearTimeout(processingTimeout)
-      if (completionTimeout) clearTimeout(completionTimeout)
       if (nextRowTimeout) clearTimeout(nextRowTimeout)
-      if (cycleTimeout) clearTimeout(cycleTimeout)
     }
     
     const processNextRow = () => {

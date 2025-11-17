@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, supabaseAdmin } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { authenticateRequest } from '@/lib/auth-middleware'
 import { validateCronExpression, calculateNextRun } from '@/lib/utils/cron'
 import type { CreateScheduleInput, ScheduledRun } from '@/lib/types/schedules'

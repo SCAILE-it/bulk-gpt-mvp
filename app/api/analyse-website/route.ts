@@ -209,7 +209,7 @@ Extract the company context information and return JSON.`
       const parsed = JSON.parse(jsonText)
 
       // Validate and clean response
-      const response: Record<string, any> = {}
+      const response: Record<string, unknown> = {}
       
       // Context Variables (strings)
       const stringFields = ['tone', 'targetCountries', 'productDescription', 'competitors', 'targetIndustries', 'complianceFlags']
@@ -230,7 +230,7 @@ Extract the company context information and return JSON.`
         if (parsed[field] && Array.isArray(parsed[field])) {
           // Filter out empty strings and trim
           const cleaned = parsed[field]
-            .filter((item: any) => typeof item === 'string' && item.trim().length > 0)
+            .filter((item: unknown) => typeof item === 'string' && item.trim().length > 0)
             .map((item: string) => item.trim())
           if (cleaned.length > 0) {
             response[field] = cleaned

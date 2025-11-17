@@ -64,7 +64,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       // Parse metadata
       let fileType: 'input' | 'output' | 'manual' = 'manual'
       let tags: string[] = []
-      let metadata: any = {}
+      let metadata: Record<string, unknown> = {}
       
       if (file.metadata) {
         if (typeof file.metadata === 'string') {

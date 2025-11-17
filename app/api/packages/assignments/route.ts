@@ -60,7 +60,7 @@ export async function GET() {
     }
 
     // Transform response to include package details
-    const formattedAssignments = (assignments || []).map((assignment: any) => ({
+    const formattedAssignments = (assignments || []).map((assignment: { id: string; agency_packages?: unknown; [key: string]: unknown }) => ({
       id: assignment.id,
       package_id: assignment.package_id,
       package_name: assignment.agency_packages?.name || 'Unknown Package',

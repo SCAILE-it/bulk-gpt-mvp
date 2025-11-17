@@ -877,7 +877,7 @@ export function AnalyticsDashboard() {
   }
 
   // Show comprehensive empty state if no data at all
-  if (!analytics || (analytics.tokenStats.totalTokens === 0 && Object.keys(analytics.batchesByStatus).length === 0)) {
+  if (!analytics || (analytics?.tokenStats?.totalTokens === 0 && Object.keys(analytics?.batchesByStatus || {}).length === 0)) {
     return (
       <div className="space-y-4">
         {/* Header */}
@@ -944,8 +944,9 @@ export function AnalyticsDashboard() {
   }
 
   return (
-    <ErrorBoundary>
-      <TooltipProvider>
+    <>
+      <ErrorBoundary>
+        <TooltipProvider>
         <div ref={dashboardRef} className="space-y-6" role="main" aria-label="Analytics Dashboard">
           {/* Skip to main content link for screen readers */}
           <a 
@@ -2681,8 +2682,9 @@ export function AnalyticsDashboard() {
             </div>
           </DialogContent>
         </Dialog>
-      </TooltipProvider>
-    </ErrorBoundary>
+        </TooltipProvider>
+      </ErrorBoundary>
+    </>
   )
 }
 
