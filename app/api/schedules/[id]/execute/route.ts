@@ -93,7 +93,7 @@ export async function POST(
     try {
       // Load CSV data
       let csvRows: Array<Record<string, string>> = []
-      let csvFilename = schedule.csv_filename || 'scheduled-run.csv'
+      const csvFilename = schedule.csv_filename || 'scheduled-run.csv'
 
       if (schedule.csv_data) {
         // Use stored CSV data

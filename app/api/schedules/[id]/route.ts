@@ -90,7 +90,7 @@ export async function PUT(
     }
 
     if (body.description !== undefined) {
-      updateData.description = body.description?.trim() || null
+      updateData.description = body.description?.trim() || undefined
     }
 
     if (body.cron_expression !== undefined) {
