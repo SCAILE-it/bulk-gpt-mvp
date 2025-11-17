@@ -100,6 +100,7 @@ export interface UpdateScheduleInput {
   csv_filename?: string
   status?: ScheduleStatus
   is_enabled?: boolean
+  next_run_at?: string
 }
 
 export interface NextRunPreview {

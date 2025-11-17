@@ -152,7 +152,7 @@ export async function PUT(
     
     if (updateData.cron_expression || updateData.timezone) {
       try {
-        updateData.next_run_at = calculateNextRun(cronExpr, timezone)
+        updateData.next_run_at = calculateNextRun(cronExpr as string, timezone as string)
       } catch (error) {
         return NextResponse.json(
           { error: `Failed to calculate next run: ${error instanceof Error ? error.message : 'Unknown error'}` },
