@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { logError } from '@/lib/errors'
+import { logError, logDebug, logWarning } from '@/lib/utils/logger'
 import { devLog } from '@/lib/dev-logger'
+import { createResourcesFromBatch } from '@/lib/utils/batch-to-resources'
 
 export const maxDuration = 300 // 5 minutes to process webhook
 
@@ -17,36 +18,44 @@ export async function POST(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
 
   try {
-    // TODO: Add webhook secret validation once Modal sends x-webhook-secret header
-    // See modal-processor/main.py fire_webhook() function for Phase 2 implementation
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('\n[WEBHOOK] ========== Modal Callback Received ==========')
-      console.log(`[WEBHOOK] Timestamp: ${new Date().toISOString()}`)
+    // Webhook secret validation (optional - only validates if secret is configured)
+    // When Modal backend sends x-webhook-secret header, validate against MODAL_WEBHOOK_SECRET env var
+    const webhookSecret = process.env.MODAL_WEBHOOK_SECRET
+    if (webhookSecret) {
+      const providedSecret = request.headers.get('x-webhook-secret')
+      if (!providedSecret || providedSecret !== webhookSecret) {
+        logWarning('[WEBHOOK] Invalid or missing webhook secret')
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
+      logDebug('[WEBHOOK] Webhook secret validated')
+    } else {
+      logDebug('[WEBHOOK] Webhook secret validation skipped (MODAL_WEBHOOK_SECRET not configured)')
     }
+
+    logDebug('\n[WEBHOOK] ========== Modal Callback Received ==========')
+    logDebug(`[WEBHOOK] Timestamp: ${new Date().toISOString()}`)
 
     // Parse webhook payload
     const payload = await request.json()
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[WEBHOOK] Payload keys:', Object.keys(payload))
-    }
+    logDebug('[WEBHOOK] Payload keys:', Object.keys(payload))
 
     const { batch_id, results, status, total_rows, successful, failed } = payload
 
     if (!batch_id) {
-      console.error('[WEBHOOK] Missing batch_id in payload')
+      logError('[WEBHOOK] Missing batch_id in payload')
       return NextResponse.json(
         { error: 'Missing batch_id' },
         { status: 400 }
       )
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[WEBHOOK] Batch ID: ${batch_id}`)
-      console.log(`[WEBHOOK] Status: ${status}`)
-      console.log(`[WEBHOOK] Total rows: ${total_rows}`)
-      console.log(`[WEBHOOK] Results count: ${results?.length || 0}`)
-    }
+    logDebug(`[WEBHOOK] Batch ID: ${batch_id}`)
+    logDebug(`[WEBHOOK] Status: ${status}`)
+    logDebug(`[WEBHOOK] Total rows: ${total_rows}`)
+    logDebug(`[WEBHOOK] Results count: ${results?.length || 0}`)
 
     // Verify batch exists
     const { data: batch, error: batchError } = await supabaseAdmin
@@ -56,30 +65,22 @@ export async function POST(request: NextRequest): Promise<Response> {
       .single()
 
     if (batchError || !batch) {
-      console.error('[WEBHOOK] Batch not found:', batch_id)
+      logError('[WEBHOOK] Batch not found', batchError, { batch_id })
       return NextResponse.json(
         { error: 'Batch not found' },
         { status: 404 }
       )
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[WEBHOOK] Batch found, user_id: ${batch.user_id}`)
-    }
+    logDebug(`[WEBHOOK] Batch found, user_id: ${batch.user_id}`)
 
     // Transform and store results
     if (results && Array.isArray(results)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[WEBHOOK] Transforming ${results.length} results...`)
-      }
+      logDebug(`[WEBHOOK] Transforming ${results.length} results...`)
       await transformAndStoreBatchResults(batch_id, results)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[WEBHOOK] Results stored successfully')
-      }
+      logDebug('[WEBHOOK] Results stored successfully')
     } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[WEBHOOK] No results provided or invalid format')
-      }
+      logWarning('[WEBHOOK] No results provided or invalid format')
     }
 
     // Update batch status
@@ -88,9 +89,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       processed_rows: total_rows || batch.total_rows,  // Note: 'processed_rows', not 'completed_rows'
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[WEBHOOK] Updating batch status:', updateData.status)
-    }
+    logDebug('[WEBHOOK] Updating batch status:', updateData.status)
 
     const { error: updateError } = await supabaseAdmin
       .from('batches')
@@ -98,17 +97,24 @@ export async function POST(request: NextRequest): Promise<Response> {
       .eq('id', batch_id)
 
     if (updateError) {
-      console.error('[WEBHOOK] Failed to update batch:', updateError)
+      logError('[WEBHOOK] Failed to update batch', updateError, { batch_id })
       throw updateError
+    }
+
+    // Create resources from batch results (if batch completed successfully)
+    if (status === 'completed' || status === 'completed_with_errors') {
+      logDebug('[WEBHOOK] Creating resources from batch results...')
+      // Don't await - let it run in background, don't fail webhook if resource creation fails
+      createResourcesFromBatch(batch_id).catch((error) => {
+        logError('[WEBHOOK] Error creating resources (non-fatal)', error, { batch_id })
+        // Log but don't throw - webhook should still succeed
+      })
     }
 
     const duration = Date.now() - startTime
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[WEBHOOK] ========== Webhook Processed Successfully ==========`)
-      console.log(`[WEBHOOK] Duration: ${duration}ms`)
-      console.log('')
-    }
+    logDebug(`[WEBHOOK] ========== Webhook Processed Successfully ==========`)
+    logDebug(`[WEBHOOK] Duration: ${duration}ms`)
 
     devLog.log(`Modal webhook received for batch ${batch_id}: ${status}`, {
       totalRows: total_rows,
@@ -128,18 +134,11 @@ export async function POST(request: NextRequest): Promise<Response> {
   } catch (error) {
     const duration = Date.now() - startTime
 
-    console.error('\n[WEBHOOK] ========== Webhook Processing Failed ==========')
-    console.error(`[WEBHOOK] Duration: ${duration}ms`)
-    console.error(`[WEBHOOK] Error type:`, typeof error)
-    console.error(`[WEBHOOK] Error:`, error)
-    console.error(`[WEBHOOK] Error string:`, String(error))
-    console.error(`[WEBHOOK] Error JSON:`, JSON.stringify(error, null, 2))
-    console.error('')
-
-    logError(error instanceof Error ? error : new Error('Webhook processing failed'), {
+    logError('Webhook processing failed', error, {
       source: 'api/webhook/modal-callback',
       duration,
-      errorDetails: error
+      errorType: typeof error,
+      errorString: String(error),
     })
 
     const errorMessage = error instanceof Error
@@ -169,9 +168,7 @@ async function transformAndStoreBatchResults(
   v2Results: unknown[]
 ): Promise<void> {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[WEBHOOK] Transforming ${v2Results.length} results for batch ${batchId}`)
-    }
+    logDebug(`[WEBHOOK] Transforming ${v2Results.length} results for batch ${batchId}`)
 
     const batchResults = v2Results.map((result, index) => {
       const v2Result = result as {
@@ -236,9 +233,7 @@ async function transformAndStoreBatchResults(
       }
     })
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[WEBHOOK] Inserting ${batchResults.length} batch_results...`)
-    }
+    logDebug(`[WEBHOOK] Inserting ${batchResults.length} batch_results...`)
 
     // Insert batch_results in bulk
     const { error: insertError } = await supabaseAdmin
@@ -246,16 +241,14 @@ async function transformAndStoreBatchResults(
       .insert(batchResults)
 
     if (insertError) {
-      console.error('[WEBHOOK] Insert error:', insertError)
+      logError('[WEBHOOK] Insert error', insertError, { batchId })
       throw new Error(`Failed to store batch results: ${insertError.message}`)
     }
 
     const successCount = batchResults.filter(r => r.status === 'success').length
     const errorCount = batchResults.filter(r => r.status === 'error').length
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[WEBHOOK] Stored ${batchResults.length} results (${successCount} success, ${errorCount} errors)`)
-    }
+    logDebug(`[WEBHOOK] Stored ${batchResults.length} results (${successCount} success, ${errorCount} errors)`)
 
     devLog.log(`Stored ${batchResults.length} results for batch ${batchId}:`, {
       success: successCount,
@@ -263,8 +256,7 @@ async function transformAndStoreBatchResults(
     })
 
   } catch (error) {
-    console.error('[WEBHOOK] Transform/store failed:', error)
-    logError(error instanceof Error ? error : new Error('Failed to transform V2 results'), {
+    logError('[WEBHOOK] Transform/store failed', error, {
       source: 'api/webhook/modal-callback/transformAndStoreBatchResults',
       batchId
     })

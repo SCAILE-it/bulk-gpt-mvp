@@ -5,12 +5,12 @@
 
 'use client'
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle,
-  Loader2, X, ChevronDown, HelpCircle,
-  Search, Filter, AlertTriangle, Sparkles, RotateCcw
+  X, ChevronDown, HelpCircle,
+  Search, Filter, AlertTriangle, Sparkles, RotateCcw, Clock, Save
 } from 'lucide-react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
@@ -45,14 +45,20 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { logError } from '@/lib/errors'
-import { useDebugLogger } from '@/lib/hooks/useDebugLogger'
-import { DebugLogger } from '@/components/debug/DebugLogger'
 import { generateExportFilename } from '@/lib/export-filename'
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow'
 import { TEMPLATE_CATEGORIES, type PromptTemplate } from '@/lib/constants/promptTemplates'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useSavedPrompts, type SavedPrompt } from '@/hooks/useSavedPrompts'
 import { saveCSVFile, restoreCSVFile, clearCSVFile } from '@/lib/storage/csv-storage'
+import { useContextFiles } from '@/hooks/useContextFiles'
 import { getGoogleAccessToken, getStoredGoogleToken, storeGoogleToken, isGoogleTokenValid, clearGoogleToken } from '@/lib/auth/google-sheets'
 import { flattenBatchResultsForExport } from '@/lib/export'
+import { ScheduleWidget } from '@/components/schedules/ScheduleWidget'
+import { DisabledButtonTooltip } from '@/components/ui/disabled-button-tooltip'
+import { getProcessAllDisabledReason, getTestDisabledReason, isProcessAllDisabled, isTestDisabled } from '@/lib/validation-helpers'
+import { ValidationSummary } from '@/components/ui/validation-summary'
+import { useMobile } from '@/hooks/useMobile'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -62,8 +68,6 @@ export default function BulkProcessor() {
   const csvParser = useCSVParser()
   const batchProcessor = useBatchProcessor()
 
-  // === DEBUG LOGGING ===
-  const debugLog = useDebugLogger()
 
   // === JOB CONTEXT PERSISTENCE ===
   const { saveContext, restoreContext, clearContext, loadContext } = useJobContext()
@@ -71,6 +75,7 @@ export default function BulkProcessor() {
 
   // === COMPANY CONTEXT ===
   const { context: contextVariables } = useContextStorage()
+  const { uploadFile: uploadContextFile } = useContextFiles()
 
   // === CONFIG STATE ===
   const [prompt, setPrompt] = useState('Write a bio for {{name}} at {{company}}')
@@ -91,6 +96,9 @@ export default function BulkProcessor() {
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templateSearchQuery, setTemplateSearchQuery] = useState('')
   const [templateCategoryFilter, setTemplateCategoryFilter] = useState<'all' | 'content' | 'data' | 'analysis'>('all')
+  const [templateTab, setTemplateTab] = useState<'templates' | 'saved'>('templates')
+  const { prompts: savedPrompts, recordUsage } = useSavedPrompts()
+
 
   // === KEYBOARD SHORTCUTS HELP ===
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
@@ -117,9 +125,34 @@ export default function BulkProcessor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount
   
+  // Mobile detection
+  const { isMobile } = useMobile()
+  
   // Task and Output don't persist state - always start closed
-  const [promptSectionOpen, setPromptSectionOpen] = useState(false)
-  const [outputSettingsSectionOpen, setOutputSettingsSectionOpen] = useState(false)
+  // On mobile, start with sections open for better UX
+  const [promptSectionOpen, setPromptSectionOpen] = useState(isMobile)
+  const [outputSettingsSectionOpen, setOutputSettingsSectionOpen] = useState(isMobile)
+  
+  // Auto-expand Prompt section when CSV is uploaded (all devices)
+  useEffect(() => {
+    if (csvParser.csvData && !promptSectionOpen) {
+      // Small delay to ensure smooth UX - let user see CSV upload success first
+      const timer = setTimeout(() => {
+        setPromptSectionOpen(true)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [csvParser.csvData, promptSectionOpen])
+  
+  // Auto-expand Output section when prompt is set (mobile only for better UX)
+  useEffect(() => {
+    if (isMobile && prompt && !outputSettingsSectionOpen) {
+      const timer = setTimeout(() => {
+        setOutputSettingsSectionOpen(true)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [isMobile, prompt, outputSettingsSectionOpen])
   
   const aiAssistantSection = useCollapsibleState({
     storageKey: 'bulk-processor-ai-assistant',
@@ -202,7 +235,7 @@ export default function BulkProcessor() {
             }
           }
         } catch (err) {
-          console.debug('Failed to restore Google Sheets:', err)
+          // Silent failure - restore failed
         } finally {
           setIsUploading(false)
         }
@@ -217,7 +250,7 @@ export default function BulkProcessor() {
             await fileUpload.uploadFile(restoredFile)
             await csvParser.parseFile(restoredFile)
           } catch (err) {
-            console.debug('Failed to restore CSV file:', err)
+            // Silent failure - restore failed
           }
         }
       }
@@ -293,17 +326,25 @@ export default function BulkProcessor() {
   // === ONBOARDING STATE ===
   const [showOnboarding, setShowOnboarding] = useState(false)
 
-  // Check if user needs onboarding on mount
+  // Check if user needs onboarding on mount (only once)
   useEffect(() => {
+    // Only check on initial mount, not on every state change
+    if (typeof window === 'undefined') return
+    
     const hasSeenOnboarding = localStorage.getItem('bulk-gpt-onboarding-seen')
     const defaultPrompt = 'Write a bio for {{name}} at {{company}}'
     const isDefaultPrompt = prompt === defaultPrompt || !prompt.trim()
     
+    // Show onboarding for new users: no CSV uploaded, default/empty prompt, and haven't seen onboarding
     if (!hasSeenOnboarding && !csvParser.csvData && isDefaultPrompt) {
-      // Show onboarding for new users (no CSV uploaded and prompt is default/empty)
-      setShowOnboarding(true)
+      // Small delay to ensure page is fully loaded
+      const timer = setTimeout(() => {
+        setShowOnboarding(true)
+      }, 500)
+      return () => clearTimeout(timer)
     }
-  }, [csvParser.csvData, prompt])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run on mount - prompt and csvParser.csvData checked inside
 
   // === PROCESSING STATE ===
   const [isTesting, setIsTesting] = useState(false)
@@ -337,10 +378,15 @@ export default function BulkProcessor() {
         const supabase = createClient()
         if (!supabase) return
 
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('batch_results')
           .select('input_tokens, output_tokens')
           .eq('batch_id', batchProcessor.batchId!)
+
+        if (error) {
+          console.error('Error fetching tokens:', error)
+          return
+        }
 
         if (data && data.length > 0) {
           const totals = data.reduce(
@@ -353,18 +399,20 @@ export default function BulkProcessor() {
           setTokenTotals(totals)
         }
       } catch (err) {
+        console.error('Error fetching token totals:', err)
         // Silent failure - tokens will just not show
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('Failed to fetch token totals:', err)
-        }
       }
     }
 
+    // Fetch immediately
     fetchTokenTotals()
-    // Poll for updates while processing
-    const interval = setInterval(fetchTokenTotals, 2000)
+    
+    // Poll for updates while processing (every 2 seconds)
+    // Also poll when not processing but batchId exists (every 5 seconds) to catch updates
+    const pollInterval = batchProcessor.isProcessing ? 2000 : 5000
+    const interval = setInterval(fetchTokenTotals, pollInterval)
     return () => clearInterval(interval)
-  }, [batchProcessor.batchId])
+  }, [batchProcessor.batchId, batchProcessor.isProcessing])
 
   // Manual AI optimization (user triggers with button)
   const {
@@ -421,7 +469,7 @@ export default function BulkProcessor() {
   // Recent files feature removed - users can re-upload files if needed
 
   // === VARIABLE VALIDATION ===
-  const variableValidation = useVariableValidation(prompt, csvParser.csvData, selectedInputColumns)
+  const variableValidation = useVariableValidation(prompt, csvParser.csvData, selectedInputColumns, contextVariables)
 
   // === FORMAT CONTEXT FOR API ===
   const formatContextString = useCallback((): string => {
@@ -435,6 +483,33 @@ export default function BulkProcessor() {
     if (contextVariables.complianceFlags) parts.push(`Compliance: ${contextVariables.complianceFlags}`)
     
     return parts.join('\n')
+  }, [contextVariables])
+
+  // === REPLACE CONTEXT VARIABLES IN PROMPT ===
+  const replaceContextVariables = useCallback((promptText: string): string => {
+    let replacedPrompt = promptText
+    
+    // Replace {{context.variableName}} with actual values
+    if (contextVariables.tone) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.tone\}\}/g, contextVariables.tone)
+    }
+    if (contextVariables.targetCountries) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.targetCountries\}\}/g, contextVariables.targetCountries)
+    }
+    if (contextVariables.productDescription) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.productDescription\}\}/g, contextVariables.productDescription)
+    }
+    if (contextVariables.competitors) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.competitors\}\}/g, contextVariables.competitors)
+    }
+    if (contextVariables.targetIndustries) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.targetIndustries\}\}/g, contextVariables.targetIndustries)
+    }
+    if (contextVariables.complianceFlags) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.complianceFlags\}\}/g, contextVariables.complianceFlags)
+    }
+    
+    return replacedPrompt
   }, [contextVariables])
 
   // === TIME ESTIMATION ===
@@ -490,14 +565,51 @@ export default function BulkProcessor() {
   ])
 
   // === BATCH COMPLETION HANDLER ===
-  // Clear test state when batch completes (for unified architecture)
+  // Clear test state when batch completes and show success feedback
+  const [previousProcessingState, setPreviousProcessingState] = useState(false)
+  
   useEffect(() => {
-    if (!batchProcessor.isProcessing && isTesting) {
-      // Batch completed, clear test state
-      setIsTesting(false)
-      setTestStartTime(undefined)
+    // Track when processing completes
+    if (previousProcessingState && !batchProcessor.isProcessing && displayResults.length > 0) {
+      const successCount = displayResults.filter(r => r.status === 'completed').length
+      const errorCount = displayResults.filter(r => r.status === 'failed').length
+      const totalCount = displayResults.length
+      
+      if (isTesting) {
+        // Test completed
+        setIsTesting(false)
+        setTestStartTime(undefined)
+        if (successCount > 0) {
+          toast.success('Test completed', {
+            description: 'Review the result below. Click "Process All" to process all rows.',
+            id: 'test-complete'
+          })
+        }
+      } else if (successCount === totalCount) {
+        // All rows succeeded - celebrate!
+        toast.success('🎉 Batch completed successfully!', {
+          description: `All ${totalCount} rows processed successfully. Ready to export.`,
+          id: 'batch-complete-success',
+          duration: 6000,
+        })
+        // Trigger success animation
+        document.body.classList.add('batch-success-celebration')
+        setTimeout(() => {
+          document.body.classList.remove('batch-success-celebration')
+        }, 2000)
+      } else if (successCount > 0) {
+        // Partial success
+        toast.success('Batch completed', {
+          description: `${successCount} succeeded, ${errorCount} failed out of ${totalCount} rows`,
+          id: 'batch-complete-partial',
+          duration: 5000,
+        })
+      }
     }
-  }, [batchProcessor.isProcessing, isTesting])
+    
+    setPreviousProcessingState(batchProcessor.isProcessing)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchProcessor.isProcessing, displayResults, isTesting, previousProcessingState])
 
   // === PROCESSING START TIME TRACKING ===
   // Track when processing starts for progress bar animation
@@ -558,6 +670,12 @@ export default function BulkProcessor() {
           googleSheetsUrl: undefined,
           googleSheetsId: undefined,
         })
+        
+        // Success feedback
+        toast.success('CSV uploaded successfully', {
+          description: `${parsed.totalRows} rows • ${parsed.columns.length} columns ready to process`,
+          duration: 4000,
+        })
       }
     } catch (err) {
       // Errors are already handled by the hooks
@@ -597,12 +715,21 @@ export default function BulkProcessor() {
 
       toast.success(`Imported "${parsedCSV.filename}" from Google Sheets`)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to process Google Sheet data'
-      setError(errorMessage)
+      const baseMessage = err instanceof Error ? err.message : 'Failed to process Google Sheet data'
+      // Provide more actionable error messages
+      let actionableMessage = baseMessage
+      if (baseMessage.includes('permission') || baseMessage.includes('access')) {
+        actionableMessage = `${baseMessage} Please ensure the Google Sheet is shared with your account and try again.`
+      } else if (baseMessage.includes('not found') || baseMessage.includes('invalid')) {
+        actionableMessage = `${baseMessage} Please check the Google Sheets URL and ensure it's correct.`
+      } else if (baseMessage.includes('network') || baseMessage.includes('fetch')) {
+        actionableMessage = `${baseMessage} Check your internet connection and try again.`
+      }
+      setError(actionableMessage)
       logError(err instanceof Error ? err : new Error(String(err)), {
         context: 'googleSheetsDataLoaded',
       })
-      toast.error(errorMessage)
+      toast.error(actionableMessage)
     } finally {
       setIsUploading(false)
     }
@@ -616,8 +743,8 @@ export default function BulkProcessor() {
     // Clear any stored CSV file from IndexedDB
     const csvFilename = fileUpload.file?.name || csvParser.csvData?.filename
     if (csvFilename) {
-      clearCSVFile(csvFilename).catch((err) => {
-        console.debug('Failed to clear CSV file from IndexedDB:', err)
+      clearCSVFile(csvFilename).catch(() => {
+        // Silent failure - clear failed
       })
     }
     // Clear Google Sheets metadata from context
@@ -640,6 +767,11 @@ export default function BulkProcessor() {
   useHotkeys('mod+enter', (e) => {
     e.preventDefault()
     if (csvParser.csvData && prompt) handleProcess()
+  })
+
+  useHotkeys('mod+shift+/', (e) => {
+    e.preventDefault()
+    setShowKeyboardHelp(true)
   })
 
   // === OUTPUT FIELDS ===
@@ -713,7 +845,7 @@ export default function BulkProcessor() {
 
     // Variable validation check
     if (!variableValidation.isValid) {
-      setError(`Cannot test: Missing variables in CSV: ${variableValidation.missing.join(', ')}`)
+      setError(`Cannot test: Your prompt uses ${variableValidation.missing.join(', ')}, but these columns don't exist in your CSV. Either remove these variables from your prompt or add these columns to your CSV file.`)
       return
     }
 
@@ -729,10 +861,13 @@ export default function BulkProcessor() {
         totalRows: 1,
       }
 
+      // Replace context variables in prompt before sending
+      const processedPrompt = replaceContextVariables(prompt)
+
       // Use unified batch processor with testMode flag
       await batchProcessor.startBatch({
         csvData: testCSVData,
-          prompt,
+          prompt: processedPrompt,
           context: formatContextString(),
         outputColumns: outputFields,
           tools: selectedTools.length > 0 ? selectedTools : undefined,
@@ -741,16 +876,24 @@ export default function BulkProcessor() {
       })
 
       // Note: batchId is set synchronously by startBatch after API call
-      debugLog.info('Test batch started via unified processor', {
-        rowCount: 1,
-      })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
-      setError(`Test failed: ${message}`)
+      // Provide more actionable error messages
+      let actionableMessage = message
+      if (message.includes('variable') || message.includes('column')) {
+        actionableMessage = `Test failed: ${message}. Check that all variables in your prompt ({{variable}}) match column names in your CSV.`
+      } else if (message.includes('token') || message.includes('limit')) {
+        actionableMessage = `Test failed: ${message}. Try reducing the prompt length or wait a moment and try again.`
+      } else if (message.includes('network') || message.includes('fetch')) {
+        actionableMessage = `Test failed: Connection error. Check your internet connection and try again.`
+      } else {
+        actionableMessage = `Test failed: ${message}. Please check your prompt and CSV data, then try again.`
+      }
+      setError(actionableMessage)
       setIsTesting(false)
       setTestStartTime(undefined)
     }
-  }, [csvParser.csvData, prompt, outputFields, variableValidation, batchProcessor, selectedTools, selectedInputColumns, debugLog, formatContextString])
+  }, [csvParser.csvData, prompt, outputFields, variableValidation, batchProcessor, selectedTools, selectedInputColumns, formatContextString, replaceContextVariables])
 
   // === PROCESS ALL ===
   const handleProcess = useCallback(async () => {
@@ -758,7 +901,7 @@ export default function BulkProcessor() {
 
     // Variable validation check
     if (!variableValidation.isValid) {
-      setError(`Cannot process: Missing variables in CSV: ${variableValidation.missing.join(', ')}`)
+      setError(`Cannot process: Your prompt uses ${variableValidation.missing.join(', ')}, but these columns don't exist in your CSV. Either remove these variables from your prompt or add these columns to your CSV file.`)
       return
     }
 
@@ -766,17 +909,122 @@ export default function BulkProcessor() {
     setIsTesting(false)
     setTestStartTime(undefined)
 
+    // Replace context variables in prompt before sending
+    const processedPrompt = replaceContextVariables(prompt)
+
     // Start batch processing using hook
     await batchProcessor.startBatch({
       csvData: csvParser.csvData,
-      prompt,
+      prompt: processedPrompt,
       context: formatContextString(),
       outputColumns: outputFields, // Always use JSON mode for structured output
       tools: selectedTools.length > 0 ? selectedTools : undefined,
       testMode: false, // Full batch
       selectedInputColumns: selectedInputColumns.length > 0 ? selectedInputColumns : undefined,
     })
-  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools, selectedInputColumns, formatContextString])
+  }, [csvParser.csvData, prompt, outputFields, batchProcessor, variableValidation, selectedTools, selectedInputColumns, formatContextString, replaceContextVariables])
+
+  // Track which rows have been auto-retried to prevent infinite loops
+  const [autoRetriedRows, setAutoRetriedRows] = useState<Set<string>>(new Set())
+  const retryingRowsRef = useRef<Set<string>>(new Set())
+
+  // === RETRY FAILED ROW ===
+  const handleRetryRow = useCallback(async (failedResult: { id: string; input: Record<string, string>; output: string; status: string; error?: string }, isAutoRetry = false) => {
+    if (!csvParser.csvData || !prompt) {
+      if (!isAutoRetry) {
+        toast.error('Cannot retry', {
+          description: 'Missing CSV data or prompt'
+        })
+      }
+      return
+    }
+
+    // Prevent duplicate retries
+    if (retryingRowsRef.current.has(failedResult.id)) {
+      return
+    }
+
+    retryingRowsRef.current.add(failedResult.id)
+
+    // Replace context variables in prompt before sending
+    const processedPrompt = replaceContextVariables(prompt)
+
+    // Create a single-row CSV for retry
+    const retryCSVData = {
+      ...csvParser.csvData,
+      rows: [{ data: failedResult.input }],
+      totalRows: 1,
+    }
+
+    try {
+      // Use batch processor with testMode to bypass batch limit
+      await batchProcessor.startBatch({
+        csvData: retryCSVData,
+        prompt: processedPrompt,
+        context: formatContextString(),
+        outputColumns: outputFields,
+        tools: selectedTools.length > 0 ? selectedTools : undefined,
+        testMode: true, // Use test mode to bypass batch limit for retries
+        selectedInputColumns: selectedInputColumns.length > 0 ? selectedInputColumns : undefined,
+      })
+
+      if (!isAutoRetry) {
+        toast.success('Retrying row', {
+          description: 'Processing failed row again...'
+        })
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      if (!isAutoRetry) {
+        // Provide more actionable error messages
+        let actionableMessage = message
+        if (message.includes('variable') || message.includes('column')) {
+          actionableMessage = `${message} Check that all variables match your CSV columns.`
+        } else if (message.includes('token') || message.includes('limit')) {
+          actionableMessage = `${message} Try reducing your prompt length or wait a moment.`
+        }
+        toast.error('Retry failed', {
+          description: actionableMessage
+        })
+      }
+    } finally {
+      retryingRowsRef.current.delete(failedResult.id)
+    }
+  }, [csvParser.csvData, prompt, outputFields, batchProcessor, selectedTools, selectedInputColumns, formatContextString, replaceContextVariables])
+
+  // === AUTO-RETRY FAILED ROWS ===
+  useEffect(() => {
+    // Only auto-retry during active batch processing
+    if (!batchProcessor.isProcessing || !batchProcessor.batchId) {
+      return
+    }
+
+    // Find failed rows that haven't been retried yet
+    const failedRows = displayResults.filter(
+      result => result.status === 'failed' && 
+      !autoRetriedRows.has(result.id) &&
+      !retryingRowsRef.current.has(result.id)
+    )
+
+    // Auto-retry each failed row once (with small delay between retries)
+    failedRows.forEach(async (failedRow, index) => {
+      setAutoRetriedRows(prev => new Set(prev).add(failedRow.id))
+      // Stagger retries to avoid overwhelming the API (1 second delay per row)
+      await new Promise(resolve => setTimeout(resolve, (index + 1) * 1000))
+      await handleRetryRow(failedRow, true) // true = isAutoRetry
+    })
+  }, [displayResults, batchProcessor.isProcessing, batchProcessor.batchId, autoRetriedRows, handleRetryRow])
+
+  // Clear auto-retried tracking when starting a new batch
+  useEffect(() => {
+    if (batchProcessor.isProcessing && batchProcessor.batchId) {
+      // Keep tracking during processing
+    } else if (!batchProcessor.batchId) {
+      // Clear tracking when batch is cleared
+      setAutoRetriedRows(new Set())
+      retryingRowsRef.current.clear()
+    }
+  }, [batchProcessor.batchId, batchProcessor.isProcessing])
 
   // === EXPORT ===
   // === GOOGLE SHEETS EXPORT ===
@@ -815,17 +1063,10 @@ export default function BulkProcessor() {
       let results: ExportResult[] = []
       
       try {
-        console.log('[Google Sheets Export] Fetching batch results from API:', `/api/batch/${currentBatchId}-status/status`)
         const statusResponse = await fetch(`/api/batch/${currentBatchId}-status/status`)
-        console.log('[Google Sheets Export] API response status:', statusResponse.status, statusResponse.statusText)
         
         if (statusResponse.ok) {
           const statusData = await statusResponse.json() as { results?: StatusResult[] }
-          console.log('[Google Sheets Export] API response data:', {
-            hasResults: !!statusData.results,
-            resultsCount: statusData.results?.length || 0,
-            batchId: currentBatchId,
-          })
           
           if (statusData.results && Array.isArray(statusData.results) && statusData.results.length > 0) {
             results = statusData.results.map((r: StatusResult) => ({
@@ -837,106 +1078,56 @@ export default function BulkProcessor() {
               output_tokens: r.output_tokens || 0,
               model: r.model || ''
             }))
-            console.log('[Google Sheets Export] Mapped results:', results.length)
-          } else {
-            console.warn('[Google Sheets Export] API returned OK but no results array or empty array')
           }
-        } else {
-          const errorText = await statusResponse.text().catch(() => 'Unable to read error response')
-          console.error('[Google Sheets Export] API error response:', {
-            status: statusResponse.status,
-            statusText: statusResponse.statusText,
-            errorText: errorText.substring(0, 200),
-          })
         }
       } catch (fetchError) {
-        console.error('[Google Sheets Export] Fetch error:', {
-          error: fetchError instanceof Error ? fetchError.message : String(fetchError),
-          batchId: currentBatchId,
-        })
         // Fallback to database
-        console.log('[Google Sheets Export] Falling back to database query...')
         const supabase = createClient()
         if (supabase) {
           try {
-            const { data: dbResults, error: dbError } = await supabase
+            const { data: dbResults } = await supabase
               .from('batch_results')
               .select('input_data, output_data, status, error_message, input_tokens, output_tokens, model')
               .eq('batch_id', currentBatchId)
               .order('id', { ascending: true })
             
-            if (dbError) {
-              console.error('[Google Sheets Export] Database query error:', dbError)
-            } else {
-              console.log('[Google Sheets Export] Database query success:', {
-                resultsCount: dbResults?.length || 0,
-                batchId: currentBatchId,
-              })
-            }
-            
             results = dbResults || []
-          } catch (dbError) {
-            console.error('[Google Sheets Export] Database query exception:', dbError)
+          } catch {
+            // Silent failure - will show error toast below
           }
-        } else {
-          console.error('[Google Sheets Export] Supabase client not available')
         }
       }
 
       if (!results || results.length === 0) {
-        console.warn('[Google Sheets Export] No results found. Checking batch status...')
         // Check if batch actually exists and its status
         try {
-          // Try both API path formats
           const batchStatusUrl = `/api/batch/${currentBatchId}-status/status`
-          console.log('[Google Sheets Export] Checking batch status at:', batchStatusUrl)
           const batchStatusResponse = await fetch(batchStatusUrl)
-          console.log('[Google Sheets Export] Batch status response:', {
-            status: batchStatusResponse.status,
-            statusText: batchStatusResponse.statusText,
-            ok: batchStatusResponse.ok,
-          })
           
           if (batchStatusResponse.ok) {
             const batchStatus = await batchStatusResponse.json()
-            console.log('[Google Sheets Export] Batch status data:', {
-              batchId: batchStatus.batchId,
-              status: batchStatus.status,
-              totalRows: batchStatus.totalRows,
-              processedRows: batchStatus.processedRows,
-              resultsCount: batchStatus.results?.length || 0,
-            })
-            
             const isComplete = batchStatus.status === 'completed' || batchStatus.status === 'failed' || batchStatus.status === 'completed_with_errors'
             
             if (isComplete) {
-              console.error('[Google Sheets Export] Batch completed but no results found')
               toast.error('Export Failed', {
-                description: `Batch completed (status: ${batchStatus.status}) but no results were found. The batch may have failed or produced no output. Check console for details.`,
+                description: `Batch completed (status: ${batchStatus.status}) but no results were found. The batch may have failed or produced no output.`,
                 id: `export-gsheets-${currentBatchId}`
               })
             } else {
-              console.warn('[Google Sheets Export] Batch still processing')
               toast.warning('No Results Available', {
                 description: `The batch is still processing (status: ${batchStatus.status}). Please wait a few moments and try again.`,
                 id: `export-gsheets-${currentBatchId}`
               })
             }
           } else {
-            const errorText = await batchStatusResponse.text().catch(() => 'Unable to read error')
-            console.error('[Google Sheets Export] Batch status check failed:', {
-              status: batchStatusResponse.status,
-              errorText: errorText.substring(0, 200),
-            })
             toast.error('Export Failed', {
-              description: `Unable to fetch batch status (HTTP ${batchStatusResponse.status}). Check browser console (F12) for details.`,
+              description: `Unable to fetch batch status (HTTP ${batchStatusResponse.status}).`,
               id: `export-gsheets-${currentBatchId}`
             })
           }
         } catch (statusError) {
-          console.error('[Google Sheets Export] Batch status check exception:', statusError)
           toast.error('Export Failed', {
-            description: `Unable to fetch batch results. Error: ${statusError instanceof Error ? statusError.message : 'Unknown error'}. Check browser console (F12) for details.`,
+            description: `Unable to fetch batch results. Error: ${statusError instanceof Error ? statusError.message : 'Unknown error'}.`,
             id: `export-gsheets-${currentBatchId}`
           })
         }
@@ -1100,10 +1291,8 @@ export default function BulkProcessor() {
             }))
           }
         }
-      } catch (statusErr) {
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('Status API fetch failed, trying database:', statusErr)
-        }
+      } catch {
+        // Silent failure - fallback to database
       }
 
       // Fallback to direct database fetch if status API didn't work
@@ -1214,19 +1403,131 @@ export default function BulkProcessor() {
     }
   }, [batchProcessor.batchId])
 
-  const applyTemplate = useCallback((template: PromptTemplate) => {
+  const applyTemplate = useCallback((template: PromptTemplate | SavedPrompt) => {
     setPrompt(template.prompt)
     setShowTemplateModal(false)
 
-    // Track template usage
+    // Track usage for saved prompts
+    if ('usage_count' in template) {
+      recordUsage(template.id)
+    }
+
+    // Track template usage (only for built-in templates)
+    if ('category' in template) {
     trackEvent(ANALYTICS_EVENTS.BULK_TEMPLATE_USED, {
       templateId: template.id,
       templateName: template.name,
       category: template.category
     })
-  }, [])
+    }
+    
+    // Success feedback
+    toast.success('Template applied', {
+      description: `"${template.name}" loaded into prompt editor`,
+      duration: 3000,
+    })
+  }, [recordUsage])
 
-  // === KEYBOARD NAVIGATION: ESC TO CLOSE MODALS ===
+  // === SAVE FILES TO CONTEXT ===
+  const handleSaveInputToContext = useCallback(async () => {
+    if (!fileUpload.file) {
+      toast.error('No file to save')
+      return
+    }
+
+    try {
+      await uploadContextFile(fileUpload.file, 'input')
+      toast.success('File saved to context', {
+        description: `${fileUpload.file.name} is now available for use in prompts`,
+        id: 'save-input-context'
+      })
+    } catch (error) {
+      logError(error instanceof Error ? error : new Error('Failed to save input file to context'), {
+        source: 'BulkProcessor/handleSaveInputToContext'
+      })
+      toast.error('Failed to save file', {
+        description: 'Could not save file to context. Please try again.',
+        id: 'save-input-context'
+      })
+    }
+  }, [fileUpload.file, uploadContextFile])
+
+  const handleSaveOutputToContext = useCallback(async () => {
+    const results = displayResults
+    if (!results || results.length === 0) {
+      toast.warning('No results to save')
+      return
+    }
+
+    try {
+      // Convert results to CSV format
+      const csvRows: string[] = []
+      
+      // Get all unique keys from results
+      const allKeys = new Set<string>()
+      results.forEach(row => {
+        if (row.output_data) {
+          const output = typeof row.output_data === 'string' 
+            ? JSON.parse(row.output_data) 
+            : row.output_data
+          Object.keys(output).forEach(key => allKeys.add(key))
+        }
+        if (row.input_data) {
+          const input = typeof row.input_data === 'string'
+            ? JSON.parse(row.input_data)
+            : row.input_data
+          Object.keys(input).forEach(key => allKeys.add(key))
+        }
+      })
+
+      const headers = Array.from(allKeys)
+      csvRows.push(headers.join(','))
+
+      // Add data rows
+      results.forEach(row => {
+        const values = headers.map(header => {
+          if (row.output_data) {
+            const output = typeof row.output_data === 'string'
+              ? JSON.parse(row.output_data)
+              : row.output_data
+            if (output[header] !== undefined) {
+              return `"${String(output[header]).replace(/"/g, '""')}"`
+            }
+          }
+          if (row.input_data) {
+            const input = typeof row.input_data === 'string'
+              ? JSON.parse(row.input_data)
+              : row.input_data
+            if (input[header] !== undefined) {
+              return `"${String(input[header]).replace(/"/g, '""')}"`
+            }
+          }
+          return ''
+        })
+        csvRows.push(values.join(','))
+      })
+
+      const csvContent = csvRows.join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const file = new File([blob], `output-${batchProcessor.batchId || Date.now()}.csv`, { type: 'text/csv' })
+      
+      await uploadContextFile(file, 'output')
+      toast.success('Results saved to context', {
+        description: `${results.length} rows saved and available for use in prompts`,
+        id: 'save-output-context'
+      })
+    } catch (error) {
+      logError(error instanceof Error ? error : new Error('Failed to save output file to context'), {
+        source: 'BulkProcessor/handleSaveOutputToContext'
+      })
+      toast.error('Failed to save results', {
+        description: 'Could not save results to context. Please try again.',
+        id: 'save-output-context'
+      })
+    }
+  }, [displayResults, batchProcessor.batchId, uploadContextFile])
+
+  // === KEYBOARD NAVIGATION: ESC TO CLOSE MODALS & CLEAR ERRORS ===
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -1239,6 +1540,12 @@ export default function BulkProcessor() {
           setShowAdvancedSettingsModal(false)
         } else if (showTemplateModal) {
           setShowTemplateModal(false)
+        } else if (error || fileUpload.error || csvParser.error || batchProcessor.error) {
+          // Clear errors on ESC if no modals are open
+          setError(null)
+          fileUpload.clearError?.()
+          csvParser.clearError?.()
+          batchProcessor.clearError?.()
         }
       }
     }
@@ -1250,7 +1557,7 @@ export default function BulkProcessor() {
     return () => {
       document.removeEventListener('keydown', handleEscapeKey)
     }
-  }, [fieldToDelete, showKeyboardHelp, showAdvancedSettingsModal, showTemplateModal])
+  }, [fieldToDelete, showKeyboardHelp, showAdvancedSettingsModal, showTemplateModal, error, fileUpload, csvParser, batchProcessor])
 
   // === RENDER ===
   return (
@@ -1265,46 +1572,176 @@ export default function BulkProcessor() {
 
       {/* Beta Banner - Subtle, integrated */}
       {showBetaBanner && (
-        <div className="flex-shrink-0 border-b border-border/30 bg-muted/20 px-4 sm:px-6 py-1.5">
+        <div className="flex-shrink-0 border-b border-border bg-muted/20 px-3 sm:px-4 md:px-6 py-2 sm:py-1.5">
           <div className="flex items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
               {usage && (
-                <span className="text-muted-foreground">
-                  {usage.batchesToday}/{usage.dailyBatchLimit} batches today
-                </span>
+                <>
+                  <span className="text-muted-foreground">
+                    {/* Mobile: Stack on separate lines for clarity */}
+                    <span className="sm:hidden flex flex-col gap-0.5">
+                      <span>{usage.batchesToday}/{usage.dailyBatchLimit} batches today</span>
+                      {usage.dailyRowLimit && (
+                        <span className="text-[10px]">{usage.dailyRowLimit.toLocaleString()} rows per batch</span>
+                      )}
+                    </span>
+                    {/* Desktop: Single line */}
+                    <span className="hidden sm:flex items-center gap-1.5">
+                      <span>{usage.batchesToday}/{usage.dailyBatchLimit} batches today</span>
+                      {usage.dailyRowLimit && (
+                        <>
+                          <span>•</span>
+                          <span className="hidden md:inline">{usage.dailyRowLimit.toLocaleString()} rows per batch</span>
+                          <span className="md:hidden">{Math.floor(usage.dailyRowLimit / 1000)}k rows/batch</span>
+                        </>
+                      )}
+                    </span>
+                  </span>
+                  {usage.batchesToday >= usage.dailyBatchLimit && (
+                    <>
+                      <span className="hidden sm:inline text-muted-foreground"> • </span>
+                      <span className="text-muted-foreground/80">
+                        Resets {(() => {
+                          const now = new Date()
+                          const tomorrow = new Date(now)
+                          tomorrow.setDate(tomorrow.getDate() + 1)
+                          tomorrow.setHours(0, 0, 0, 0)
+                          const hoursUntilReset = Math.ceil((tomorrow.getTime() - now.getTime()) / (1000 * 60 * 60))
+                          return hoursUntilReset === 24 ? 'tomorrow' : `in ${hoursUntilReset}h`
+                        })()}
+                      </span>
+                    </>
+                  )}
+                </>
               )}
             </div>
             <button
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 p-2 min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] flex items-center justify-center -mr-1 touch-manipulation"
               onClick={dismissBetaBanner}
               aria-label="Dismiss"
             >
-              <X className="h-3 w-3" aria-hidden="true" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
         </div>
       )}
 
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+
       {/* Main Content */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden min-h-0">
+      <main id="main-content" className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden min-h-0" tabIndex={-1}>
         {/* LEFT PANEL - Configuration */}
         <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 min-h-0">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 min-h-0">
             {/* Error - Use V2 error if available */}
             {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
-              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded space-y-2">
+              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md space-y-2 animate-slide-in-up">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 space-y-1">
-                    <p className="text-sm text-red-400">
+                    <p className="text-xs sm:text-sm text-red-400 font-medium break-words">
                       {fileUpload.error || csvParser.error || batchProcessor.error || error}
                     </p>
-                    {/* Enhanced limit error display */}
-                    {(error?.includes('limit reached') || error?.includes('limit resets') || batchProcessor.error?.includes('limit')) && (
-                      <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                        <p>Wait for the limit to reset or review previous batches in Dashboard.</p>
-                      </div>
-                    )}
+                    {/* Enhanced error recovery suggestions */}
+                    {(() => {
+                      const errorLower = (fileUpload.error || csvParser.error || batchProcessor.error || error || '').toLowerCase()
+                      
+                      if (errorLower.includes('limit reached') || errorLower.includes('limit resets') || errorLower.includes('daily limit')) {
+                        return (
+                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                            <p className="font-medium mb-1.5">What you can do:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-1">
+                              <li>Wait for the limit to reset (shown in banner above)</li>
+                              <li>Review and delete old batches in Dashboard</li>
+                              <li>Contact support to upgrade your plan</li>
+                            </ul>
+                          </div>
+                        )
+                      }
+                      
+                      if (errorLower.includes('variable') || errorLower.includes('column') || errorLower.includes('missing')) {
+                        return (
+                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                            <p className="font-medium mb-1.5">How to fix:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-1">
+                              <li>Check that all variables in your prompt match CSV column names exactly</li>
+                              <li>Use the &quot;Quick fix&quot; button in the prompt section to remove missing variables</li>
+                              <li>Or add the missing columns to your CSV file</li>
+                            </ul>
+                          </div>
+                        )
+                      }
+                      
+                      if (errorLower.includes('file type') || errorLower.includes('not supported') || (errorLower.includes('file') && errorLower.includes('csv'))) {
+                        return (
+                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                            <p className="font-medium mb-1.5">How to fix:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-1">
+                              <li>Export your spreadsheet as CSV format</li>
+                              <li>In Excel: File → Save As → CSV (Comma delimited)</li>
+                              <li>In Google Sheets: File → Download → CSV</li>
+                            </ul>
+                          </div>
+                        )
+                      }
+                      
+                      if (errorLower.includes('too large') || errorLower.includes('size') || errorLower.includes('10mb')) {
+                        return (
+                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                            <p className="font-medium mb-1.5">How to fix:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-1">
+                              <li>Split your CSV into smaller files (max 10MB each)</li>
+                              <li>Remove unnecessary columns to reduce file size</li>
+                              <li>Process files separately and combine results</li>
+                            </ul>
+                          </div>
+                        )
+                      }
+                      
+                      if (errorLower.includes('empty') || errorLower.includes('0 bytes') || errorLower.includes('no data')) {
+                        return (
+                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                            <p className="font-medium mb-1.5">How to fix:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-1">
+                              <li>Check that your CSV file contains data rows</li>
+                              <li>Ensure the file wasn&apos;t corrupted during download</li>
+                              <li>Try re-exporting from your spreadsheet application</li>
+                            </ul>
+                          </div>
+                        )
+                      }
+                      
+                      if (errorLower.includes('google sheets') || errorLower.includes('spreadsheet') || errorLower.includes('permission')) {
+                        return (
+                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                            <p className="font-medium mb-1.5">How to fix:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-1">
+                              <li>Ensure the Google Sheet is publicly accessible (View access)</li>
+                              <li>Or share it with the service account email</li>
+                              <li>Try downloading as CSV and uploading directly</li>
+                            </ul>
+                          </div>
+                        )
+                      }
+                      
+                      // Generic recovery for unknown errors
+                      return (
+                        <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                          <p className="font-medium mb-1.5">Try these steps:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-1">
+                            <li>Refresh the page and try again</li>
+                            <li>Check your internet connection</li>
+                            <li>If the problem persists, contact support</li>
+                          </ul>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
                 {(error?.includes('wait for your current batch') || error?.includes('batch to complete')) && (
@@ -1319,7 +1756,8 @@ export default function BulkProcessor() {
                         // Silent failure - user can try again
                       }
                     }}
-                    className="text-xs px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded text-red-300 transition-colors"
+                    className="text-xs px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded text-red-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    aria-label="Reset stuck batch to allow new processing"
                   >
                     Reset Stuck Batch
                   </button>
@@ -1327,7 +1765,28 @@ export default function BulkProcessor() {
               </div>
             )}
 
-            {/* Validation messages moved to Task section */}
+            {/* Validation Summary - Shows all validation errors at once */}
+            {(csvParser.csvData || prompt) && !variableValidation.isValid && variableValidation.missing.length > 0 && (
+              <ValidationSummary
+                errors={[
+                  {
+                    field: 'prompt',
+                    message: `Prompt uses ${variableValidation.missing.map(v => `{{${v}}}`).join(', ')} but these columns don't exist in your CSV. Remove these variables or add these columns.`,
+                    scrollToField: () => {
+                      setPromptSectionOpen(true)
+                      setTimeout(() => {
+                        const textarea = document.querySelector('[data-testid="prompt-textarea"]') as HTMLTextAreaElement
+                        textarea?.focus()
+                        textarea?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }, 100)
+                    },
+                  },
+                ]}
+                title="Fix these issues to continue"
+                dismissible={false}
+                className="mb-4"
+              />
+            )}
 
             {/* Unused columns warning - Hidden to reduce noise */}
 
@@ -1338,13 +1797,15 @@ export default function BulkProcessor() {
               title="Input"
               open={dataInputSection.isOpen}
               onOpenChange={dataInputSection.setIsOpen}
-              className="border border-border/30 rounded-md bg-background/30"
+              className="border border-border rounded-md bg-card"
               triggerClassName="hover:bg-accent/20"
               contentClassName="px-0 pb-0"
               status={csvParser.csvData ? 'ready' : undefined}
               statusMessage={csvParser.csvData ? 'Ready' : undefined}
             >
+              <div className="space-y-3">
               <DataInputTabs
+                isParsing={csvParser.isParsing}
                 csvData={csvParser.csvData}
                 fileName={fileUpload.file?.name}
                 isUploading={isUploading}
@@ -1354,6 +1815,21 @@ export default function BulkProcessor() {
                 selectedInputColumns={selectedInputColumns}
                 onInputColumnsChange={setSelectedInputColumns}
               />
+                {fileUpload.file && csvParser.csvData && (
+                  <div className="px-4 pb-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveInputToContext}
+                      className="w-full text-xs"
+                    >
+                      <Save className="h-3.5 w-3.5 mr-1.5" />
+                      Save Input File to Context
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CollapsibleSection>
 
             {/* TASK SECTION */}
@@ -1361,7 +1837,7 @@ export default function BulkProcessor() {
               title="Task"
               open={promptSectionOpen}
               onOpenChange={setPromptSectionOpen}
-              className="border border-border/30 rounded-md bg-background/30"
+              className="border border-border rounded-md bg-card"
               triggerClassName="hover:bg-accent/20"
               contentClassName="px-0 pb-0"
               status={
@@ -1392,7 +1868,7 @@ export default function BulkProcessor() {
               title="Output"
               open={outputSettingsSectionOpen}
               onOpenChange={setOutputSettingsSectionOpen}
-              className="border border-border/30 rounded-md bg-background/30"
+              className="border border-border rounded-md bg-card"
               triggerClassName="hover:bg-accent/20"
               contentClassName="space-y-3"
               status={
@@ -1443,18 +1919,18 @@ export default function BulkProcessor() {
 
           {/* AI OPTIMIZATION - Global, above actions */}
           {csvParser.csvData && prompt && (
-            <div className="flex-shrink-0 border-t border-border/30 bg-background/50">
+            <div className="flex-shrink-0 border-t border-border bg-background/50">
               <CollapsibleSection
                 title="AI Optimization"
                 open={aiAssistantSection.isOpen}
                 onOpenChange={aiAssistantSection.setIsOpen}
                 className="border-0 bg-transparent"
-                triggerClassName="hover:bg-accent/20 px-4 py-2.5"
+                triggerClassName="hover:bg-accent/20 px-4 py-2"
                 contentClassName="px-4 pb-3"
               >
                 <div className="space-y-3">
-                  {/* Optimization selector - Modern toggle switches */}
-                  <div className="flex flex-wrap gap-4">
+                  {/* Optimization selector - Toggle switches */}
+                  <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <Switch
                         checked={optimizeInput}
@@ -1489,11 +1965,21 @@ export default function BulkProcessor() {
                       sampleRows: csvParser.csvData?.rows.slice(0, 5).map(row => row.data),
                     })}
                     disabled={!csvParser.csvData || !prompt || isOptimizing || (!optimizeInput && !optimizeTask && !optimizeOutput)}
-                    className="w-full px-3 py-2 h-9 bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-md text-xs font-medium text-foreground transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 h-9 bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/30 rounded-md text-xs font-medium text-foreground transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={
+                      !csvParser.csvData 
+                        ? 'Upload a CSV file to enable AI optimization' 
+                        : !prompt 
+                          ? 'Enter a prompt to enable AI optimization'
+                          : isOptimizing
+                            ? 'AI optimization in progress'
+                            : 'Optimize configuration with AI'
+                    }
+                    aria-busy={isOptimizing}
                   >
                     {isOptimizing ? (
                       <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <div className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
                         <span>AI Optimizing...</span>
                       </>
                     ) : (
@@ -1509,72 +1995,109 @@ export default function BulkProcessor() {
           )}
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-4 sm:p-6 pb-4 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
-            <div className="flex items-center justify-between max-w-4xl mx-auto gap-2.5">
-              {/* Reset button - Secondary action on left */}
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setShowResetConfirmation(true)}
-                      className="flex items-center justify-center w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded transition-colors"
-                      aria-label="Reset configuration"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Reset configuration
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
-              {/* Primary action buttons */}
-              <div className="flex gap-2.5 items-stretch flex-1 justify-end">
+          <div className="flex-shrink-0 p-3 sm:p-4 md:p-6 pb-safe sm:pb-3 md:pb-4 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between max-w-4xl mx-auto gap-2.5 sm:gap-2.5">
+              {/* Left side - Reset and Keyboard Help */}
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <TooltipProvider delayDuration={0}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-              <button
-                onClick={handleTest}
-                disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
-                        className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 h-9 bg-secondary/50 border border-border/50 rounded-md text-xs font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                aria-label="Test prompt with first CSV row"
-              >
-                        {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                <span className="whitespace-nowrap">Test</span>
-              </button>
+                      <button
+                        onClick={() => setShowResetConfirmation(true)}
+                        className="flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded transition-colors touch-manipulation"
+                        aria-label="Reset configuration"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : 'Test with first row (⌘T)'}
+                      Reset configuration
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-              <button
-                onClick={handleProcess}
-                disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
-                        className="flex-[2] flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                data-testid="run-button"
-                        aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
+                      <button
+                        onClick={() => setShowKeyboardHelp(true)}
+                        className="flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded transition-colors touch-manipulation"
+                        aria-label="View keyboard shortcuts"
+                        title="Keyboard shortcuts (⌘?)"
                       >
-                        {batchProcessor.isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                        <span className="whitespace-nowrap flex items-center gap-1.5">
-                          <span>Bulk Agent</span>
-                          {csvParser.csvData && (
-                            <>
-                              <span className="inline">({csvParser.csvData.totalRows})</span>
-                              {timeEstimate && !batchProcessor.isProcessing && (
-                                <span className="inline opacity-75">• ~{timeEstimate.formatted}</span>
-                              )}
-                            </>
-                          )}
-                </span>
-              </button>
+                        <HelpCircle className="h-3.5 w-3.5" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {!csvParser.csvData ? 'Upload CSV file first' : !prompt ? 'Enter a prompt first' : !variableValidation.isValid ? `Missing variables: ${variableValidation.missing.join(', ')}` : `Process all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
+                      Keyboard shortcuts (⌘?)
                     </TooltipContent>
                   </Tooltip>
+                </TooltipProvider>
+              </div>
+              
+              {/* Primary action buttons */}
+              <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2 items-stretch flex-1 justify-end">
+                <TooltipProvider delayDuration={0}>
+                  <DisabledButtonTooltip
+                    reason={getTestDisabledReason({
+                      hasCSV: !!csvParser.csvData,
+                      hasPrompt: !!prompt,
+                      variableValidation,
+                      isProcessing: isTesting,
+                    }) || 'Test with first row (⌘T)'}
+                  >
+                    <button
+                      disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
+                      onClick={handleTest}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[40px] bg-secondary/50 border border-border/50 rounded-md text-xs sm:text-sm font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                      aria-label="Test prompt with first CSV row"
+                    >
+                      {isTesting ? <div className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                      <span className="whitespace-nowrap">Test</span>
+                    </button>
+                  </DisabledButtonTooltip>
+                  <DisabledButtonTooltip
+                    reason={getProcessAllDisabledReason({
+                      hasCSV: !!csvParser.csvData,
+                      hasPrompt: !!prompt,
+                      variableValidation,
+                      isProcessing: batchProcessor.isProcessing,
+                    }) || `Process all ${csvParser.csvData?.totalRows || 0} rows${timeEstimate ? ` (~${timeEstimate.formatted})` : ''} (⌘Enter)`}
+                  >
+                    <button
+                      disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
+                      onClick={handleProcess}
+                      className="flex-[2] flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[40px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                      data-testid="run-button"
+                      aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
+                    >
+                      {batchProcessor.isProcessing ? <div className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                      <span className="whitespace-nowrap flex items-center gap-1.5">
+                        <span>Process All</span>
+                        {csvParser.csvData && (
+                          <>
+                            <span className="inline">({csvParser.csvData.totalRows})</span>
+                            {timeEstimate && !batchProcessor.isProcessing && (
+                              <span className="inline opacity-75">• ~{timeEstimate.formatted}</span>
+                            )}
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  </DisabledButtonTooltip>
+                  <ScheduleWidget
+                    onScheduleCreated={() => {
+                      toast.success('Schedule created successfully')
+                    }}
+                    prompt={prompt}
+                    outputFields={outputFields.map(name => ({ name }))}
+                    selectedTools={selectedTools}
+                    selectedInputColumns={selectedInputColumns}
+                    csvData={csvParser.csvData ? {
+                      columns: csvParser.csvData.columns,
+                      rows: csvParser.csvData.rows.map(r => r.data),
+                      filename: csvParser.csvData.filename,
+                    } : undefined}
+                    csvFilename={csvParser.csvData?.filename}
+                    disabled={false}
+                  />
                 </TooltipProvider>
               </div>
             </div>
@@ -1582,7 +2105,7 @@ export default function BulkProcessor() {
         </div>
 
         {/* RIGHT PANEL - Results */}
-        <div className="h-full overflow-hidden flex flex-col border-l border-border/30 bg-muted/20">
+        <div className="h-full overflow-hidden flex flex-col border-l border-border bg-muted/20">
           {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
             <ResultsTable
               results={displayResults}
@@ -1592,6 +2115,8 @@ export default function BulkProcessor() {
               processingStartTime={processingStartTime}
               onExport={handleExport}
               onExportToGoogleSheets={handleExportToGoogleSheets}
+              onSaveToContext={handleSaveOutputToContext}
+              onRetry={handleRetryRow}
               isTesting={isTesting}
               testStartTime={testStartTime}
               testEstimatedSeconds={isTesting && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
@@ -1599,16 +2124,22 @@ export default function BulkProcessor() {
               totalOutputTokens={tokenTotals.output}
             />
           ) : (
-            // Empty state - minimal and clean
-            <div className="flex-1 flex items-center justify-center p-8">
-              <div className="text-center space-y-2 max-w-xs">
-                <p className="text-sm text-muted-foreground">
-                  {csvParser.csvData 
-                    ? 'Run a test or process all rows to see results'
-                    : 'Upload CSV and configure prompt to see results'}
-                </p>
-              </div>
-            </div>
+            <EmptyState
+              icon={csvParser.csvData ? Play : FileText}
+              title={csvParser.csvData ? 'Ready to process' : 'No results yet'}
+              description={
+                csvParser.csvData
+                  ? `Click "Test" to try with the first row, or "Process All" to process all ${csvParser.csvData.totalRows} rows`
+                  : 'Upload a CSV file and configure your prompt to get started. Results will appear here after processing.'
+              }
+              size="sm"
+            >
+              {csvParser.csvData && (
+                <div className="mt-4 text-xs text-muted-foreground">
+                  <p>💡 Tip: Use &quot;Test&quot; to verify your prompt before processing all rows</p>
+                </div>
+              )}
+            </EmptyState>
           )}
         </div>
       </main>
@@ -1617,13 +2148,45 @@ export default function BulkProcessor() {
       {/* TEMPLATE GALLERY MODAL */}
       <Modal
         isOpen={showTemplateModal}
-        onClose={() => setShowTemplateModal(false)}
+        onClose={() => {
+          setShowTemplateModal(false)
+          setTemplateTab('templates')
+          setTemplateSearchQuery('')
+          setTemplateCategoryFilter('all')
+        }}
         title="Template Gallery"
         titleIcon={FileText}
         size="lg"
         ariaLabelledBy="template-gallery-title"
       >
         <div className="space-y-4">
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-border">
+            <button
+              onClick={() => setTemplateTab('templates')}
+              className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+                templateTab === 'templates'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Templates
+            </button>
+            <button
+              onClick={() => setTemplateTab('saved')}
+              className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
+                templateTab === 'saved'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Saved ({savedPrompts.length})
+            </button>
+          </div>
+
+          {/* Templates Tab */}
+          {templateTab === 'templates' && (
+            <>
           {/* Search and Filter */}
           <div className="space-y-3">
             {/* Search */}
@@ -1634,7 +2197,7 @@ export default function BulkProcessor() {
                 value={templateSearchQuery}
                 onChange={(e) => setTemplateSearchQuery(e.target.value)}
                 placeholder="Search templates..."
-                className="w-full pl-10 pr-3 py-2.5 bg-secondary/70 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-border transition-all"
+                className="w-full pl-10 pr-3 py-2 bg-secondary/50 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-border transition-all"
                 aria-label="Search templates by name or category"
               />
             </div>
@@ -1676,7 +2239,7 @@ export default function BulkProcessor() {
                 <button
                   key={template.id}
                   onClick={() => applyTemplate(template)}
-                  className="text-left p-4 bg-secondary/70 hover:bg-accent/70 border border-border hover:border-border rounded-md transition-all group"
+                  className="text-left p-4 bg-secondary/50 hover:bg-accent/50 border border-border hover:border-border rounded-md transition-all group"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
@@ -1719,6 +2282,81 @@ export default function BulkProcessor() {
               </div>
             )}
           </div>
+            </>
+          )}
+
+          {/* Saved Prompts Tab */}
+          {templateTab === 'saved' && (
+            <div className="grid grid-cols-1 gap-3">
+              {savedPrompts.length > 0 ? (
+                savedPrompts
+                  .filter((p) => {
+                    if (!templateSearchQuery) return true
+                    const query = templateSearchQuery.toLowerCase()
+                    return (
+                      p.name.toLowerCase().includes(query) ||
+                      p.prompt.toLowerCase().includes(query) ||
+                      (p.description && p.description.toLowerCase().includes(query)) ||
+                      (p.tags && p.tags.some((tag) => tag.toLowerCase().includes(query)))
+                    )
+                  })
+                  .map((savedPrompt) => (
+                    <button
+                      key={savedPrompt.id}
+                      onClick={() => applyTemplate(savedPrompt)}
+                      className="text-left p-4 bg-secondary/50 hover:bg-accent/50 border border-border hover:border-border rounded-md transition-all group"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-sm font-medium text-foreground group-hover:text-white transition-colors">
+                              {savedPrompt.name}
+                            </h4>
+                            {savedPrompt.tags && savedPrompt.tags.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {savedPrompt.tags.slice(0, 3).map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="px-2 py-0.5 bg-accent text-muted-foreground rounded text-xs"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {savedPrompt.description && (
+                            <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+                              {savedPrompt.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span>Used {savedPrompt.usage_count} time{savedPrompt.usage_count !== 1 ? 's' : ''}</span>
+                            {savedPrompt.last_used_at && (
+                              <>
+                                <span>•</span>
+                                <span>
+                                  Last used {new Date(savedPrompt.last_used_at).toLocaleDateString()}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground rotate-[-90deg] transition-colors flex-shrink-0 mt-1" />
+                      </div>
+                    </button>
+                  ))
+              ) : (
+                <div className="p-12 text-center">
+                  <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-1">No saved prompts yet</p>
+                  <p className="text-xs text-muted-foreground">
+                    Save prompts from the prompt editor to use them here
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -1777,7 +2415,7 @@ export default function BulkProcessor() {
                 <div className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-md">
                   <div className="flex items-center gap-3">
                     <Play className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-foreground">Bulk Agent (process all rows)</span>
+                    <span className="text-sm text-foreground">Process All ({csvParser.csvData?.totalRows || 0} rows)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">⌘</kbd>
@@ -1873,8 +2511,7 @@ export default function BulkProcessor() {
         </p>
       </Modal>
 
-      {/* Debug Logger - Only show in development mode */}
-      <DebugLogger />
+
     </div>
   )
 }

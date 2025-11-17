@@ -7,6 +7,7 @@
 
 import { Table2 } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface CSVPreviewTableProps {
   csvData: ParsedCSV
@@ -38,7 +39,8 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
       {/* Table */}
       <div className="flex-1 overflow-auto p-6">
         <div className="border border-border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-secondary/50 sticky top-0">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border w-12">
@@ -57,8 +59,14 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
             <tbody className="divide-y divide-border">
               {previewRows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No data rows found in CSV. Please check your file format.
+                  <td colSpan={columns.length + 1} className="px-4 py-8">
+                    <EmptyState
+                      variant="table"
+                      icon={Table2}
+                      title="No data rows found"
+                      description="Your CSV file appears to be empty or has no data rows. Please check your file format and ensure it contains data."
+                      size="sm"
+                    />
                   </td>
                 </tr>
               ) : (
@@ -94,6 +102,7 @@ export function CSVPreviewTable({ csvData, maxRows = 5 }: CSVPreviewTableProps) 
               </p>
             </div>
           )}
+          </div>
         </div>
 
       </div>

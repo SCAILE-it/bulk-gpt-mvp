@@ -1,7 +1,7 @@
 /**
  * ABOUTME: Custom hook for persisting job configuration to localStorage
  * ABOUTME: Saves prompt, output fields, tools, and other job settings
- * ABOUTME: Restores context when user returns to /bulk page
+ * ABOUTME: Restores context when user returns to /agents page
  */
 
 import { useState, useCallback, useEffect } from 'react'

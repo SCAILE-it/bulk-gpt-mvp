@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { logError } from '@/lib/utils/logger'
 
 export const maxDuration = 60
 
@@ -48,7 +49,7 @@ export async function GET(
       .single()
 
     if (batchError || !batchData) {
-      console.error('Batch not found:', batchId, batchError)
+      logError('Batch not found', batchError, { batchId })
       return NextResponse.json(
         { error: 'Batch not found' },
         { status: 404 }
@@ -62,7 +63,7 @@ export async function GET(
       .eq('batch_id', batchId)
 
     if (resultsError) {
-      console.error('Failed to fetch batch results:', resultsError)
+      logError('Failed to fetch batch results', resultsError, { batchId })
       return NextResponse.json(
         { error: 'Failed to fetch batch results' },
         { status: 500 }
@@ -120,7 +121,7 @@ export async function GET(
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('GET /api/batch/[id]/status error:', error)
+    logError('GET /api/batch/[id]/status error', error)
     return NextResponse.json(
       {
         error: 'Failed to fetch batch status',

@@ -7,21 +7,42 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateApiKey, listApiKeys, revokeApiKey } from '@/lib/api-keys'
 import { authenticateRequest } from '@/lib/auth-middleware'
 import { logError } from '@/lib/errors'
+import { logPerformance } from '@/lib/utils/logger'
 
 /**
  * GET /api/keys - List all API keys for the authenticated user
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
   try {
+    const authStart = Date.now()
     const userId = await authenticateRequest(request)
+    const authTime = Date.now() - authStart
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const keysStart = Date.now()
     const keys = await listApiKeys(userId)
+    const keysTime = Date.now() - keysStart
 
-    return NextResponse.json({ keys })
+    const totalTime = Date.now() - startTime
+    logPerformance('API keys fetch', {
+      total: `${totalTime}ms`,
+      auth: `${authTime}ms`,
+      keys: `${keysTime}ms`,
+      keyCount: keys?.length || 0,
+    })
+
+    return NextResponse.json(
+      { keys },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        },
+      }
+    )
   } catch (error) {
     logError(error instanceof Error ? error : new Error('Failed to list API keys'), {
       source: 'api/keys/GET'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Building2, Mail, Zap, CheckCircle, XCircle, Loader2, RefreshCw } from 'lucide-react'
+import { Building2, Mail, Zap, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -82,13 +82,13 @@ export function ContextIntegrations() {
   return (
     <div className="space-y-4">
       <div className="text-xs text-muted-foreground mb-4">
-        Connect external tools to use their data as context in your Bulk Agent prompts
+        Connect external tools to use their data as context in your agent prompts
       </div>
 
       {/* Loading State */}
       {isLoading && integrations.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          <Loader2 className="h-12 w-12 mx-auto mb-3 animate-spin opacity-50" />
+          <div className="h-12 w-12 mx-auto mb-3 rounded-full border-4 border-muted-foreground border-t-transparent animate-spin opacity-50" />
           <p className="text-xs">Loading integrations...</p>
         </div>
       )}
@@ -198,7 +198,7 @@ export function ContextIntegrations() {
                           >
                             {syncing === integration.id ? (
                               <>
-                                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                <div className="h-3.5 w-3.5 mr-1.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
                                 Syncing...
                               </>
                             ) : (

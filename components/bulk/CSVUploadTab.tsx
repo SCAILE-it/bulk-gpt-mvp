@@ -5,7 +5,7 @@
 
 import { forwardRef, useRef, useImperativeHandle, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, CheckCircle, Loader2 } from 'lucide-react'
+import { Upload, CheckCircle } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 
@@ -30,7 +30,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
 
   useImperativeHandle(forwardedRef, () => localRef.current as HTMLInputElement)
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open, fileRejections } = useDropzone({
     onDrop: (acceptedFiles) => {
       if (acceptedFiles[0]) onFileUpload(acceptedFiles[0])
     },
@@ -38,6 +38,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
     accept: { 'text/csv': ['.csv'] },
     noClick: false,
     noKeyboard: false,
+    maxSize: 10 * 1024 * 1024, // 10MB
   })
 
   // Get input props - react-dropzone handles the ref internally
@@ -72,8 +73,8 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
         </div>
       )}
 
-      {csvData && !isUploading ? (
-        // Show CSV Preview when file is loaded
+      {csvData && csvData.rows.length > 0 && !isUploading ? (
+        // Show CSV Preview when file is loaded and has data
         <>
           <div className="border border-border rounded-md overflow-hidden">
             <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/20">
@@ -85,56 +86,66 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
                 {csvData.totalRows} rows • {csvData.columns.length} columns
               </span>
             </div>
-            <div className="overflow-x-auto max-h-[120px] overflow-y-auto">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-muted/40 border-b border-border">
-                  <tr>
-                    {csvData.columns.map(col => {
-                      const isSelected = selectedInputColumns?.includes(col) ?? true
-                      return (
-                        <th key={col} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                if (!onInputColumnsChange || !csvData) return
-                                const newSelection = e.target.checked
-                                  ? [...(selectedInputColumns || csvData.columns), col]
-                                  : (selectedInputColumns || csvData.columns).filter(c => c !== col)
-                                onInputColumnsChange(newSelection)
-                              }}
-                              className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-1 focus:ring-ring cursor-pointer"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span className={!isSelected ? 'opacity-50' : ''}>{col}</span>
-                          </div>
-                        </th>
-                      )
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {csvData.rows.slice(0, 5).map((row, i) => (
-                    <tr
-                      key={i}
-                      className={`border-b border-border/30 last:border-0 ${i % 2 === 0 ? 'bg-muted/10' : 'bg-transparent'}`}
-                    >
+            <div className="overflow-x-auto max-h-[120px] overflow-y-auto -mx-1 sm:mx-0">
+              <div className="min-w-full inline-block">
+                <table className="w-full text-xs min-w-[500px] sm:min-w-0">
+                  <thead className="sticky top-0 bg-muted/40 border-b border-border">
+                    <tr>
                       {csvData.columns.map(col => {
                         const isSelected = selectedInputColumns?.includes(col) ?? true
                         return (
-                          <td 
-                            key={col} 
-                            className={`px-2 py-1 text-foreground font-mono text-xs whitespace-nowrap ${
-                              !isSelected ? 'opacity-30' : ''
-                            }`}
-                          >
-                            {row.data[col] || '—'}
-                          </td>
+                          <th key={col} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (!onInputColumnsChange || !csvData) return
+                                  const newSelection = e.target.checked
+                                    ? [...(selectedInputColumns || csvData.columns), col]
+                                    : (selectedInputColumns || csvData.columns).filter(c => c !== col)
+                                  onInputColumnsChange(newSelection)
+                                }}
+                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-border text-primary focus:ring-1 focus:ring-ring cursor-pointer touch-manipulation"
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={`Toggle ${col} column`}
+                              />
+                              <span className={!isSelected ? 'opacity-50' : ''}>{col}</span>
+                            </div>
+                          </th>
                         )
                       })}
                     </tr>
-                  ))}
+                  </thead>
+                <tbody>
+                  {csvData.rows.slice(0, 5).map((row, i) => (
+                      <tr
+                        key={i}
+                        className={`border-b border-border last:border-0 ${i % 2 === 0 ? 'bg-muted/10' : 'bg-transparent'}`}
+                      >
+                        {csvData.columns.map(col => {
+                          const isSelected = selectedInputColumns?.includes(col) ?? true
+                          const cellValue = row.data[col]
+                          const isEmpty = !cellValue || !cellValue.trim()
+                          return (
+                            <td 
+                              key={col} 
+                              className={`px-2 py-1.5 sm:py-1 font-mono text-xs whitespace-nowrap ${
+                                !isSelected ? 'opacity-30' : isEmpty ? 'text-muted-foreground/50' : 'text-foreground'
+                              }`}
+                            >
+                              {isEmpty ? (
+                                <span className="italic" aria-label="Empty cell">(empty)</span>
+                              ) : (
+                                <span className="block max-w-[200px] sm:max-w-none truncate sm:whitespace-normal" title={cellValue}>
+                                  {cellValue}
+                                </span>
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -143,6 +154,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
                 Showing first 5 of {csvData.totalRows} rows
               </div>
             )}
+            </div>
           </div>
           <input {...inputProps} className="hidden" data-testid="file-input" />
         </>
@@ -158,17 +170,46 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
         >
           <input {...inputProps} className="hidden" data-testid="file-input" />
           {isUploading ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
-              <p className="text-xs text-muted-foreground">Uploading...</p>
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="relative">
+                <div className="h-8 w-8 rounded-full border-2 border-primary/20" />
+                <div className="absolute inset-0 h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-medium text-foreground">Uploading file...</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Please wait</p>
+              </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2 w-full">
-              <Upload className={`h-5 w-5 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
-              <p className="text-xs text-muted-foreground">
-                {isDragActive ? 'Drop CSV file here' : 'Drop CSV file or click to browse'}
-              </p>
-            </div>
+            <>
+              <div className="flex flex-col items-center gap-2 w-full">
+                <Upload className={`h-5 w-5 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                <p className="text-xs text-muted-foreground">
+                  {isDragActive ? 'Drop CSV file here' : 'Drop CSV file or click to browse'}
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Max 10MB • CSV format only
+                </p>
+              </div>
+              {fileRejections.length > 0 && (
+                <div className="mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
+                  {fileRejections.map(({ file, errors }) => (
+                    <div key={file.name}>
+                      <p className="font-medium">{file.name}</p>
+                      {errors.map((e) => (
+                        <p key={e.code} className="text-red-300/80">
+                          {e.code === 'file-too-large' 
+                            ? `File too large (max 10MB)`
+                            : e.code === 'file-invalid-type'
+                            ? 'Only CSV files are accepted'
+                            : e.message}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

@@ -28,12 +28,12 @@ test.describe('Context Page and Website Analysis', () => {
     await page.screenshot({ path: 'playwright-tests/screenshots/context-page-initial.png', fullPage: true })
   })
 
-  test('should analyze website and populate context fields', async ({ page }) => {
+  test('should analyze scaile.tech and populate context fields', async ({ page }) => {
     test.setTimeout(60000) // 60 seconds for API call
 
-    // Enter a test website URL (using a simple, accessible site)
-    const testUrl = 'https://example.com'
-    const urlInput = page.locator('input[type="url"]')
+    // Enter scaile.tech website URL
+    const testUrl = 'scaile.tech'
+    const urlInput = page.locator('input[type="text"][placeholder*="yourcompany"]')
     
     await urlInput.fill(testUrl)
     await expect(urlInput).toHaveValue(testUrl)
@@ -41,35 +41,47 @@ test.describe('Context Page and Website Analysis', () => {
     // Click analyze button
     const analyzeButton = page.locator('button:has-text("Analyze")')
     await expect(analyzeButton).toBeEnabled()
+    
+    // Take screenshot before analysis
+    await page.screenshot({ path: 'playwright-tests/screenshots/context-page-before-analysis.png', fullPage: true })
+    
     await analyzeButton.click()
 
-    // Wait for analysis to complete (button should show "Analyzing..." then back to "Analyze")
-    await expect(page.locator('text=Analyzing...')).toBeVisible({ timeout: 5000 }).catch(() => {
-      // If already completed, that's fine
-    })
+    // Wait for analyzing state
+    await expect(page.locator('text=Analyzing...')).toBeVisible({ timeout: 5000 })
+    
+    // Wait for analysis to complete - look for success toast or fields being populated
+    await page.waitForTimeout(10000) // Wait for API response (up to 10 seconds)
 
-    // Wait for success toast or for fields to be populated
-    // Check if any context field has been filled (indicating success)
-    await page.waitForTimeout(5000) // Wait for API response
-
-    // Verify that at least some fields might be populated (analysis may or may not find all fields)
-    // The API should return some data, even if minimal
+    // Check if fields have been populated
     const toneField = page.locator('input#tone')
     const productField = page.locator('textarea#productDescription')
+    const countriesField = page.locator('input#targetCountries')
     
-    // Check if fields have been populated (they might be empty if analysis didn't find info)
+    // Wait a bit more for fields to populate
+    await page.waitForTimeout(2000)
+    
     const toneValue = await toneField.inputValue()
     const productValue = await productField.inputValue()
+    const countriesValue = await countriesField.inputValue()
     
-    console.log(`Tone field value: "${toneValue}"`)
-    console.log(`Product Description value: "${productValue.substring(0, 50)}..."`)
+    console.log(`\n=== Analysis Results ===`)
+    console.log(`Tone: "${toneValue}"`)
+    console.log(`Product Description: "${productValue.substring(0, 100)}..."`)
+    console.log(`Target Countries: "${countriesValue}"`)
 
-    // Verify button is back to normal state
+    // Verify button is back to normal state (not analyzing)
     await expect(analyzeButton).toBeEnabled()
-    await expect(page.locator('text=Analyzing...')).not.toBeVisible()
+    
+    // URL should remain visible after successful analysis
+    await expect(urlInput).toHaveValue(testUrl)
 
     // Take screenshot after analysis
-    await page.screenshot({ path: 'playwright-tests/screenshots/context-page-after-analysis.png', fullPage: true })
+    await page.screenshot({ path: 'playwright-tests/screenshots/context-page-after-analysis-scaile.png', fullPage: true })
+    
+    // Verify at least one field was populated (analysis should find something)
+    const hasAnyData = toneValue.length > 0 || productValue.length > 0 || countriesValue.length > 0
+    expect(hasAnyData).toBeTruthy()
   })
 
   test('should handle invalid URL gracefully', async ({ page }) => {

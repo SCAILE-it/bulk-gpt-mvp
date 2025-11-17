@@ -18,7 +18,9 @@ interface CreateSheetRequest {
  */
 export async function POST(request: NextRequest): Promise<Response> {
   const startTime = Date.now()
-  console.log('[Google Sheets Export] Request received')
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Google Sheets Export] Request received')
+  }
   
   // CORS headers for cross-origin requests (e.g., from localhost:3000 test page)
   const origin = request.headers.get('origin')
@@ -42,13 +44,15 @@ export async function POST(request: NextRequest): Promise<Response> {
   
   try {
     const body = (await request.json()) as CreateSheetRequest
-    console.log('[Google Sheets Export] Body parsed:', {
-      hasAccessToken: !!body.accessToken,
-      tokenLength: body.accessToken?.length,
-      title: body.title,
-      dataRows: body.data?.length,
-      dataColumns: body.data?.[0]?.length,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Google Sheets Export] Body parsed:', {
+        hasAccessToken: !!body.accessToken,
+        tokenLength: body.accessToken?.length,
+        title: body.title,
+        dataRows: body.data?.length,
+        dataColumns: body.data?.[0]?.length,
+      })
+    }
 
     if (!body.accessToken) {
       console.error('[Google Sheets Export] Missing access token')
@@ -106,13 +110,15 @@ export async function POST(request: NextRequest): Promise<Response> {
       `--${boundary}--`,
     ].join('\r\n')
 
-    console.log('[Google Sheets Export] Calling Google Drive API...')
-    console.log('[Google Sheets Export] Request details:', {
-      url: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&convert=true',
-      method: 'POST',
-      csvContentLength: csvContent.length,
-      boundary,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Google Sheets Export] Calling Google Drive API...')
+      console.log('[Google Sheets Export] Request details:', {
+        url: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&convert=true',
+        method: 'POST',
+        csvContentLength: csvContent.length,
+        boundary,
+      })
+    }
     
     const createResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&convert=true', {
       method: 'POST',
@@ -123,11 +129,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       body: multipartBody,
     })
 
-    console.log('[Google Sheets Export] Google Drive API response:', {
-      status: createResponse.status,
-      statusText: createResponse.statusText,
-      ok: createResponse.ok,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Google Sheets Export] Google Drive API response:', {
+        status: createResponse.status,
+        statusText: createResponse.statusText,
+        ok: createResponse.ok,
+      })
+    }
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text()
@@ -199,11 +207,13 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     const createData = await createResponse.json()
-    console.log('[Google Sheets Export] Google Drive API success:', {
-      hasId: !!createData.id,
-      id: createData.id,
-      name: createData.name,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Google Sheets Export] Google Drive API success:', {
+        hasId: !!createData.id,
+        id: createData.id,
+        name: createData.name,
+      })
+    }
     
     const spreadsheetId = createData.id
 
@@ -219,12 +229,14 @@ export async function POST(request: NextRequest): Promise<Response> {
     const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`
     const duration = Date.now() - startTime
     
-    console.log('[Google Sheets Export] Success:', {
-      spreadsheetId,
-      spreadsheetUrl,
-      rowsWritten: data.length,
-      duration: `${duration}ms`,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Google Sheets Export] Success:', {
+        spreadsheetId,
+        spreadsheetUrl,
+        rowsWritten: data.length,
+        duration: `${duration}ms`,
+      })
+    }
 
     return NextResponse.json({
       success: true,

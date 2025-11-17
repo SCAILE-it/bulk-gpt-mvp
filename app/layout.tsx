@@ -86,6 +86,40 @@ export default function RootLayout({
           richColors
           closeButton
           duration={4000}
+          toastOptions={{
+            className: 'animate-in fade-in slide-in-from-top-2 duration-300',
+            success: {
+              icon: '✅',
+              className: 'border-green-500/20 bg-green-500/10',
+            },
+            error: {
+              icon: '❌',
+              className: 'border-red-500/20 bg-red-500/10',
+            },
+            warning: {
+              icon: '⚠️',
+              className: 'border-yellow-500/20 bg-yellow-500/10',
+            },
+            info: {
+              icon: 'ℹ️',
+              className: 'border-blue-500/20 bg-blue-500/10',
+            },
+          }}
+        />
+        {/* Live region for screen reader announcements */}
+        <div
+          id="live-region"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        />
+        <div
+          id="live-region-assertive"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+          className="sr-only"
         />
       </body>
     </html>

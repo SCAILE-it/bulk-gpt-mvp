@@ -15,6 +15,7 @@ export interface BatchResult {
   output: string
   status: 'pending' | 'processing' | 'completed' | 'failed'
   error?: string
+  retryCount?: number // Track retry attempts
 }
 
 export interface BatchProgress {
@@ -46,14 +47,95 @@ export interface UseBatchProcessorReturn {
   clearResults: () => void
 }
 
+const BATCH_ID_STORAGE_KEY = 'bulk-gpt-current-batch-id'
+
 export function useBatchProcessor(): UseBatchProcessorReturn {
-  const [batchId, setBatchId] = useState<string | null>(null)
+  // Restore batchId from sessionStorage on mount (survives page refresh)
+  const [batchId, setBatchId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      return sessionStorage.getItem(BATCH_ID_STORAGE_KEY) || null
+    } catch {
+      return null
+    }
+  })
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState<BatchResult[]>([])
   const [progress, setProgress] = useState<BatchProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
   
   const eventSourceRef = useRef<EventSource | null>(null)
+
+  // Persist batchId to sessionStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      if (batchId) {
+        sessionStorage.setItem(BATCH_ID_STORAGE_KEY, batchId)
+      } else {
+        sessionStorage.removeItem(BATCH_ID_STORAGE_KEY)
+      }
+    } catch (err) {
+      console.debug('Failed to persist batchId:', err)
+    }
+  }, [batchId])
+
+  // On mount, if batchId exists, check batch status and restore results
+  // This runs once on mount to restore state from sessionStorage
+  useEffect(() => {
+    if (!batchId) return
+    
+    let isMounted = true
+    
+    const restoreBatchState = async () => {
+      try {
+        const response = await fetch(`/api/batch/${batchId}-status/status`)
+        if (!response.ok || !isMounted) return
+
+        const data = await response.json()
+        const { status, processedRows, totalRows, results: dbResults } = data
+
+        if (!isMounted) return
+
+        // Determine if batch is still processing
+        const isStillProcessing = status === 'processing' || status === 'pending'
+        setIsProcessing(isStillProcessing)
+
+        // Load results if available
+        if (dbResults && Array.isArray(dbResults) && dbResults.length > 0) {
+          setResults(dbResults.map((r: any) => ({
+            id: r.id || `${batchId}-${dbResults.indexOf(r)}`,
+            input: r.input || {},
+            output: r.output || '',
+            status: r.status === 'success' ? 'completed' : r.status === 'error' ? 'failed' : 'pending',
+            error: r.error,
+          })))
+        }
+
+        // Update progress if available
+        const total = totalRows || 0
+        const processed = processedRows || 0
+        if (total > 0) {
+          setProgress({
+            completed: processed,
+            total: total,
+            percentage: Math.round((processed / total) * 100),
+          })
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.debug('Failed to restore batch state:', err)
+        }
+      }
+    }
+
+    restoreBatchState()
+    
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run on mount
 
   const startBatch = useCallback(async (params: StartBatchParams): Promise<void> => {
     const { csvData, prompt, context = '', outputColumns, webhookUrl, tools, testMode = false, selectedInputColumns } = params
@@ -149,13 +231,60 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
     setResults([])
     setProgress(null)
     setError(null)
-    // Don't clear batchId immediately - allow post-completion actions like export
-    // batchId will be cleared when starting a new batch
+    setBatchId(null) // Clear batchId and sessionStorage
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem(BATCH_ID_STORAGE_KEY)
+      } catch {
+        // Ignore
+      }
+    }
   }, [])
 
   useEffect(() => {
-    if (!batchId || !isProcessing) return
+    if (!batchId) return
 
+    // If not processing, just fetch results once (for completed batches)
+    if (!isProcessing) {
+      const fetchCompletedResults = async () => {
+        try {
+          const response = await fetch(`/api/batch/${batchId}-status/status`)
+          if (!response.ok) return
+
+          const data = await response.json()
+          const { results: dbResults, status, processedRows, totalRows } = data
+
+          // Load results if available
+          if (dbResults && Array.isArray(dbResults) && dbResults.length > 0) {
+            setResults(dbResults.map((r: any) => ({
+              id: r.id || `${batchId}-${dbResults.indexOf(r)}`,
+              input: r.input || {},
+              output: r.output || '',
+              status: r.status === 'success' ? 'completed' : r.status === 'error' ? 'failed' : 'pending',
+              error: r.error,
+            })))
+          }
+
+          // Update progress if available
+          const total = totalRows || 0
+          const processed = processedRows || 0
+          if (total > 0) {
+            setProgress({
+              completed: processed,
+              total: total,
+              percentage: Math.round((processed / total) * 100),
+            })
+          }
+        } catch (err) {
+          console.debug('Failed to fetch completed batch results:', err)
+        }
+      }
+
+      fetchCompletedResults()
+      return
+    }
+
+    // If processing, set up EventSource streaming
     const eventSource = new EventSource('/api/batch/' + batchId + '/stream')
     eventSourceRef.current = eventSource
 

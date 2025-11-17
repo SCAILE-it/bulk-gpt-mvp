@@ -13,6 +13,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip middleware for components-showcase (public demo page)
+  if (request.nextUrl.pathname === '/components-showcase') {
+    return NextResponse.next()
+  }
+
   return await updateSession(request)
 }
 

@@ -1,28 +1,51 @@
 'use client'
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Home, Loader2 } from 'lucide-react'
 import { logError as logErrorToService } from '@/lib/errors'
+import { Button } from './ui/button'
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
   onError?: (error: Error, errorInfo: ErrorInfo) => void
+  /** Enable auto-retry with exponential backoff */
+  autoRetry?: boolean
+  /** Maximum number of retry attempts */
+  maxRetries?: number
+  /** Initial retry delay in milliseconds */
+  retryDelay?: number
+  /** Custom error message */
+  errorMessage?: string
+  /** Custom retry label */
+  retryLabel?: string
 }
 
 interface State {
   hasError: boolean
   error: Error | null
   errorInfo: ErrorInfo | null
+  retryCount: number
+  isRetrying: boolean
+  retryTimeoutId: NodeJS.Timeout | null
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  private retryTimeoutId: NodeJS.Timeout | null = null
+
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null, errorInfo: null }
+    this.state = { 
+      hasError: false, 
+      error: null, 
+      errorInfo: null,
+      retryCount: 0,
+      isRetrying: false,
+      retryTimeoutId: null,
+    }
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error, errorInfo: null }
   }
 
@@ -57,18 +80,122 @@ export class ErrorBoundary extends Component<Props, State> {
       .catch(() => {
         // Silently fail if Sentry is not available
       })
+
+    // Auto-retry if enabled
+    if (this.props.autoRetry) {
+      this.scheduleRetry()
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.retryTimeoutId) {
+      clearTimeout(this.retryTimeoutId)
+    }
+  }
+
+  scheduleRetry = () => {
+    const { maxRetries = 3, retryDelay = 1000 } = this.props
+    const { retryCount } = this.state
+
+    if (retryCount >= maxRetries) {
+      return // Max retries reached
+    }
+
+    // Exponential backoff: 1s, 2s, 4s, 8s...
+    const delay = retryDelay * Math.pow(2, retryCount)
+
+    this.retryTimeoutId = setTimeout(() => {
+      this.handleRetry()
+    }, delay) as unknown as NodeJS.Timeout
+    
+    this.setState({ retryTimeoutId: this.retryTimeoutId })
+  }
+
+  handleRetry = () => {
+    const { maxRetries = 3 } = this.props
+    const { retryCount } = this.state
+
+    if (retryCount >= maxRetries) {
+      return
+    }
+
+    this.setState({ 
+      isRetrying: true,
+      retryCount: retryCount + 1,
+    })
+
+    // Reset error state to attempt re-render
+    setTimeout(() => {
+      this.setState({ 
+        hasError: false, 
+        error: null, 
+        errorInfo: null,
+        isRetrying: false,
+      })
+    }, 100)
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null })
+    if (this.retryTimeoutId) {
+      clearTimeout(this.retryTimeoutId)
+    }
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorInfo: null,
+      retryCount: 0,
+      isRetrying: false,
+      retryTimeoutId: null,
+    })
+  }
+
+  getErrorMessage = (): string => {
+    if (this.props.errorMessage) {
+      return this.props.errorMessage
+    }
+
+    const { error } = this.state
+    if (!error) return 'Something went wrong'
+
+    // Provide more helpful error messages based on error type
+    if (error.message.includes('Network') || error.message.includes('fetch')) {
+      return 'Network error. Please check your connection and try again.'
+    }
+    if (error.message.includes('timeout')) {
+      return 'Request timed out. The server may be slow to respond.'
+    }
+    if (error.message.includes('Failed to fetch')) {
+      return 'Unable to connect to the server. Please check your internet connection.'
+    }
+
+    return error.message || 'An unexpected error occurred'
   }
 
   render() {
-    if (this.state.hasError) {
+    const { retryCount, isRetrying, hasError } = this.state
+    const { maxRetries = 3, retryLabel = 'Try again' } = this.props
+
+    if (isRetrying) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="max-w-md w-full text-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              Retrying... ({retryCount}/{maxRetries})
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    if (hasError) {
       // Custom fallback provided
       if (this.props.fallback) {
         return <>{this.props.fallback}</>
       }
+
+      const canRetry = retryCount < maxRetries
+      const errorMessage = this.getErrorMessage()
 
       // Default error UI
       return (
@@ -88,14 +215,19 @@ export class ErrorBoundary extends Component<Props, State> {
                   Something went wrong
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  We&apos;ve encountered an unexpected error. Our team has been notified.
+                  {errorMessage}
                 </p>
+                {this.props.autoRetry && retryCount > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Attempt {retryCount} of {maxRetries}
+                  </p>
+                )}
               </div>
 
               {/* Error Details (Development only) */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mt-4">
-                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-muted-foreground">
+                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                     Error details
                   </summary>
                   <div className="mt-2 p-3 bg-background rounded border border-border">
@@ -103,7 +235,7 @@ export class ErrorBoundary extends Component<Props, State> {
                       {this.state.error.toString()}
                     </p>
                     {this.state.errorInfo && (
-                      <pre className="mt-2 text-xs text-muted-foreground overflow-auto">
+                      <pre className="mt-2 text-xs text-muted-foreground overflow-auto max-h-40">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     )}
@@ -113,21 +245,32 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <button
-                  onClick={this.handleReset}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-accent hover:bg-accent border border-border rounded-md text-sm text-foreground transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Try again
-                </button>
-                <button
+                {canRetry && (
+                  <Button
+                    onClick={this.handleRetry}
+                    variant="default"
+                    className="flex-1 gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    {retryLabel}
+                  </Button>
+                )}
+                <Button
                   onClick={() => window.location.href = '/'}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-accent hover:bg-accent border border-border rounded-md text-sm text-foreground transition-colors"
+                  variant={canRetry ? 'outline' : 'default'}
+                  className="flex-1 gap-2"
                 >
                   <Home className="w-4 h-4" />
                   Go home
-                </button>
+                </Button>
               </div>
+
+              {/* Auto-retry indicator */}
+              {this.props.autoRetry && canRetry && (
+                <p className="text-xs text-center text-muted-foreground pt-2">
+                  Will automatically retry in a few seconds...
+                </p>
+              )}
             </div>
 
             {/* Beta Notice */}
@@ -173,6 +316,11 @@ export function BulkProcessorErrorBoundary({ children }: { children: ReactNode }
   return (
     <ErrorBoundary
       onError={handleError}
+      autoRetry={true}
+      maxRetries={3}
+      retryDelay={2000}
+      errorMessage="The bulk processor encountered an error. This might be due to network issues, invalid CSV format, or API rate limits."
+      retryLabel="Retry Processing"
       fallback={
         <div className="p-6 bg-secondary border border-border rounded-lg">
           <div className="flex items-center gap-3 text-yellow-500 mb-3">
@@ -188,12 +336,24 @@ export function BulkProcessorErrorBoundary({ children }: { children: ReactNode }
             <li>API rate limits</li>
             <li>Server processing errors</li>
           </ul>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md text-sm transition-colors"
-          >
-            Reload Page
-          </button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => window.location.reload()}
+              variant="default"
+              className="gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Retry Processing
+            </Button>
+            <Button
+              onClick={() => window.location.href = '/'}
+              variant="outline"
+              className="gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Go Home
+            </Button>
+          </div>
         </div>
       }
     >
@@ -201,6 +361,36 @@ export function BulkProcessorErrorBoundary({ children }: { children: ReactNode }
     </ErrorBoundary>
   )
 }
+
+// Error boundary for data fetching components (SWR errors)
+export function DataErrorBoundary({ 
+  children, 
+  errorMessage,
+  onRetry,
+}: { 
+  children: ReactNode
+  errorMessage?: string
+  onRetry?: () => void
+}) {
+  return (
+    <ErrorBoundary
+      autoRetry={true}
+      maxRetries={2}
+      retryDelay={1000}
+      errorMessage={errorMessage || 'Failed to load data. Please check your connection and try again.'}
+      retryLabel="Reload Data"
+      onError={() => {
+        // If onRetry callback provided, call it
+        if (onRetry) {
+          setTimeout(onRetry, 100)
+        }
+      }}
+    >
+      {children}
+    </ErrorBoundary>
+  )
+}
+
 
 
 

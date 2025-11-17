@@ -5,43 +5,12 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Activity, TrendingUp, Calendar } from 'lucide-react'
-
-interface UsageStats {
-  batchesToday: number
-  rowsToday: number
-  batchesThisMonth: number
-  rowsThisMonth: number
-  totalBatches: number
-  totalRows: number
-  dailyBatchLimit: number
-  dailyRowLimit: number
-  planType: string
-}
+import { useUsageStats } from '@/hooks/useUsageStats'
+import { AutoSkeleton } from '@/components/ui/auto-skeleton'
 
 export function UsageDisplay() {
-  const [usage, setUsage] = useState<UsageStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  async function loadUsage() {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/usage')
-      if (!response.ok) throw new Error('Failed to load usage')
-      const data = await response.json()
-      setUsage(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load usage')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadUsage()
-  }, [])
+  const { usage, isLoading, error } = useUsageStats()
 
   function getPercentage(current: number, limit: number) {
     return Math.min(100, (current / limit) * 100)
@@ -53,19 +22,24 @@ export function UsageDisplay() {
     return 'bg-primary'
   }
 
-  if (loading) {
+  // Show error only if there's an actual error and we're not loading
+  if (error && !isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-muted-foreground">Loading usage stats...</div>
+      <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
+        {error instanceof Error ? error.message : 'Failed to load usage'}
       </div>
     )
   }
 
-  if (error || !usage) {
+  // Show loading state or nothing if no usage data yet
+  if (!usage) {
     return (
-      <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
-        {error || 'Failed to load usage'}
-      </div>
+      <AutoSkeleton isLoading={isLoading}>
+        <div className="space-y-6">
+          <div className="h-4 bg-secondary/50 rounded animate-pulse" />
+          <div className="h-20 bg-secondary/50 rounded animate-pulse" />
+        </div>
+      </AutoSkeleton>
     )
   }
 
@@ -73,12 +47,12 @@ export function UsageDisplay() {
   const rowPercentage = getPercentage(usage.rowsToday, usage.dailyRowLimit)
 
   return (
-    <div className="space-y-6">
+    <AutoSkeleton isLoading={isLoading}>
+      <div className="space-y-6 animate-fade-in">
       {/* Plan Badge */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-foreground">Usage & Limits</h3>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground">
             Current plan: <span className="capitalize text-primary">{usage.planType}</span>
           </p>
         </div>
@@ -155,11 +129,12 @@ export function UsageDisplay() {
         </div>
       </div>
 
-      {/* All-time Stats */}
-      <div className="text-xs text-muted-foreground flex items-center justify-between">
-        <span>All-time: {usage.totalBatches.toLocaleString()} batches</span>
-        <span>{usage.totalRows.toLocaleString()} rows processed</span>
+        {/* All-time Stats */}
+        <div className="text-xs text-muted-foreground flex items-center justify-between">
+          <span>All-time: {usage.totalBatches.toLocaleString()} batches</span>
+          <span>{usage.totalRows.toLocaleString()} rows processed</span>
+        </div>
       </div>
-    </div>
+    </AutoSkeleton>
   )
 }

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { Logo } from '@/components/brand/Logo'
 import { logError } from '@/lib/errors'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
@@ -189,7 +189,7 @@ function ResetPasswordForm() {
             <Button type="submit" className="w-full min-h-[44px] lg:min-h-0" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  <div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" />
                   Updating password...
                 </>
               ) : (

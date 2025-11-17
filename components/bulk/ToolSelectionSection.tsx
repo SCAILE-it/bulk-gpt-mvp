@@ -7,7 +7,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Wrench, ChevronDown, Search, X } from 'lucide-react'
+import { Wrench, ChevronDown, Search, X, HelpCircle } from 'lucide-react'
 import { type GTMTool, ESSENTIAL_GTM_TOOLS, ALL_OTHER_TOOLS } from '@/lib/types/gtm-types'
 import {
   Tooltip,
@@ -41,6 +41,35 @@ export function ToolSelectionSection({
   const allOtherTools = useMemo(() => {
     return searchTools(ALL_OTHER_TOOLS, searchQuery)
   }, [searchQuery])
+
+  // Group tools by category for better organization
+  const toolsByCategory = useMemo(() => {
+    const grouped: Record<string, GTMTool[]> = {
+      enrichment: [],
+      generation: [],
+      analysis: [],
+    }
+    
+    allOtherTools.forEach(tool => {
+      if (grouped[tool.category]) {
+        grouped[tool.category].push(tool)
+      }
+    })
+    
+    return grouped
+  }, [allOtherTools])
+
+  const categoryLabels: Record<string, string> = {
+    enrichment: 'Enrichment',
+    generation: 'Generation',
+    analysis: 'Analysis',
+  }
+
+  const categoryIcons: Record<string, string> = {
+    enrichment: '🔍',
+    generation: '✨',
+    analysis: '📊',
+  }
 
   // Auto-expand sections when searching
   const shouldShowMoreTools = showMoreTools || searchQuery.trim().length > 0
@@ -82,6 +111,28 @@ export function ToolSelectionSection({
         <div className="flex items-center gap-2">
           <Wrench className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <label className="text-sm font-medium text-foreground">AI Tools</label>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Learn about AI tools"
+              >
+                <HelpCircle className="h-3.5 w-3.5 cursor-help" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <div className="space-y-1.5 text-xs">
+                <p className="font-medium">AI Tools</p>
+                <p className="text-muted-foreground">
+                  Select which specialized AI tools the model can use during processing. Each tool provides specific capabilities like data extraction, analysis, or formatting.
+                </p>
+                <p className="text-muted-foreground mt-2 pt-2 border-t border-border">
+                  <strong>Tip:</strong> Start with essential tools. You can add more tools later if needed for specific use cases.
+                </p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
           <span className="text-xs text-muted-foreground">
             ({selectedTools.length} selected)
           </span>
@@ -92,15 +143,22 @@ export function ToolSelectionSection({
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search tools..."
+            placeholder="Search tools... (⌘F)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setSearchQuery('')
+                e.currentTarget.blur()
+              }
+            }}
             className="pl-8 pr-8 h-8 text-xs bg-secondary/70 border-border/50 focus-visible:ring-1 focus-visible:ring-ring"
+            aria-label="Search AI tools"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
               aria-label="Clear search"
             >
               <X className="h-3.5 w-3.5" />
@@ -138,8 +196,29 @@ export function ToolSelectionSection({
             </button>
 
             {shouldShowMoreTools && (
-              <div className="flex flex-wrap gap-2">
-                {allOtherTools.map(renderToolBadge)}
+              <div className="space-y-4">
+                {/* Group by category if not searching, otherwise show flat list */}
+                {searchQuery.trim().length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {allOtherTools.map(renderToolBadge)}
+                  </div>
+                ) : (
+                  // Show categorized when not searching
+                  Object.entries(toolsByCategory).map(([category, tools]) => {
+                    if (tools.length === 0) return null
+                    return (
+                      <div key={category} className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          <span>{categoryIcons[category]}</span>
+                          <span>{categoryLabels[category]} ({tools.length})</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {tools.map(renderToolBadge)}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
               </div>
             )}
           </div>

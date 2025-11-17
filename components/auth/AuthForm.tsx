@@ -2,12 +2,12 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { FormField } from '@/components/ui/form-field'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
 import { logError } from '@/lib/errors'
 import { signInWithLinkedIn } from '@/lib/auth/linkedin'
+import { useRealtimeValidation } from '@/hooks/useRealtimeValidation'
 
 export type AuthMode = 'signin' | 'signup' | 'reset'
 
@@ -22,7 +22,7 @@ interface AuthFormProps {
  * Authentication form component - Email/Password for testing, LinkedIn OAuth for production
  * Follows SOLID principles: Single Responsibility, Open/Closed
  */
-export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps) {
+export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoadingEmail, setIsLoadingEmail] = useState(false)
@@ -30,6 +30,37 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps
   const [error, setError] = useState<string | null>(null)
 
   const supabase = createClient()
+
+  // Real-time email validation
+  const emailValidation = useRealtimeValidation({
+    value: email,
+    rules: [
+      {
+        validate: (val) => {
+          if (!val.trim()) return null // Don't validate empty on blur
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+          return emailRegex.test(val) ? null : 'Please enter a valid email address'
+        },
+        debounceMs: 300,
+      },
+    ],
+    enabled: mode === 'signin',
+  })
+
+  // Real-time password validation
+  const passwordValidation = useRealtimeValidation({
+    value: password,
+    rules: [
+      {
+        validate: (val) => {
+          if (!val.trim()) return null // Don't validate empty on blur
+          return val.length >= 6 ? null : 'Password must be at least 6 characters'
+        },
+        debounceMs: 300,
+      },
+    ],
+    enabled: mode === 'signin',
+  })
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -118,46 +149,62 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps
       {/* Email/Password Form - For local testing */}
       {mode === 'signin' && (
         <form onSubmit={handleEmailSignIn} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs">
-              Email
-            </Label>
+          <FormField
+            id="email"
+            label="Email"
+            error={emailValidation.touched ? emailValidation.errors[0] : undefined}
+            required
+          >
             <Input
-              id="email"
               type="email"
               placeholder="test@bulkgpt.local"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                emailValidation.setTouched()
+              }}
+              onBlur={emailValidation.setTouched}
               required
               disabled={isLoadingEmail}
-              autocomplete="email"
+              autoComplete="email"
+              aria-label="Email address"
+              aria-describedby={error ? "form-error email-error" : emailValidation.touched && emailValidation.errors[0] ? "email-error" : undefined}
+              aria-invalid={emailValidation.touched && !emailValidation.isValid}
               className="h-9 text-xs"
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-xs">
-              Password
-            </Label>
+          </FormField>
+          <FormField
+            id="password"
+            label="Password"
+            error={passwordValidation.touched ? passwordValidation.errors[0] : undefined}
+            required
+          >
             <Input
-              id="password"
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                passwordValidation.setTouched()
+              }}
+              onBlur={passwordValidation.setTouched}
               required
               disabled={isLoadingEmail}
-              autocomplete="current-password"
+              autoComplete="current-password"
+              aria-label="Password"
+              aria-describedby={error ? "form-error password-error" : passwordValidation.touched && passwordValidation.errors[0] ? "password-error" : undefined}
+              aria-invalid={passwordValidation.touched && !passwordValidation.isValid}
               className="h-9 text-xs"
             />
-          </div>
+          </FormField>
           <Button
             type="submit"
-            disabled={isLoadingEmail}
+            disabled={isLoadingEmail || (emailValidation.touched && !emailValidation.isValid) || (passwordValidation.touched && !passwordValidation.isValid)}
             className="w-full h-9 text-xs"
           >
             {isLoadingEmail ? (
               <>
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" aria-hidden="true" />
+                <div className="mr-2 h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" />
                 Signing in...
               </>
             ) : (
@@ -188,7 +235,7 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/bulk' }: AuthFormProps
       >
         {isLoadingLinkedIn ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            <div className="mr-2 h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" />
             Connecting...
           </>
         ) : (

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
+import { logError } from '@/lib/utils/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +31,7 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Token error:', error)
+    logError('Token error', error)
     return NextResponse.json(
       { error: 'Failed to get token' },
       { status: 500 }

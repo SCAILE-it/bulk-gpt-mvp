@@ -1,52 +1,143 @@
-/**
- * Context Form Component
- * Form for managing company context variables
- * Auto-populates fields when website URL is entered (like zola-aisdkv5)
- */
-
 'use client'
 
-import { Building2, Globe, Package, Users, Target, Shield, RotateCcw, Loader2 } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { useState, useCallback, useEffect } from 'react'
+import { Globe, AlertTriangle, Trash2, CheckCircle, HelpCircle, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Modal } from '@/components/ui/modal'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useContextStorage } from '@/hooks/useContextStorage'
+import { GTMClassificationForm } from '@/components/context/GTMClassificationForm'
 import { toast } from 'sonner'
-import { useCallback, useState } from 'react'
+import type { BusinessContext as BusinessContextType } from '@/lib/types/business-context'
+
+/**
+ * ABOUTME: Context Form Component
+ * ABOUTME: Allows users to set company business context variables manually or via website analysis
+ * ABOUTME: Includes "Analyze Website" button that calls Gemini API to extract context
+ */
 
 export function ContextForm() {
-  const { context, updateContext, clearContext, hasContext } = useContextStorage()
+  const { context, businessContext, gtmProfile, updateContext, updateBusinessContext, updateGTMProfile, clearContext, hasContext, isLoading } = useContextStorage()
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false)
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false)
+  const [hasUserMadeChanges, setHasUserMadeChanges] = useState(false)
+  
+  // Array field inputs
+  const [newCountry, setNewCountry] = useState('')
+  const [newProduct, setNewProduct] = useState('')
+  const [newMarketingGoal, setNewMarketingGoal] = useState('')
+  const [newTargetKeyword, setNewTargetKeyword] = useState('')
+  const [newCompetitorKeyword, setNewCompetitorKeyword] = useState('')
 
-  // Auto-save on change
-  const handleFieldChange = useCallback((field: keyof typeof context, value: string) => {
-    updateContext({ [field]: value || undefined })
+  // Show saved indicator briefly after user makes changes
+  useEffect(() => {
+    if (hasUserMadeChanges && hasContext) {
+      setShowSavedIndicator(true)
+      const timer = setTimeout(() => setShowSavedIndicator(false), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [context, hasContext, hasUserMadeChanges])
+
+  // Track when user makes manual changes (not from website analysis)
+  const handleManualUpdate = useCallback((updates: Parameters<typeof updateContext>[0]) => {
+    setHasUserMadeChanges(true)
+    updateContext(updates)
   }, [updateContext])
 
-  const handleClear = useCallback(() => {
-    clearContext()
-    setWebsiteUrl('')
-    toast.success('Context cleared')
-  }, [clearContext])
+  const handleBusinessContextUpdate = useCallback((updates: Parameters<typeof updateBusinessContext>[0]) => {
+    setHasUserMadeChanges(true)
+    updateBusinessContext(updates)
+  }, [updateBusinessContext])
+
+  // Array field handlers
+  const addCountry = useCallback(() => {
+    if (newCountry.trim()) {
+      handleBusinessContextUpdate({
+        countries: [...(businessContext.countries || []), newCountry.trim()]
+      })
+      setNewCountry('')
+    }
+  }, [newCountry, businessContext.countries, handleBusinessContextUpdate])
+
+  const removeCountry = useCallback((index: number) => {
+    handleBusinessContextUpdate({
+      countries: businessContext.countries?.filter((_, i) => i !== index) || []
+    })
+  }, [businessContext.countries, handleBusinessContextUpdate])
+
+  const addProduct = useCallback(() => {
+    if (newProduct.trim()) {
+      handleBusinessContextUpdate({
+        products: [...(businessContext.products || []), newProduct.trim()]
+      })
+      setNewProduct('')
+    }
+  }, [newProduct, businessContext.products, handleBusinessContextUpdate])
+
+  const removeProduct = useCallback((index: number) => {
+    handleBusinessContextUpdate({
+      products: businessContext.products?.filter((_, i) => i !== index) || []
+    })
+  }, [businessContext.products, handleBusinessContextUpdate])
+
+  const addMarketingGoal = useCallback(() => {
+    if (newMarketingGoal.trim()) {
+      handleBusinessContextUpdate({
+        marketingGoals: [...(businessContext.marketingGoals || []), newMarketingGoal.trim()]
+      })
+      setNewMarketingGoal('')
+    }
+  }, [newMarketingGoal, businessContext.marketingGoals, handleBusinessContextUpdate])
+
+  const removeMarketingGoal = useCallback((index: number) => {
+    handleBusinessContextUpdate({
+      marketingGoals: businessContext.marketingGoals?.filter((_, i) => i !== index) || []
+    })
+  }, [businessContext.marketingGoals, handleBusinessContextUpdate])
+
+  const addTargetKeyword = useCallback(() => {
+    if (newTargetKeyword.trim()) {
+      handleBusinessContextUpdate({
+        targetKeywords: [...(businessContext.targetKeywords || []), newTargetKeyword.trim()]
+      })
+      setNewTargetKeyword('')
+    }
+  }, [newTargetKeyword, businessContext.targetKeywords, handleBusinessContextUpdate])
+
+  const removeTargetKeyword = useCallback((index: number) => {
+    handleBusinessContextUpdate({
+      targetKeywords: businessContext.targetKeywords?.filter((_, i) => i !== index) || []
+    })
+  }, [businessContext.targetKeywords, handleBusinessContextUpdate])
+
+  const addCompetitorKeyword = useCallback(() => {
+    if (newCompetitorKeyword.trim()) {
+      handleBusinessContextUpdate({
+        competitorKeywords: [...(businessContext.competitorKeywords || []), newCompetitorKeyword.trim()]
+      })
+      setNewCompetitorKeyword('')
+    }
+  }, [newCompetitorKeyword, businessContext.competitorKeywords, handleBusinessContextUpdate])
+
+  const removeCompetitorKeyword = useCallback((index: number) => {
+    handleBusinessContextUpdate({
+      competitorKeywords: businessContext.competitorKeywords?.filter((_, i) => i !== index) || []
+    })
+  }, [businessContext.competitorKeywords, handleBusinessContextUpdate])
 
   const handleAnalyzeWebsite = useCallback(async () => {
-    if (!websiteUrl || websiteUrl.trim().length === 0) {
+    if (!websiteUrl.trim()) {
       toast.error('Please enter a website URL')
-      return
-    }
-
-    // Validate URL format
-    let validUrl = websiteUrl.trim()
-    if (!validUrl.startsWith('http://') && !validUrl.startsWith('https://')) {
-      validUrl = `https://${validUrl}`
-    }
-
-    try {
-      new URL(validUrl)
-    } catch {
-      toast.error('Invalid URL format')
       return
     }
 
@@ -57,216 +148,773 @@ export function ContextForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url: validUrl }),
+        body: JSON.stringify({ url: websiteUrl.trim() }),
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        const error = await response.json().catch(() => ({ error: 'Failed to analyze website' }))
         throw new Error(error.message || error.error || 'Failed to analyze website')
       }
 
-      const extractedContext = await response.json()
+      const data = await response.json()
 
-      // Update context with extracted values
-      updateContext(extractedContext)
+      // Update context variables with extracted data
+      const contextUpdates: Parameters<typeof updateContext>[0] = {}
+      if (data.tone) contextUpdates.tone = data.tone
+      if (data.targetCountries) contextUpdates.targetCountries = data.targetCountries
+      if (data.productDescription) contextUpdates.productDescription = data.productDescription
+      if (data.competitors) contextUpdates.competitors = data.competitors
+      if (data.targetIndustries) contextUpdates.targetIndustries = data.targetIndustries
+      if (data.complianceFlags) contextUpdates.complianceFlags = data.complianceFlags
+
+      // Update business context with extracted data
+      const businessUpdates: Parameters<typeof updateBusinessContext>[0] = {}
+      if (data.icp) businessUpdates.icp = data.icp
+      if (data.countries && Array.isArray(data.countries)) businessUpdates.countries = data.countries
+      if (data.products && Array.isArray(data.products)) businessUpdates.products = data.products
+      if (data.targetKeywords && Array.isArray(data.targetKeywords)) businessUpdates.targetKeywords = data.targetKeywords
+      if (data.competitorKeywords && Array.isArray(data.competitorKeywords)) businessUpdates.competitorKeywords = data.competitorKeywords
+
+      setHasUserMadeChanges(true)
       
-      toast.success('Website analyzed! Fields updated.')
-      setWebsiteUrl('') // Clear URL input after successful analysis
+      // Update both context types
+      if (Object.keys(contextUpdates).length > 0) {
+        updateContext(contextUpdates)
+      }
+      if (Object.keys(businessUpdates).length > 0) {
+        updateBusinessContext(businessUpdates)
+      }
+
+      toast.success('Website analyzed successfully')
+      // Keep URL visible - don't clear it so user can see what was analyzed
     } catch (error) {
-      console.error('Website analysis error:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to analyze website')
     } finally {
       setIsAnalyzing(false)
     }
-  }, [websiteUrl, updateContext])
+  }, [websiteUrl, context, updateContext])
+
+  const handleClearAll = useCallback(() => {
+    clearContext()
+    setHasUserMadeChanges(false)
+    setShowClearConfirmation(false)
+    toast.success('Context cleared')
+  }, [clearContext])
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-20 bg-secondary/50 rounded animate-pulse" />
+        <div className="h-32 bg-secondary/50 rounded animate-pulse" />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="text-xs text-muted-foreground mb-6">
-        Set up your company context variables. These will be available as <span className="font-mono text-primary">{'{{context.variableName}}'}</span> in your prompts when using Bulk Agent.
-      </div>
-
-      {/* Website Analysis - Like zola pattern with Analyze button */}
-      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
-        <div className="space-y-2">
-          <Label htmlFor="websiteUrl" className="flex items-center gap-2 text-xs font-medium">
-            Website URL (optional - auto-fills context)
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="websiteUrl"
-              type="text"
-              placeholder="yourcompany.com"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isAnalyzing && websiteUrl.trim()) {
-                  handleAnalyzeWebsite()
-                }
-              }}
-              className="text-sm flex-1"
-              disabled={isAnalyzing}
-            />
-            <Button
-              onClick={handleAnalyzeWebsite}
-              disabled={!websiteUrl.trim() || isAnalyzing}
-              size="sm"
-              className="text-xs"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                'Analyze'
-              )}
-            </Button>
-          </div>
-          {isAnalyzing && (
-            <div className="space-y-2">
-              <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
-                <div className="bg-primary h-full animate-pulse rounded-full" />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Using AI to analyze your company, product, and context...
-              </p>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Enter a website URL and click Analyze to automatically extract context, or fill fields manually below
-          </p>
-        </div>
-      </div>
-
+    <TooltipProvider delayDuration={300}>
       <div className="space-y-6">
+      {/* Website Analysis Section */}
+      <div className="border border-primary/20 bg-primary/5 rounded-lg p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-primary" />
+          <Label htmlFor="website-url" className="text-sm font-semibold text-foreground">
+            Analyze Website
+          </Label>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            id="website-url"
+            type="text"
+            placeholder="yourcompany.com or https://yourcompany.com"
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !isAnalyzing && websiteUrl.trim()) {
+                handleAnalyzeWebsite()
+              }
+            }}
+            disabled={isAnalyzing}
+            className="text-xs flex-1"
+          />
+          <Button
+            onClick={handleAnalyzeWebsite}
+            disabled={!websiteUrl.trim() || isAnalyzing}
+            size="sm"
+            className="text-xs font-medium"
+          >
+            {isAnalyzing ? (
+              <>
+                <div className="h-3.5 w-3.5 mr-1.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              'Analyze'
+            )}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Enter a website URL to automatically extract company context using AI
+        </p>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border" />
+
+      {/* Manual Context Fields */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs font-medium">Business Context Variables</Label>
+            {showSavedIndicator && (
+              <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 animate-in fade-in-0 duration-300">
+                <CheckCircle className="h-3 w-3" />
+                <span>Auto-saved</span>
+              </div>
+            )}
+            {!showSavedIndicator && hasContext && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CheckCircle className="h-3 w-3" />
+                <span>All changes saved automatically</span>
+              </div>
+            )}
+          </div>
+          {hasContext && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowClearConfirmation(true)}
+              className="text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              Clear All
+            </Button>
+          )}
+        </div>
+
         {/* Tone */}
         <div className="space-y-2">
-          <Label htmlFor="tone" className="flex items-center gap-2 text-xs font-medium">
-            <Target className="h-3.5 w-3.5 text-muted-foreground" />
-            Tone
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="tone" className="text-xs">
+              Tone
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about tone"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Tone</p>
+                  <p className="text-muted-foreground">
+                    The writing style and voice for AI-generated content. Use this in prompts with <code className="text-xs bg-secondary px-1 rounded">context.tone</code>.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Input
             id="tone"
+            type="text"
             placeholder="e.g., Professional, Friendly, Technical"
             value={context.tone || ''}
-            onChange={(e) => handleFieldChange('tone', e.target.value)}
-            className="text-sm"
+            onChange={(e) => handleManualUpdate({ tone: e.target.value })}
+            className="text-xs"
           />
-          <p className="text-xs text-muted-foreground">
-            Desired communication tone for outputs
-          </p>
         </div>
 
-        {/* Target Countries */}
+        {/* ICP */}
         <div className="space-y-2">
-          <Label htmlFor="targetCountries" className="flex items-center gap-2 text-xs font-medium">
-            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-            Target Countries
-          </Label>
-          <Input
-            id="targetCountries"
-            placeholder="e.g., US, UK, Canada, Germany"
-            value={context.targetCountries || ''}
-            onChange={(e) => handleFieldChange('targetCountries', e.target.value)}
-            className="text-sm"
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="icp" className="text-xs">
+              Ideal Customer Profile (ICP)
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about ICP"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Ideal Customer Profile</p>
+                  <p className="text-muted-foreground">
+                    Describe your ideal customer: industry, company size, pain points, etc. Used for AI classification and content generation.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <Textarea
+            id="icp"
+            placeholder="Describe your ideal customer: industry, company size, pain points, etc."
+            value={businessContext.icp || ''}
+            onChange={(e) => handleBusinessContextUpdate({ icp: e.target.value })}
+            rows={4}
+            className="text-xs resize-none"
           />
-          <p className="text-xs text-muted-foreground">
-            Comma-separated list of target countries
-          </p>
+        </div>
+
+        {/* Value Proposition */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="value-proposition" className="text-xs">
+              Value Proposition
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about value proposition"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Value Proposition</p>
+                  <p className="text-muted-foreground">
+                    A clear statement that explains how your product solves customers' problems, delivers specific benefits, and why customers should choose you over competitors.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <Textarea
+            id="value-proposition"
+            placeholder="We replace inconsistent, manual outreach with a scalable, data-driven, and automated AI sales engine..."
+            value={businessContext.valueProposition || ''}
+            onChange={(e) => handleBusinessContextUpdate({ valueProposition: e.target.value })}
+            rows={3}
+            className="text-xs resize-none"
+          />
+        </div>
+
+        {/* Marketing Goals */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs">Marketing Goals</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about marketing goals"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Marketing Goals</p>
+                  <p className="text-muted-foreground">
+                    Define your marketing objectives. Examples: Generate qualified leads, Build thought leadership, Dominate search results.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add marketing goal (e.g., Generate qualified leads)"
+              value={newMarketingGoal}
+              onChange={(e) => setNewMarketingGoal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addMarketingGoal()
+                }
+              }}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" onClick={addMarketingGoal}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          {businessContext.marketingGoals && businessContext.marketingGoals.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {businessContext.marketingGoals.map((goal, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
+                >
+                  {goal}
+                  <button
+                    type="button"
+                    onClick={() => removeMarketingGoal(index)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Countries */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs">Target Countries</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about target countries"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Target Countries</p>
+                  <p className="text-muted-foreground">
+                    Geographic markets for your business. Used for AI classification and content generation.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add country (e.g., United States)"
+              value={newCountry}
+              onChange={(e) => setNewCountry(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addCountry()
+                }
+              }}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" onClick={addCountry}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          {businessContext.countries && businessContext.countries.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {businessContext.countries.map((country, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
+                >
+                  {country}
+                  <button
+                    type="button"
+                    onClick={() => removeCountry(index)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Products */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs">Products</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about products"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Products</p>
+                  <p className="text-muted-foreground">
+                    Your product or service offerings. Used for AI classification and content generation.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add product name"
+              value={newProduct}
+              onChange={(e) => setNewProduct(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addProduct()
+                }
+              }}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" onClick={addProduct}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          {businessContext.products && businessContext.products.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {businessContext.products.map((product, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
+                >
+                  {product}
+                  <button
+                    type="button"
+                    onClick={() => removeProduct(index)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Product Description */}
         <div className="space-y-2">
-          <Label htmlFor="productDescription" className="flex items-center gap-2 text-xs font-medium">
-            <Package className="h-3.5 w-3.5 text-muted-foreground" />
-            Product Description
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="productDescription" className="text-xs">
+              Product Description
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about product description"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Product Description</p>
+                  <p className="text-muted-foreground">
+                    Brief overview of your product or service. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.productDescription</code>.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Textarea
             id="productDescription"
-            placeholder="Describe your product or service..."
+            placeholder="Brief description of your product or service"
             value={context.productDescription || ''}
-            onChange={(e) => handleFieldChange('productDescription', e.target.value)}
-            className="text-sm min-h-[100px]"
-            rows={4}
+            onChange={(e) => handleManualUpdate({ productDescription: e.target.value })}
+            rows={3}
+            className="text-xs resize-none"
           />
-          <p className="text-xs text-muted-foreground">
-            Brief description of your product or service
-          </p>
         </div>
 
         {/* Competitors */}
         <div className="space-y-2">
-          <Label htmlFor="competitors" className="flex items-center gap-2 text-xs font-medium">
-            <Users className="h-3.5 w-3.5 text-muted-foreground" />
-            Competitors
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="competitors" className="text-xs">
+              Competitors
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about competitors"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Competitors</p>
+                  <p className="text-muted-foreground">
+                    Main competitors to reference in content. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.competitors</code>.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Input
             id="competitors"
-            placeholder="e.g., Company A, Company B, Company C"
+            type="text"
+            placeholder="e.g., Salesforce, HubSpot"
             value={context.competitors || ''}
-            onChange={(e) => handleFieldChange('competitors', e.target.value)}
-            className="text-sm"
+            onChange={(e) => handleManualUpdate({ competitors: e.target.value })}
+            className="text-xs"
           />
-          <p className="text-xs text-muted-foreground">
-            Main competitors in your market
-          </p>
         </div>
 
         {/* Target Industries */}
         <div className="space-y-2">
-          <Label htmlFor="targetIndustries" className="flex items-center gap-2 text-xs font-medium">
-            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-            Target Industries
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="targetIndustries" className="text-xs">
+              Target Industries
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about target industries"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Target Industries</p>
+                  <p className="text-muted-foreground">
+                    Industries your content targets. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.targetIndustries</code>.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Input
             id="targetIndustries"
-            placeholder="e.g., SaaS, Healthcare, Finance"
+            type="text"
+            placeholder="e.g., SaaS, Technology, Healthcare"
             value={context.targetIndustries || ''}
-            onChange={(e) => handleFieldChange('targetIndustries', e.target.value)}
-            className="text-sm"
+            onChange={(e) => handleManualUpdate({ targetIndustries: e.target.value })}
+            className="text-xs"
           />
-          <p className="text-xs text-muted-foreground">
-            Industries you primarily target
-          </p>
         </div>
 
         {/* Compliance Flags */}
         <div className="space-y-2">
-          <Label htmlFor="complianceFlags" className="flex items-center gap-2 text-xs font-medium">
-            <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-            Compliance Flags
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="complianceFlags" className="text-xs">
+              Compliance Flags
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about compliance flags"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Compliance Flags</p>
+                  <p className="text-muted-foreground">
+                    Compliance standards to mention in content. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.complianceFlags</code>.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Input
             id="complianceFlags"
-            placeholder="e.g., GDPR, HIPAA, SOC2"
+            type="text"
+            placeholder="e.g., SOC2, GDPR, HIPAA"
             value={context.complianceFlags || ''}
-            onChange={(e) => handleFieldChange('complianceFlags', e.target.value)}
-            className="text-sm"
+            onChange={(e) => handleManualUpdate({ complianceFlags: e.target.value })}
+            className="text-xs"
           />
-          <p className="text-xs text-muted-foreground">
-            Relevant compliance requirements
-          </p>
+        </div>
+
+        {/* Target Keywords */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs">Target Keywords</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about target keywords"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Target Keywords</p>
+                  <p className="text-muted-foreground">
+                    Keywords to target in your content and campaigns.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add target keyword"
+              value={newTargetKeyword}
+              onChange={(e) => setNewTargetKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addTargetKeyword()
+                }
+              }}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" onClick={addTargetKeyword}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          {businessContext.targetKeywords && businessContext.targetKeywords.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {businessContext.targetKeywords.map((keyword, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
+                >
+                  {keyword}
+                  <button
+                    type="button"
+                    onClick={() => removeTargetKeyword(index)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Competitor Keywords */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs">Competitor Keywords</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Learn about competitor keywords"
+                >
+                  <HelpCircle className="h-3 w-3 cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <div className="space-y-1 text-xs">
+                  <p className="font-medium">Competitor Keywords</p>
+                  <p className="text-muted-foreground">
+                    Keywords to track for competitor monitoring.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add competitor keyword to track"
+              value={newCompetitorKeyword}
+              onChange={(e) => setNewCompetitorKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addCompetitorKeyword()
+                }
+              }}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" onClick={addCompetitorKeyword}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          {businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {businessContext.competitorKeywords.map((keyword, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
+                >
+                  {keyword}
+                  <button
+                    type="button"
+                    onClick={() => removeCompetitorKeyword(index)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-border">
-        <div className="text-xs text-muted-foreground">
-          {hasContext ? 'Context saved automatically' : 'No context variables set'}
-        </div>
-        {hasContext && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClear}
-            className="text-xs"
-          >
-            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-            Clear All
-          </Button>
-        )}
+      {/* GTM Classification - Integrated naturally with other fields */}
+      <GTMClassificationForm
+        initialContext={gtmProfile ? {
+          gtm_playbook: gtmProfile.gtmPlaybook as any,
+          product_type: gtmProfile.productType,
+          gtm_playbook_confidence: gtmProfile.gtmPlaybookConfidence,
+          product_type_confidence: gtmProfile.productTypeConfidence,
+          gtm_playbook_ai_suggested: gtmProfile.gtmPlaybookAISuggested,
+          product_type_ai_suggested: gtmProfile.productTypeAISuggested,
+          gtm_playbook_manually_overridden: gtmProfile.gtmPlaybookManuallyOverridden,
+          product_type_manually_overridden: gtmProfile.productTypeManuallyOverridden,
+          gtm_playbook_ai_suggestion: gtmProfile.gtmPlaybookAISuggestion as any,
+          product_type_ai_suggestion: gtmProfile.productTypeAISuggestion,
+        } as BusinessContextType : undefined}
+        onUpdate={async (playbook, productType) => {
+          setHasUserMadeChanges(true)
+          await updateGTMProfile({
+            gtmPlaybook: playbook || undefined,
+            productType: productType || undefined,
+          })
+        }}
+        icp={businessContext.icp}
+        products={businessContext.products}
+        countries={businessContext.countries}
+      />
+
+      {/* Clear All Confirmation Modal */}
+      <Modal
+        isOpen={showClearConfirmation}
+        onClose={() => setShowClearConfirmation(false)}
+        title="Clear all context?"
+        titleIcon={AlertTriangle}
+        titleIconColor="text-yellow-500"
+        size="sm"
+        ariaLabelledBy="clear-context-title"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowClearConfirmation(false)}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearAll}
+              className="text-xs"
+            >
+              Clear All
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-muted-foreground">
+          This will clear all business context variables and business context. GTM profile will be preserved. This action cannot be undone.
+        </p>
+      </Modal>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }

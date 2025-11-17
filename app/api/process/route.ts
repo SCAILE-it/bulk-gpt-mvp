@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { validatePrompt } from '@/lib/validation'
 import { checkRateLimits, releaseBatch } from '@/middleware/rateLimits'
-import { logError } from '@/lib/errors'
+import { logError, logDebug, logWarning } from '@/lib/utils/logger'
 import { authenticateRequest } from '@/lib/auth-middleware'
 import { checkUsageLimits } from '@/lib/api-keys'
 import { GTMAPIClient } from '@/lib/api/gtm-client'
 import type { EnrichRowResponse } from '@/lib/types/gtm-types'
+import { createResourcesFromBatch } from '@/lib/utils/batch-to-resources'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
 
@@ -112,9 +113,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     // GTM BACKEND ROUTING - Process with enrichment tools if selected
     // ========================================================================
     if (tools && tools.length > 0) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[GTM] Tools selected (${tools.length}): ${tools.join(', ')}`)
-      }
+      logDebug(`[GTM] Tools selected (${tools.length}): ${tools.join(', ')}`)
 
       try {
         // Get user session token for GTM authentication
@@ -124,14 +123,10 @@ export async function POST(request: NextRequest): Promise<Response> {
         const authToken = session?.access_token || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
         if (!authToken) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[GTM] No auth token available, falling back to Modal')
-          }
+          logWarning('[GTM] No auth token available, falling back to Modal')
           // Fall through to Modal processor below
         } else {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[GTM] Calling GTM backend with auth token')
-          }
+          logDebug('[GTM] Calling GTM backend with auth token')
 
           // Create GTM client with authentication
           const gtmClient = new GTMAPIClient({ authToken })
@@ -142,13 +137,11 @@ export async function POST(request: NextRequest): Promise<Response> {
             tools: tools,
           })
 
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[GTM] Batch enrichment successful:', {
-              totalRows: gtmResponse.totalRows,
-              successfulRows: gtmResponse.successfulRows,
-              failedRows: gtmResponse.failedRows,
-            })
-          }
+          logDebug('[GTM] Batch enrichment successful:', {
+            totalRows: gtmResponse.totalRows,
+            successfulRows: gtmResponse.successfulRows,
+            failedRows: gtmResponse.failedRows,
+          })
 
           // Create batch record in database
           const batchId = gtmResponse.batchId
@@ -167,9 +160,8 @@ export async function POST(request: NextRequest): Promise<Response> {
             })
 
           if (batchInsertError) {
-            logError(new Error('Failed to create GTM batch record'), {
+            logError('Failed to create GTM batch record', batchInsertError, {
               source: 'api/process/GTM',
-              supabaseError: batchInsertError,
               batchId
             })
             // Continue anyway - data is enriched, just can't track in DB
@@ -192,12 +184,17 @@ export async function POST(request: NextRequest): Promise<Response> {
             .insert(resultsToInsert)
 
           if (resultsInsertError) {
-            logError(new Error('Failed to store GTM results'), {
+            logError('Failed to store GTM results', resultsInsertError, {
               source: 'api/process/GTM',
-              supabaseError: resultsInsertError,
               batchId
             })
           }
+
+          // Create resources from batch results (for GTM/bulk-agent)
+          // Don't await - let it run in background
+          createResourcesFromBatch(batchId).catch((error) => {
+            logError('[PROCESS] Error creating resources (non-fatal)', error)
+          })
 
           // Return success response (batch complete immediately - no Modal polling needed)
           return NextResponse.json(
@@ -213,12 +210,11 @@ export async function POST(request: NextRequest): Promise<Response> {
         }
       } catch (gtmError) {
         // Log GTM error but don't fail - fall back to Modal processor
-        logError(gtmError instanceof Error ? gtmError : new Error('GTM enrichment failed'), {
+        logError('GTM enrichment failed, falling back to Modal', gtmError, {
           source: 'api/process/GTM_FALLBACK',
           tools,
           rowCount: rows.length
         })
-        console.warn('[GTM] Enrichment failed, falling back to Modal:', gtmError instanceof Error ? gtmError.message : 'Unknown error')
         // Fall through to Modal processor below
       }
     }
@@ -245,9 +241,8 @@ export async function POST(request: NextRequest): Promise<Response> {
         .select()
 
       if (error) {
-        logError(new Error('Failed to create batch'), {
+        logError('Failed to create batch', error, {
           source: 'api/process/POST',
-          supabaseError: error,
           batchId
         })
         return NextResponse.json(
@@ -256,7 +251,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         )
       }
     } catch (dbError) {
-      logError(dbError instanceof Error ? dbError : new Error('Database error'), {
+      logError('Database error', dbError, {
         source: 'api/process/POST/database',
         batchId
       })
@@ -281,19 +276,17 @@ export async function POST(request: NextRequest): Promise<Response> {
         .eq('id', batchId)
 
       if (updateError) {
-        console.warn('[POLLING] Failed to update batch with processing data:', updateError)
+        logWarning('[POLLING] Failed to update batch with processing data', { updateError })
         // Continue anyway - batch is created, Modal can still try to process
       }
     } catch (updateErr) {
-      console.warn('[POLLING] Error updating batch data:', updateErr)
+      logWarning('[POLLING] Error updating batch data', { updateErr })
     }
 
     // No HTTP call to Modal - Modal will poll database for pending batches
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[POLLING] Batch created and marked as pending')
-      console.log('[POLLING] Modal poller will pick up batch within 10 seconds')
-      console.log(`[POLLING] Batch ID: ${batchId}, Rows: ${rows.length}`)
-    }
+    logDebug('[POLLING] Batch created and marked as pending')
+    logDebug('[POLLING] Modal poller will pick up batch within 10 seconds')
+    logDebug(`[POLLING] Batch ID: ${batchId}, Rows: ${rows.length}`)
 
     // Return immediately with batch ID
     return NextResponse.json(
@@ -308,10 +301,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    logError(error instanceof Error ? error : new Error('Process API error'), {
-      source: 'api/process/POST',
-      userId
-    })
+      logError('Process API error', error, {
+        source: 'api/process/POST',
+        userId
+      })
     // Release rate limit on error
     if (userId) {
       releaseBatch(userId)

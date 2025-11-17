@@ -2,6 +2,9 @@
  * Core type definitions for BULK-GPT MVP
  */
 
+// Re-export agent types
+export * from './types/agents'
+
 /**
  * Custom error class - re-exported from errors.ts for consistency
  */

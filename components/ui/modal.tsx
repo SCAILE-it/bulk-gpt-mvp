@@ -51,7 +51,11 @@ export function Modal({
   ariaLabelledBy,
   className,
 }: ModalProps) {
-  const modalRef = useFocusTrap<HTMLDivElement>(isOpen)
+  const modalRef = useFocusTrap({
+    enabled: isOpen,
+    onEscape: onClose,
+    returnFocus: true,
+  })
   const generatedId = React.useId()
   const titleId = ariaLabelledBy || `modal-title-${generatedId}`
 

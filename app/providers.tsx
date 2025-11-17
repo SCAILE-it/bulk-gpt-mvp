@@ -2,15 +2,25 @@
 
 import { ThemeProvider } from 'next-themes'
 import { useEffect } from 'react'
-import { analytics } from '@/lib/analytics'
+import { initWebVitals } from '@/lib/analytics/web-vitals'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Initialize analytics on mount (async)
-    analytics.init().catch((error) => {
-      // Silently fail if analytics initialization fails
-      console.error('Analytics initialization failed:', error)
-    })
+    // Initialize Web Vitals tracking
+    initWebVitals()
+    
+    // Initialize analytics on mount (async) if available
+    try {
+      const { analytics } = require('@/lib/analytics')
+      if (analytics?.init) {
+        analytics.init().catch((error: unknown) => {
+          // Silently fail if analytics initialization fails
+          console.error('Analytics initialization failed:', error)
+        })
+      }
+    } catch (error: unknown) {
+      // Analytics module not available, continue without it
+    }
   }, [])
   
   return (

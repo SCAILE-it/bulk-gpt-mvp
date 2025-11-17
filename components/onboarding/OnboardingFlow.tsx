@@ -59,8 +59,8 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
   const CurrentIcon = currentStep.icon
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <Card className="max-w-2xl w-full shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+      <Card className="max-w-2xl w-full shadow-xl animate-slide-in-up">
         <div className="relative p-6">
           {/* Close button */}
           <button
@@ -86,7 +86,7 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
 
           {/* Step content */}
           <div className="text-center space-y-4 mb-6">
-            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center animate-pulse">
               <CurrentIcon className="h-8 w-8 text-primary" aria-hidden="true" />
             </div>
             <h2 className="text-base font-semibold text-foreground">
@@ -95,6 +95,12 @@ export function OnboardingFlow({ onDismiss, onComplete }: OnboardingFlowProps) {
             <p className="text-muted-foreground max-w-md mx-auto">
               {currentStep.description}
             </p>
+            {currentStep.example && (
+              <div className="mt-4 p-3 bg-secondary/50 border border-border rounded-md text-left">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Example:</p>
+                <p className="text-xs text-foreground font-mono">{currentStep.example}</p>
+              </div>
+            )}
           </div>
 
           {/* Navigation */}

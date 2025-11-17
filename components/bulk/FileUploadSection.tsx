@@ -5,7 +5,7 @@
 
 import { forwardRef, useRef, useImperativeHandle } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, CheckCircle, Loader2, FileSpreadsheet } from 'lucide-react'
+import { Upload, CheckCircle, FileSpreadsheet } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 
@@ -123,7 +123,7 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
                   {csvData.rows.slice(0, 5).map((row, i) => (
                     <tr
                       key={i}
-                      className={`border-b border-border/30 last:border-0 ${i % 2 === 0 ? 'bg-muted/10' : 'bg-transparent'}`}
+                      className={`border-b border-border last:border-0 ${i % 2 === 0 ? 'bg-muted/10' : 'bg-transparent'}`}
                     >
                       {csvData.columns.map(col => {
                         const isSelected = selectedInputColumns?.includes(col) ?? true
@@ -164,7 +164,7 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
           <input {...getInputProps()} ref={localRef} className="hidden" data-testid="file-input" />
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+              <div className="h-5 w-5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
               <p className="text-xs text-muted-foreground">Uploading...</p>
             </div>
           ) : (

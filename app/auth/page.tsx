@@ -27,14 +27,14 @@ function AuthPageContent() {
 
   const handleSuccess = () => {
     // Get returnUrl from query params with validation
-    const returnUrl = searchParams.get('returnUrl') || '/bulk'
+    const returnUrl = searchParams.get('returnUrl') || '/agents'
 
     // Validate before redirecting (SECURITY - prevent open redirect)
     if (isValidReturnUrl(returnUrl)) {
       router.push(returnUrl)
     } else {
       // Invalid returnUrl, use safe fallback
-      router.push('/bulk')
+      router.push('/agents')
     }
 
     router.refresh()
@@ -50,7 +50,14 @@ function AuthPageContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-md bg-card border border-border rounded-lg overflow-hidden shadow-lg">
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+      <div id="main-content" className="w-full max-w-md bg-card border border-border rounded-lg overflow-hidden shadow-lg" tabIndex={-1}>
         <div className="px-6 py-6 text-center border-b border-border">
           <div className="mx-auto mb-4 flex justify-center">
             <Logo size="lg" showText={false} />
@@ -65,7 +72,7 @@ function AuthPageContent() {
             mode={mode}
             onModeChange={setMode}
             onSuccess={handleSuccess}
-            returnUrl={searchParams.get('returnUrl') || '/bulk'}
+            returnUrl={searchParams.get('returnUrl') || '/agents'}
           />
         </div>
       </div>

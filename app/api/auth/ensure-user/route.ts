@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { logError } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
@@ -21,13 +22,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       })
 
     if (error) {
-      console.error('Error ensuring user exists:', error)
+      logError('Error ensuring user exists', error, { userId, email })
       return NextResponse.json({ error: 'Failed to create user record' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error in ensure-user:', error)
+    logError('Error in ensure-user', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

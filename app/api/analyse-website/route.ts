@@ -13,12 +13,19 @@ import { authenticateRequest } from '@/lib/auth-middleware'
  * 
  * Returns:
  * {
+ *   // Context Variables
  *   tone?: string
  *   targetCountries?: string
  *   productDescription?: string
  *   competitors?: string
  *   targetIndustries?: string
  *   complianceFlags?: string
+ *   // Business Context
+ *   icp?: string
+ *   countries?: string[]
+ *   products?: string[]
+ *   targetKeywords?: string[]
+ *   competitorKeywords?: string[]
  * }
  */
 
@@ -26,23 +33,36 @@ const SYSTEM_PROMPT = `You are an expert at analyzing company websites and extra
 
 Given a website's HTML content, extract the following information:
 
+**Context Variables:**
 1. **Tone**: The communication style/tone used on the website (e.g., "Professional", "Friendly", "Technical", "Casual", "Formal")
-2. **Target Countries**: Countries or regions the company targets (look for "We serve", "Available in", location mentions, etc.)
+2. **Target Countries**: Countries or regions the company targets (comma-separated string, e.g., "US, UK, Canada")
 3. **Product Description**: A brief description of the main product or service (2-3 sentences max)
-4. **Competitors**: Any competitors mentioned or implied (if not mentioned, leave empty)
-5. **Target Industries**: Industries or sectors the company targets (look for "For [industry]", customer testimonials mentioning industries, etc.)
-6. **Compliance Flags**: Any compliance certifications or standards mentioned (GDPR, HIPAA, SOC2, ISO, etc.)
+4. **Competitors**: Any competitors mentioned or implied (comma-separated string, e.g., "Salesforce, HubSpot")
+5. **Target Industries**: Industries or sectors the company targets (comma-separated string, e.g., "SaaS, Technology, Sales")
+6. **Compliance Flags**: Any compliance certifications or standards mentioned (comma-separated string, e.g., "SOC2, GDPR")
 
-Return ONLY a valid JSON object with these fields. If a field cannot be determined, omit it or set it to an empty string.
+**Business Context:**
+7. **ICP (Ideal Customer Profile)**: Describe the ideal customer based on website content - company size, industry, pain points, etc. (2-3 sentences)
+8. **Countries**: Array of specific countries/regions mentioned (e.g., ["United States", "United Kingdom", "Canada"])
+9. **Products**: Array of product names or service offerings mentioned (e.g., ["CRM", "Marketing Automation", "Sales Analytics"])
+10. **Target Keywords**: Array of key terms/phrases the company seems to target (e.g., ["crm software", "sales automation", "lead management"])
+11. **Competitor Keywords**: Array of competitor names or brands mentioned (e.g., ["Salesforce", "HubSpot", "Pipedrive"])
+
+Return ONLY a valid JSON object with these fields. If a field cannot be determined, omit it or set arrays to empty arrays [].
 
 Example output:
 {
   "tone": "Professional",
   "targetCountries": "US, UK, Canada",
   "productDescription": "Cloud-based CRM platform for sales teams",
-  "competitors": "",
+  "competitors": "Salesforce, HubSpot",
   "targetIndustries": "SaaS, Technology, Sales",
-  "complianceFlags": "SOC2, GDPR"
+  "complianceFlags": "SOC2, GDPR",
+  "icp": "B2B SaaS companies with 50-500 employees looking for sales automation and CRM solutions",
+  "countries": ["United States", "United Kingdom", "Canada"],
+  "products": ["CRM", "Sales Automation", "Lead Management"],
+  "targetKeywords": ["crm software", "sales automation", "lead management"],
+  "competitorKeywords": ["Salesforce", "HubSpot"]
 }`
 
 export const maxDuration = 30 // Max 30 seconds for website analysis
@@ -148,9 +168,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    // Initialize Gemini client
+    // Initialize Gemini client with Google Search Grounding
+    // Uses web search to get more accurate and up-to-date information about the company
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      tools: [{ googleSearchRetrieval: {} }]
+    })
 
     // Build prompt
     const fullPrompt = `${SYSTEM_PROMPT}
@@ -185,12 +209,32 @@ Extract the company context information and return JSON.`
       const parsed = JSON.parse(jsonText)
 
       // Validate and clean response
-      const response: Record<string, string> = {}
+      const response: Record<string, any> = {}
       
-      const fields = ['tone', 'targetCountries', 'productDescription', 'competitors', 'targetIndustries', 'complianceFlags']
-      for (const field of fields) {
+      // Context Variables (strings)
+      const stringFields = ['tone', 'targetCountries', 'productDescription', 'competitors', 'targetIndustries', 'complianceFlags']
+      for (const field of stringFields) {
         if (parsed[field] && typeof parsed[field] === 'string' && parsed[field].trim().length > 0) {
           response[field] = parsed[field].trim()
+        }
+      }
+      
+      // Business Context - ICP (string)
+      if (parsed.icp && typeof parsed.icp === 'string' && parsed.icp.trim().length > 0) {
+        response.icp = parsed.icp.trim()
+      }
+      
+      // Business Context - Arrays
+      const arrayFields = ['countries', 'products', 'targetKeywords', 'competitorKeywords']
+      for (const field of arrayFields) {
+        if (parsed[field] && Array.isArray(parsed[field])) {
+          // Filter out empty strings and trim
+          const cleaned = parsed[field]
+            .filter((item: any) => typeof item === 'string' && item.trim().length > 0)
+            .map((item: string) => item.trim())
+          if (cleaned.length > 0) {
+            response[field] = cleaned
+          }
         }
       }
 

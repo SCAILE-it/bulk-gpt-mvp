@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { releaseBatch } from '@/middleware/rateLimits'
 import { authenticateRequest } from '@/lib/auth-middleware'
+import { logError } from '@/lib/utils/logger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -113,7 +114,7 @@ export async function GET(
             controller.close()
           }
         } catch (error) {
-          console.error('Stream error:', error)
+          logError('Stream error', error, { batchId })
           sendEvent('error', { message: 'Stream error' })
           clearInterval(interval)
           controller.close()

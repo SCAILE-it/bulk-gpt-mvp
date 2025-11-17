@@ -2,6 +2,147 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Screen reader only - visually hidden but accessible to assistive technologies */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Mobile touch improvements */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Responsive typography utilities */
+@media (max-width: 640px) {
+  .text-responsive {
+    font-size: clamp(0.75rem, 2.5vw, 0.875rem);
+  }
+  
+  .text-responsive-lg {
+    font-size: clamp(0.875rem, 3vw, 1rem);
+  }
+  
+  .text-responsive-xl {
+    font-size: clamp(1rem, 4vw, 1.25rem);
+  }
+}
+
+/* Mobile-optimized spacing */
+@media (max-width: 640px) {
+  .mobile-px {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .mobile-py {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .mobile-gap {
+    gap: 0.75rem;
+  }
+}
+
+/* Ensure all interactive elements meet touch target minimum */
+@media (max-width: 640px) {
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Allow exceptions for specific cases */
+  button.size-sm,
+  .touch-target-sm {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* Enhanced focus indicators for accessibility */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* Enhanced focus indicators for better visibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
+/* High contrast focus for better visibility */
+@media (prefers-contrast: high) {
+  *:focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 3px;
+  }
+}
+
+/* Focus indicators for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Safe area insets for mobile devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Fade-in animation for skeleton loaders */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-in;
+}
+
+@import "react-day-picker/dist/style.css";
+
 /* Ensure Geist fonts are base layer */
 @layer base {
   body {
@@ -113,10 +254,22 @@
   .rounded-2xl { border-radius: 1rem !important; }    /* 16px */
 
   /* Smooth transitions - Cursor-inspired subtle animations */
+  /* NOTE: transform excluded to prevent tooltip animations */
+  /* Using GPU-accelerated properties (opacity, transform) for better performance */
   * {
-    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow;
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* GPU acceleration hints for animated elements */
+  .animate-fade-in,
+  .animate-slide-in-up,
+  .animate-slide-in-down,
+  .animate-scale-in,
+  .animate-shimmer,
+  [class*="motion-"] {
+    will-change: transform, opacity;
   }
 
   /* Disable transitions for animations and specific elements */
@@ -185,6 +338,42 @@
   }
 }
 
+@keyframes slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes checkmark {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 @keyframes slide-in-right {
   from {
     opacity: 0;
@@ -196,12 +385,127 @@
   }
 }
 
+/* Shimmer animation for skeletons - Cursor-style */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+  transform: translateX(-100%);
+}
+
+.dark .animate-shimmer::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+}
+
+/* Auto-Skeleton: Automatically generate skeletons from component structure */
+.skeleton-auto {
+  pointer-events: none;
+  user-select: none;
+}
+
+.skeleton-auto * {
+  color: transparent !important;
+  background: hsl(var(--muted)) !important;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 2s infinite !important;
+  border-color: hsl(var(--border)) !important;
+  box-shadow: none !important;
+}
+
+.skeleton-auto img,
+.skeleton-auto svg,
+.skeleton-auto [role="img"],
+.skeleton-auto [data-icon] {
+  opacity: 0.1;
+  filter: grayscale(100%);
+}
+
+.skeleton-auto input,
+.skeleton-auto textarea,
+.skeleton-auto select,
+.skeleton-auto button {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.skeleton-auto a {
+  pointer-events: none !important;
+}
+
+/* Preserve layout structure */
+.skeleton-auto [class*="flex"],
+.skeleton-auto [class*="grid"],
+.skeleton-auto [class*="space-"] {
+  display: inherit !important;
+}
+
+/* Dark mode adjustments */
+.dark .skeleton-auto * {
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  ) !important;
+}
+
 @keyframes progress-shimmer {
   0% {
     background-position: -200% 0;
   }
   100% {
     background-position: 200% 0;
+  }
+}
+
+/* Success pulse animation for completed rows */
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -214,13 +518,117 @@
   animation: slide-in-up 300ms ease-out;
 }
 
+.animate-slide-in-down {
+  animation: slide-in-down 200ms ease-out;
+}
+
 .animate-slide-in-right {
   animation: slide-in-right 300ms ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 200ms ease-out;
+}
+
+.animate-checkmark {
+  animation: checkmark 0.3s ease-out;
 }
 
 .animate-progress-shimmer {
   background-size: 200% 100%;
   animation: progress-shimmer 1.5s linear infinite;
+}
+
+.animate-success-pulse {
+  animation: successPulse 0.6s ease-out;
+}
+
+/* Count-up animation for success numbers */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.2s ease-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Table row hover */
+tbody tr {
+  transition: background-color 0.15s ease-out;
+}
+
+tbody tr:hover {
+  background-color: hsl(var(--accent) / 0.3);
+}
+
+/* Error message slide-in */
+.error-message {
+  animation: slide-in-down 0.2s ease-out;
+}
+
+/* Success checkmark animation */
+.success-checkmark {
+  animation: checkmark 0.3s ease-out;
+}
+
+.animate-count-up {
+  animation: countUp 0.3s ease-out;
+}
+
+/* Batch success celebration animation */
+@keyframes batchSuccessCelebration {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.batch-success-celebration {
+  animation: batchSuccessCelebration 0.6s ease-out;
+}
+
+.batch-success-celebration::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 9999;
+  animation: fade-in 0.3s ease-out, fade-out 0.3s ease-out 0.3s forwards;
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* Staggered animation delays for loading dots */
@@ -232,21 +640,65 @@
   animation-delay: 300ms;
 }
 
-/* Override Radix UI tooltip animations - tooltips appear instantly on hover without flying animation */
-[data-radix-tooltip-content] {
+/* Disable tooltip animations - Radix uses transforms for positioning */
+[data-radix-tooltip-content],
+[data-radix-portal] [data-radix-tooltip-content],
+[data-radix-tooltip-content][data-state],
+[data-radix-tooltip-content] * {
+  transition: none !important;
   animation: none !important;
-  transform: none !important;
-  transition: opacity 100ms ease-in-out !important;
 }
 
-[data-radix-tooltip-content][data-state="delayed-open"] {
-  animation: none !important;
-  transform: none !important;
+[data-radix-tooltip-content][data-state="delayed-open"],
+[data-radix-tooltip-content][data-state="instant-open"] {
   opacity: 1 !important;
+  visibility: visible !important;
 }
 
 [data-radix-tooltip-content][data-state="closed"] {
-  animation: none !important;
-  transform: none !important;
   opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Recharts Tooltip Overrides - Remove white background */
+/* Based on gtm-os-v2 fix */
+.recharts-tooltip-wrapper {
+  background-color: transparent !important;
+  background: transparent !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Target all possible wrapper variations */
+.recharts-tooltip-wrapper,
+.recharts-tooltip-wrapper > div,
+.recharts-default-tooltip-wrapper {
+  background-color: transparent !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Override default tooltip content styles - make wrapper transparent */
+.recharts-default-tooltip {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.recharts-tooltip-label {
+  color: hsl(var(--foreground)) !important;
+  font-weight: 500 !important;
+  margin-bottom: 4px !important;
+}
+
+.recharts-tooltip-item {
+  color: hsl(var(--foreground)) !important;
+  padding: 2px 0 !important;
 }

@@ -9,9 +9,9 @@ import path from 'path'
 
 const authFile = path.join(__dirname, '../playwright/.auth/user.json')
 
-// Test user credentials - using new user to bypass rate limit
+// Test user credentials
 const TEST_USER = {
-  email: 'e2e-test-1762354355023@bulkgpt.local',
+  email: 'test@bulkgpt.local',
   password: 'E2ETest123456!'
 }
 

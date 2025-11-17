@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextResponse } from 'next/server'
 import { ALL_GTM_TOOLS } from '@/lib/types/gtm-types'
+import { logError } from '@/lib/utils/logger'
 
 // ABOUTME: Server-side API route for AI-powered job optimization
 // ABOUTME: Analyzes user prompts and suggests improvements + output columns + tool suggestions
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-      console.error('GEMINI_API_KEY not configured')
+      logError('GEMINI_API_KEY not configured')
       return NextResponse.json(
         { error: 'API not configured', fallback: true },
         { status: 500 }
@@ -193,7 +194,7 @@ Optimize the requested aspects and return JSON.`
       throw error
     }
   } catch (error) {
-    console.error('Optimization error:', error)
+    logError('Optimization error', error)
 
     // Return fallback indicating optimization failed
     return NextResponse.json(

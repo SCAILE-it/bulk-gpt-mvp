@@ -1,4 +1,5 @@
 import { Nav } from '@/components/layout/nav'
+import { SkipLink } from '@/components/ui/skip-link'
 
 export default function AuthenticatedLayout({
   children,
@@ -7,8 +8,11 @@ export default function AuthenticatedLayout({
 }) {
   return (
     <div className="h-screen flex flex-col">
+      <SkipLink href="#main-content" />
       <Nav />
-      <div className="flex-1 overflow-hidden">{children}</div>
+      <main id="main-content" className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   )
 }

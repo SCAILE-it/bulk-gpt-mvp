@@ -1,26 +1,24 @@
 {
-  "name": "Bulk GPT - Batch Process CSV with AI",
+  "name": "Bulk GPT",
   "short_name": "Bulk GPT",
-  "description": "Transform CSV data at scale with AI. Upload your spreadsheet, define custom prompts, and process thousands of rows using Google Gemini AI.",
+  "description": "AI-powered bulk processing tool",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#3b82f6",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/logo.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
-  ],
-  "categories": ["productivity", "business"],
-  "screenshots": []
+  ]
 }
-

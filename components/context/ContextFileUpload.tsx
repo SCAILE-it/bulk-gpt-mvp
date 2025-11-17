@@ -1,11 +1,15 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useMemo } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, FileText, FileSpreadsheet, File, X, CheckCircle, Loader2 } from 'lucide-react'
+import { Upload, FileText, FileSpreadsheet, File, X, CheckCircle, Search, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useContextFiles } from '@/hooks/useContextFiles'
+import { AutoSkeleton } from '@/components/ui/auto-skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const ACCEPTED_FILE_TYPES = {
   'text/csv': ['.csv'],
@@ -35,13 +39,17 @@ function formatFileSize(bytes: number): string {
 }
 
 export function ContextFileUpload() {
-  const { files, isLoading, uploadFile, deleteFile } = useContextFiles()
+  const { files, isLoading, uploadFile, deleteFile, updateFileTags } = useContextFiles()
   const [uploading, setUploading] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [editingTags, setEditingTags] = useState<string | null>(null)
+  const [newTagInput, setNewTagInput] = useState('')
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     for (const file of acceptedFiles) {
       if (file.size > MAX_FILE_SIZE) {
-        continue // Error toast handled by uploadFile
+        continue
       }
 
       setUploading(file.name)
@@ -60,6 +68,8 @@ export function ContextFileUpload() {
     accept: ACCEPTED_FILE_TYPES,
     multiple: true,
     maxSize: MAX_FILE_SIZE,
+    noClick: false,
+    noKeyboard: false,
   })
 
   const removeFile = useCallback(async (fileId: string) => {
@@ -70,10 +80,76 @@ export function ContextFileUpload() {
     }
   }, [deleteFile])
 
+  // Get all unique tags from files
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    files.forEach(file => {
+      (file.tags || []).forEach(tag => tagSet.add(tag))
+    })
+    return Array.from(tagSet).sort()
+  }, [files])
+
+  // Filter files by search query and selected tag
+  const filteredFiles = useMemo(() => {
+    let filtered = files
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(file =>
+        file.name.toLowerCase().includes(query) ||
+        (file.tags || []).some(tag => tag.includes(query))
+      )
+    }
+
+    // Filter by selected tag
+    if (selectedTag) {
+      filtered = filtered.filter(file =>
+        (file.tags || []).includes(selectedTag)
+      )
+    }
+
+    return filtered
+  }, [files, searchQuery, selectedTag])
+
+  // Save tags to API
+  const saveTags = useCallback(async (fileId: string, tags: string[]) => {
+    try {
+      await updateFileTags(fileId, tags)
+      setEditingTags(null)
+      setNewTagInput('')
+    } catch (error) {
+      // Error handled by updateFileTags
+    }
+  }, [updateFileTags])
+
+  // Add tag
+  const addTag = useCallback((fileId: string, tag: string) => {
+    const trimmedTag = tag.trim().toLowerCase()
+    if (!trimmedTag) return
+    
+    const file = files.find(f => f.id === fileId)
+    if (!file) return
+
+    const currentTags = file.tags || []
+    if (currentTags.includes(trimmedTag)) return
+
+    saveTags(fileId, [...currentTags, trimmedTag])
+  }, [files, saveTags])
+
+  // Remove tag
+  const removeTag = useCallback((fileId: string, tagToRemove: string) => {
+    const file = files.find(f => f.id === fileId)
+    if (!file) return
+
+    const updatedTags = (file.tags || []).filter(tag => tag !== tagToRemove)
+    saveTags(fileId, updatedTags)
+  }, [files, saveTags])
+
   return (
     <div className="space-y-4">
       <div className="text-xs text-muted-foreground mb-4">
-        Upload files to use as context in your Bulk Agent prompts. Supported formats: CSV, XLSX, PDF, DOCX
+        Upload files to use as context in your agent prompts. Supported formats: CSV, XLSX, PDF, DOCX
       </div>
 
       {/* Dropzone */}
@@ -91,75 +167,259 @@ export function ContextFileUpload() {
         <p className="text-sm font-medium mb-1">
           {isDragActive ? 'Drop files here' : 'Drag & drop files here'}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground mb-3">
           or click to browse • Max 10MB per file
         </p>
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-xs text-muted-foreground mt-3">
           CSV, XLSX, PDF, DOCX
         </p>
       </div>
 
-      {/* Loading State */}
-      {isLoading && files.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <Loader2 className="h-12 w-12 mx-auto mb-3 animate-spin opacity-50" />
-          <p className="text-xs">Loading files...</p>
-        </div>
-      )}
-
       {/* File List */}
-      {files.length > 0 && (
+      <AutoSkeleton isLoading={isLoading && files.length === 0}>
+        {files.length > 0 ? (
+          <div className="space-y-3">
+          {/* Search and Filters */}
         <div className="space-y-2">
-          <h3 className="text-xs font-medium">Uploaded Files ({files.length})</h3>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search files..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-8 h-8 text-xs"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+
+            {/* Tag Filters */}
+            {allTags.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">Filter:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge
+                    variant={selectedTag === null ? 'default' : 'outline'}
+                    className="cursor-pointer text-xs"
+                    onClick={() => setSelectedTag(null)}
+                  >
+                    All
+                  </Badge>
+                  {allTags.map(tag => (
+                    <Badge
+                      key={tag}
+                      variant={selectedTag === tag ? 'default' : 'outline'}
+                      className="cursor-pointer text-xs"
+                      onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Files Count */}
+            {filteredFiles.length !== files.length && (
+              <p className="text-xs text-muted-foreground">
+                Showing {filteredFiles.length} of {files.length} files
+              </p>
+            )}
+          </div>
+
+          {/* Files List */}
           <div className="space-y-2">
-            {files.map((file) => {
+            {filteredFiles.length === 0 ? (
+              <EmptyState
+                icon={Search}
+                title="No files match your search"
+                description={searchQuery ? `No files found matching "${searchQuery}". Try a different search term or clear the search.` : 'No files found. Try adjusting your filters or tags.'}
+                size="sm"
+                className="py-6"
+                action={
+                  searchQuery || selectedTag
+                    ? {
+                        label: 'Clear Filters',
+                        onClick: () => {
+                          setSearchQuery('')
+                          setSelectedTag(null)
+                        },
+                        variant: 'outline',
+                      }
+                    : undefined
+                }
+              />
+            ) : (
+              filteredFiles.map((file) => {
               const Icon = getFileIcon(file.type)
               const isFileUploading = uploading === file.name
+                const fileTags = file.tags || []
+                const isEditingTags = editingTags === file.id
 
               return (
                 <div
                   key={file.id}
-                  className="flex items-center gap-3 p-3 bg-secondary/40 border border-border rounded-lg"
+                    className="group p-3 bg-secondary/40 border border-border rounded-lg hover:bg-secondary/60 transition-colors"
                 >
-                  <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex items-start gap-3">
+                      <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-xs font-medium truncate">{file.name}</p>
+                      {file.fileType && file.fileType !== 'manual' && (
+                            <Badge variant="outline" className="text-xs px-1.5 py-0">
+                          {file.fileType === 'input' ? 'Input' : 'Output'}
+                            </Badge>
+                      )}
+                    </div>
+                        <p className="text-xs text-muted-foreground mb-2">
                       {formatFileSize(file.size)} • {file.type || 'Unknown type'}
                     </p>
+                        
+                        {/* Tags */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {fileTags.map(tag => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs cursor-pointer h-5 px-1.5"
+                              onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                            >
+                              {tag}
+                              {isEditingTags && (
+                                <X
+                                  className="h-2.5 w-2.5 ml-1 inline-block hover:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    removeTag(file.id, tag)
+                                  }}
+                                />
+                              )}
+                            </Badge>
+                          ))}
+                          {isEditingTags && (
+                            <Input
+                              type="text"
+                              placeholder="Add tag..."
+                              value={newTagInput}
+                              onChange={(e) => setNewTagInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  addTag(file.id, newTagInput)
+                                } else if (e.key === 'Escape') {
+                                  setEditingTags(null)
+                                  setNewTagInput('')
+                                }
+                              }}
+                              onBlur={() => {
+                                if (newTagInput.trim()) {
+                                  addTag(file.id, newTagInput)
+                                } else {
+                                  setEditingTags(null)
+                                  setNewTagInput('')
+                                }
+                              }}
+                              className="h-5 px-1.5 text-xs w-24"
+                              autoFocus
+                            />
+                          )}
+                          {!isEditingTags && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingTags(file.id)}
+                              className="h-5 px-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Add tags"
+                            >
+                              <Tag className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                   </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
                   {isFileUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          <div className="h-4 w-4 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <CheckCircle className="h-4 w-4 text-green-500" />
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFile(file.id)}
-                        className="h-6 w-6 p-0 flex-shrink-0"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
                         aria-label={`Remove ${file.name}`}
+                              title="Delete file"
                       >
                         <X className="h-3.5 w-3.5" />
                       </Button>
                     </>
                   )}
+                      </div>
+                    </div>
                 </div>
               )
-            })}
+              })
+            )}
+          </div>
+        </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="p-3 border border-border rounded-md bg-secondary/30">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded flex-shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="h-3 w-32 rounded" />
+                  <div className="h-2 w-24 rounded" />
+                </div>
+              </div>
+            </div>
+            <div className="p-3 border border-border rounded-md bg-secondary/30">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded flex-shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="h-3 w-32 rounded" />
+                  <div className="h-2 w-24 rounded" />
+                </div>
+              </div>
+            </div>
+            <div className="p-3 border border-border rounded-md bg-secondary/30">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded flex-shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="h-3 w-32 rounded" />
+                  <div className="h-2 w-24 rounded" />
+                </div>
+              </div>
           </div>
         </div>
       )}
+      </AutoSkeleton>
 
       {/* Empty State */}
       {!isLoading && files.length === 0 && !isDragActive && (
-        <div className="text-center py-8 text-muted-foreground">
-          <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p className="text-xs">No files uploaded yet</p>
-          <p className="text-xs mt-1">Upload files to use them as context in your prompts</p>
+        <EmptyState
+          icon={FileText}
+          title="No files uploaded yet"
+          description="Upload files to use them as context in your prompts. Drag and drop files here or click to browse."
+          size="md"
+        >
+          <div className="mt-4 text-xs text-muted-foreground max-w-md">
+            <p className="mb-2">💡 <strong>Tip:</strong> Upload reference documents, product catalogs, or any files you want to reference in your prompts.</p>
+            <p>Files are stored securely and can be reused across multiple jobs.</p>
         </div>
+        </EmptyState>
       )}
     </div>
   )
 }
-

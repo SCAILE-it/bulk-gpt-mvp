@@ -15,52 +15,46 @@ export default function HomePage() {
       return
     }
 
-    async function checkAuth() {
-      // Mark as redirected immediately to prevent multiple calls
-      hasRedirected.current = true
+    // Mark as redirected immediately to prevent multiple calls
+    hasRedirected.current = true
 
+    async function checkAuth() {
       try {
         const supabase = createClient()
         if (!supabase) {
-          console.error('Supabase client not available - check environment variables')
-          router.replace('/auth')
+          // Fallback: use window.location if router doesn't work
+          window.location.href = '/auth'
           return
         }
 
-        // Add timeout to prevent hanging
-        const authPromise = supabase.auth.getUser()
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Auth check timeout')), 3000)
-        )
+        // Use a timeout to prevent hanging
+        const timeoutId = setTimeout(() => {
+          window.location.href = '/auth'
+        }, 2000)
 
-        const result = await Promise.race([
-          authPromise,
-          timeoutPromise
-        ])
-        
-        const { data: { user }, error } = result
-        
-        if (error) {
-          console.error('Auth check error:', error)
-          router.replace('/auth')
-          return
-        }
-
-        if (user) {
-          router.replace('/bulk')
-        } else {
-          router.replace('/auth')
+        try {
+          const { data: { user }, error: authError } = await supabase.auth.getUser()
+          clearTimeout(timeoutId)
+          
+          if (authError || !user) {
+            window.location.href = '/auth'
+          } else {
+            window.location.href = '/home'
+          }
+        } catch (authErr) {
+          clearTimeout(timeoutId)
+          window.location.href = '/auth'
         }
       } catch (err) {
-        console.error('Error checking auth:', err)
-        // On timeout or error, redirect to auth page
-        router.replace('/auth')
+        // Fallback redirect
+        window.location.href = '/auth'
       }
     }
     
     checkAuth()
   }, [router, pathname])
 
+  // Minimal render - redirect happens immediately
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">

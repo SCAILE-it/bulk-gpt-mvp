@@ -1,6 +1,12 @@
 {
   "buildCommand": "next build",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/cron/execute-schedules",
+      "schedule": "* * * * *"
+    }
+  ]
 }
 

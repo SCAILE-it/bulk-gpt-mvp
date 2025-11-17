@@ -3,7 +3,7 @@
  * ABOUTME: Shows 3 steps with conditional icons and colors based on completion state
  */
 
-import { CheckCircle, Loader2 } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
 
 interface WorkflowStepsProps {
   hasCSV: boolean
@@ -54,7 +54,7 @@ export function WorkflowSteps({
       <div className="flex items-center gap-3">
         <div className={`flex items-center gap-2 ${isProcessing ? 'text-primary' : hasResults ? 'text-green-400' : 'text-muted-foreground'}`}>
           {isProcessing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
           ) : hasResults ? (
             <CheckCircle className="h-4 w-4" />
           ) : (

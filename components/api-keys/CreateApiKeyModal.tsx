@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { X, Copy, Check, AlertTriangle } from 'lucide-react'
+import { useApiKeys } from '@/hooks/useApiKeys'
 
 interface CreateApiKeyModalProps {
   open: boolean
@@ -15,6 +16,7 @@ interface CreateApiKeyModalProps {
 }
 
 export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateApiKeyModalProps) {
+  const { createApiKey } = useApiKeys()
   const [keyName, setKeyName] = useState('')
   const [createdKey, setCreatedKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -42,7 +44,10 @@ export function CreateApiKeyModal({ open, onOpenChange, onKeyCreated }: CreateAp
       }
 
       const data = await response.json()
-      setCreatedKey(data.key)
+      setCreatedKey(data.key.key || data.key) // Handle both formats
+      
+      // Also update via hook for cache sync
+      await createApiKey(keyName.trim())
       onKeyCreated()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create API key')

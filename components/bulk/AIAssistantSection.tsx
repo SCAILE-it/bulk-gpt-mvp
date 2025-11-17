@@ -3,7 +3,7 @@
  * ABOUTME: Single unified button for prompt optimization and column generation
  */
 
-import { Sparkles, Loader2 } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { SectionHeader } from './SectionHeader'
 
 export interface AIAssistantSectionProps {
@@ -59,7 +59,7 @@ export function AIAssistantSection({
       >
         <div className="flex-shrink-0">
           {isOptimizing ? (
-            <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+            <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" aria-hidden="true" />
           ) : (
             <Sparkles className="h-4 w-4 text-primary group-hover:text-primary/80 transition-colors" aria-hidden="true" />
           )}
