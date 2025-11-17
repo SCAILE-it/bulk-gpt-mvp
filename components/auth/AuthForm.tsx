@@ -168,7 +168,7 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormPro
               disabled={isLoadingEmail}
               autoComplete="email"
               aria-label="Email address"
-              aria-describedby={error ? "form-error email-error" : emailValidation.touched && emailValidation.errors[0] ? "email-error" : undefined}
+              aria-describedby={error ? "form-error" : emailValidation.touched && emailValidation.errors[0] ? "email-error" : undefined}
               aria-invalid={emailValidation.touched && !emailValidation.isValid}
               className="h-9 text-xs"
             />
