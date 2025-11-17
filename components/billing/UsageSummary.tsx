@@ -7,7 +7,6 @@
 
 import { useState, useEffect } from 'react'
 import { DollarSign, TrendingUp, Zap } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
 import { UsageSummary as UsageSummaryType, CreditInfo } from '@/lib/types/billing'

@@ -16,7 +16,7 @@ import {
 import { useContextStorage } from '@/hooks/useContextStorage'
 import { GTMClassificationForm } from '@/components/context/GTMClassificationForm'
 import { toast } from 'sonner'
-import type { BusinessContext as BusinessContextType } from '@/lib/types/business-context'
+import type { BusinessContext as BusinessContextType, GTMPlaybook } from '@/lib/types/business-context'
 
 /**
  * ABOUTME: Context Form Component
@@ -192,7 +192,7 @@ export function ContextForm() {
     } finally {
       setIsAnalyzing(false)
     }
-  }, [websiteUrl, context, updateContext])
+  }, [websiteUrl, context, updateContext, updateBusinessContext])
 
   const handleClearAll = useCallback(() => {
     clearContext()
@@ -383,7 +383,7 @@ export function ContextForm() {
                 <div className="space-y-1 text-xs">
                   <p className="font-medium">Value Proposition</p>
                   <p className="text-muted-foreground">
-                    A clear statement that explains how your product solves customers' problems, delivers specific benefits, and why customers should choose you over competitors.
+                    A clear statement that explains how your product solves customers&apos; problems, delivers specific benefits, and why customers should choose you over competitors.
                   </p>
                 </div>
               </TooltipContent>
@@ -857,7 +857,7 @@ export function ContextForm() {
       {/* GTM Classification - Integrated naturally with other fields */}
       <GTMClassificationForm
         initialContext={gtmProfile ? {
-          gtm_playbook: gtmProfile.gtmPlaybook as any,
+          gtm_playbook: gtmProfile.gtmPlaybook as GTMPlaybook | null,
           product_type: gtmProfile.productType,
           gtm_playbook_confidence: gtmProfile.gtmPlaybookConfidence,
           product_type_confidence: gtmProfile.productTypeConfidence,
@@ -865,7 +865,7 @@ export function ContextForm() {
           product_type_ai_suggested: gtmProfile.productTypeAISuggested,
           gtm_playbook_manually_overridden: gtmProfile.gtmPlaybookManuallyOverridden,
           product_type_manually_overridden: gtmProfile.productTypeManuallyOverridden,
-          gtm_playbook_ai_suggestion: gtmProfile.gtmPlaybookAISuggestion as any,
+          gtm_playbook_ai_suggestion: gtmProfile.gtmPlaybookAISuggestion as GTMPlaybook | null,
           product_type_ai_suggestion: gtmProfile.productTypeAISuggestion,
         } as BusinessContextType : undefined}
         onUpdate={async (playbook, productType) => {

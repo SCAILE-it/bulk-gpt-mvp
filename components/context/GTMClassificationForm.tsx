@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { GTM_PLAYBOOKS, PRODUCT_TYPES, getGTMProfileDisplay } from '@/lib/config/gtm-config';
-import { GTMPlaybook, ProductType, BusinessContext, getConfidenceLevel } from '@/lib/types/business-context';
+import { GTMPlaybook, BusinessContext, getConfidenceLevel } from '@/lib/types/business-context';
 import { Info, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 

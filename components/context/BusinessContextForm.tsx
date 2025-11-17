@@ -6,14 +6,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Building2, Plus, X, Save } from 'lucide-react'
+import { Plus, X, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { GTMClassificationForm } from '@/components/context/GTMClassificationForm'
-import type { BusinessContext as BusinessContextType, GTMPlaybook } from '@/lib/types/business-context'
+import type { BusinessContext as BusinessContextType } from '@/lib/types/business-context'
 
 interface BusinessContext {
   icp?: string

@@ -17,6 +17,7 @@ import type { Resource } from '@/lib/types/resources'
 import { ContentEditor } from './ContentEditor'
 import { ResourceLinker } from './ResourceLinker'
 import { AnalyticsDataDisplay } from './AnalyticsDataDisplay'
+import type { AEOAnalyticsData } from './AnalyticsDataDisplay'
 
 interface ResourceDetailProps {
   resource: Resource | null
@@ -215,7 +216,7 @@ export function ResourceDetail({
                   </div>
                 ) : resource.type === 'analytics' && resource.agent_id === 'aeo_analytics' ? (
                   // Render analytics data with structured display
-                  <AnalyticsDataDisplay data={data as any} />
+                  <AnalyticsDataDisplay data={data as AEOAnalyticsData} />
                 ) : (
                   // Regular display for other resource types
                   Object.entries(data).map(([key, value]) => (

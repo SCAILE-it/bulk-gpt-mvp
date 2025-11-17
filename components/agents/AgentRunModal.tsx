@@ -64,7 +64,7 @@ export function AgentRunModal({ agent, open, onClose }: AgentRunModalProps) {
       const response = await fetch(`/api/resources?type=${type}&limit=100`)
       if (response.ok) {
         const data = await response.json()
-        const resources = (data.resources || []).map((r: any) => ({
+        const resources = (data.resources || []).map((r: { id: string; data?: { name?: string; keyword?: string; email?: string } }) => ({
           id: r.id,
           name: r.data?.name || r.data?.keyword || r.data?.email || r.id,
         }))
@@ -113,9 +113,9 @@ export function AgentRunModal({ agent, open, onClose }: AgentRunModalProps) {
       // Trigger refresh of agents list to show updated status
       // The parent component (AgentsList) polls every 5 seconds
       onClose()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error running agent:', error)
-      toast.error(error.message || 'Failed to run agent')
+      toast.error(error instanceof Error ? error.message : 'Failed to run agent')
     } finally {
       setIsRunning(false)
     }

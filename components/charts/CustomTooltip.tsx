@@ -13,7 +13,7 @@ interface CustomTooltipProps {
     value?: number | string
     dataKey?: string
     color?: string
-    formatter?: (value: any) => string
+    formatter?: (value: number | string) => string
   }>
   label?: string
   formatter?: (value: number) => string

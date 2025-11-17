@@ -10,7 +10,6 @@ import { useState, useEffect } from 'react'
 import { Package, Play, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -102,7 +101,7 @@ export function PackageRunsSection() {
         throw new Error('Failed to run package')
       }
 
-      const data = await response.json()
+      await response.json()
       toast.success(`Package run started: ${assignment.package_name}`)
       
       // Refresh runs

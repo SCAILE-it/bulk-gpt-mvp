@@ -5,7 +5,7 @@
 
 'use client'
 
-import { X, Maximize2, Download } from 'lucide-react'
+import { X, Download } from 'lucide-react'
 import { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { exportSVGAsPNG, findChartSVG } from '@/lib/utils/chart-export'

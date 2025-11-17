@@ -130,9 +130,9 @@ export function CreateResourceModal({ type, open, onClose, onCreated }: CreateRe
       toast.success(`${getTypeLabel()} created successfully`)
       onCreated()
       onClose()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating resource:', error)
-      toast.error(error.message || 'Failed to create resource')
+      toast.error(error instanceof Error ? error.message : 'Failed to create resource')
     } finally {
       setIsCreating(false)
     }

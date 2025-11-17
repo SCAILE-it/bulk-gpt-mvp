@@ -296,9 +296,12 @@ function HomePageContent() {
   const processingBatches = safeStats?.recentBatches?.filter(b => 
     b.status === 'processing' || b.status === 'pending'
   ) || []
-  const completedBatches = safeStats?.recentBatches?.filter(b => 
-    b.status === 'completed' || b.status === 'completed_with_errors'
-  ) || []
+  const completedBatches = useMemo(() => 
+    safeStats?.recentBatches?.filter(b => 
+      b.status === 'completed' || b.status === 'completed_with_errors'
+    ) || [], 
+    [safeStats?.recentBatches]
+  )
 
   // Fetch replay data when we have completed batches (even if processing)
   useEffect(() => {

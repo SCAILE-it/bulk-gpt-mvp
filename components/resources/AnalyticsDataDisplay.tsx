@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 
-interface AEOAnalyticsData {
+export interface AEOAnalyticsData {
   keyword: string
   keywordId?: string
   metrics?: {

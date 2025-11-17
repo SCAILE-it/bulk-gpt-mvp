@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { Calendar, ChevronDown } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, subDays, startOfWeek, endOfWeek, subMonths } from 'date-fns'
+import { format, subDays } from 'date-fns'
 import { DateRange } from 'react-day-picker'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'

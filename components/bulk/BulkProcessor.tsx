@@ -10,7 +10,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 import {
   Upload, FileText, Play, CheckCircle,
   X, ChevronDown, HelpCircle,
-  Search, Filter, AlertTriangle, Sparkles, RotateCcw, Clock, Save
+  Search, Filter, AlertTriangle, Sparkles, RotateCcw, Save
 } from 'lucide-react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useFileUpload } from '@/hooks/useFileUpload'
@@ -56,7 +56,7 @@ import { getGoogleAccessToken, getStoredGoogleToken, storeGoogleToken, isGoogleT
 import { flattenBatchResultsForExport } from '@/lib/export'
 import { ScheduleWidget } from '@/components/schedules/ScheduleWidget'
 import { DisabledButtonTooltip } from '@/components/ui/disabled-button-tooltip'
-import { getProcessAllDisabledReason, getTestDisabledReason, isProcessAllDisabled, isTestDisabled } from '@/lib/validation-helpers'
+import { getProcessAllDisabledReason, getTestDisabledReason } from '@/lib/validation-helpers'
 import { ValidationSummary } from '@/components/ui/validation-summary'
 import { useMobile } from '@/hooks/useMobile'
 

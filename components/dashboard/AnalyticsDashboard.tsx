@@ -12,7 +12,7 @@ import { Activity, Zap, BarChart3, Clock, TrendingUp, TrendingDown, ExternalLink
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { exportSVGAsPNG, exportElementAsPNG, exportDashboardAsPDF, findChartSVG } from '@/lib/utils/chart-export'
-import { exportAnalyticsSummaryCSV, exportAnalyticsJSON, exportTokenActivityCSV, copyToClipboardJSON } from '@/lib/utils/data-export'
+import { exportAnalyticsSummaryCSV, exportAnalyticsJSON, exportTokenActivityCSV } from '@/lib/utils/data-export'
 import { UsageDisplay } from '@/components/usage/UsageDisplay'
 import { ChartModal } from '@/components/charts/ChartModal'
 // Lazy load recharts components to reduce initial bundle size
@@ -33,7 +33,7 @@ import {
 import { CustomTooltip } from '@/components/charts/CustomTooltip'
 import { normalizeModelName, formatModelNameForDisplay } from '@/lib/utils/model-utils'
 import { calculateTotalCost, formatCost, calculateCost, calculateCostPerBatch, calculateCostPerRow, calculatePotentialSavings } from '@/lib/utils/cost-calculator'
-import { findPeakUsage, calculateTrendLine, calculateAverage } from '@/lib/utils/chart-annotations'
+import { findPeakUsage, calculateAverage } from '@/lib/utils/chart-annotations'
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
@@ -45,8 +45,6 @@ import { ComparisonWidget } from '@/components/dashboard/ComparisonWidget'
 import { useSavedFilters } from '@/hooks/useSavedFilters'
 import { Button } from '@/components/ui/button'
 import { ChartSkeleton } from '@/components/skeletons/ChartSkeleton'
-import { WidgetSkeleton } from '@/components/skeletons/WidgetSkeleton'
-import { Skeleton } from '@/components/ui/skeleton'
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker'
 import { HelpCircle } from 'lucide-react'
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -233,7 +231,7 @@ export function AnalyticsDashboard() {
   const expandedModelBreakdownRef = useRef<HTMLDivElement>(null)
   const expandedRecentActivityRef = useRef<HTMLDivElement>(null)
 
-  const handleChartClick = useCallback((data: any, chartType: string) => {
+  const handleChartClick = useCallback((data: { name?: string }, chartType: string) => {
     // Navigate to batches page with filter
     if (chartType === 'status' && data?.name) {
       const status = data.name.toLowerCase().replace(/\s+/g, '_')
@@ -1111,7 +1109,7 @@ export function AnalyticsDashboard() {
                     <SelectContent>
                       <SelectItem value="all">All statuses</SelectItem>
                       {Object.entries(analytics.batchesByStatus)
-                        .filter(([_, count]) => count > 0)
+                        .filter(([, count]) => count > 0)
                         .map(([status]) => (
                           <SelectItem key={status} value={status}>
                             {status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')}

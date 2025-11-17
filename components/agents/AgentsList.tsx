@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Zap, 
@@ -115,24 +115,7 @@ export function AgentsList() {
   // Agents that have dedicated full-page interfaces
   const agentsWithDedicatedPages = ['bulk']
 
-  useEffect(() => {
-    fetchAgents()
-  }, []) // Only fetch on mount
-
-  useEffect(() => {
-    // Poll for agent stats updates - adaptive interval based on activity
-    // Faster polling when agents are running, slower when idle
-    const hasRunningAgents = agents.some(a => a.status === 'running')
-    const pollInterval = hasRunningAgents ? 3000 : 10000 // 3s when running, 10s when idle
-    
-    const interval = setInterval(() => {
-      fetchAgents()
-    }, pollInterval)
-
-    return () => clearInterval(interval)
-  }, [agents]) // Re-create interval when agents change (to adjust polling frequency)
-
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       setIsLoading(true)
       
@@ -208,7 +191,7 @@ export function AgentsList() {
         // Note: AgentDefinition uses category/input_type/output_type, Agent uses type/inputSchema/outputSchema
         return {
           id: def.id,
-          type: def.category as any, // Map category to type for compatibility
+          type: def.category as 'lead' | 'keyword' | 'content' | 'campaign', // Map category to type for compatibility
           name: def.name,
           description: def.description || '',
           status,
@@ -280,7 +263,24 @@ export function AgentsList() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchAgents()
+  }, [fetchAgents]) // Only fetch on mount
+
+  useEffect(() => {
+    // Poll for agent stats updates - adaptive interval based on activity
+    // Faster polling when agents are running, slower when idle
+    const hasRunningAgents = agents.some(a => a.status === 'running')
+    const pollInterval = hasRunningAgents ? 3000 : 10000 // 3s when running, 10s when idle
+    
+    const interval = setInterval(() => {
+      fetchAgents()
+    }, pollInterval)
+
+    return () => clearInterval(interval)
+  }, [agents, fetchAgents]) // Re-create interval when agents change (to adjust polling frequency)
 
   return (
     <div className="space-y-4">

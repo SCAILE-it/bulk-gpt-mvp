@@ -41,8 +41,7 @@ const CardContent = ({ children, className = '' }: { children: React.ReactNode; 
 )
 
 export function ComponentShowcase() {
-  const { isMobile, isTablet, isDesktop } = useResponsive()
-  const [error, setError] = useState<string | null>(null)
+  const { isMobile, isTablet } = useResponsive()
   const [visibleColumns, setVisibleColumns] = useState(['filename', 'status', 'rows'])
   
   // Demo data
@@ -97,7 +96,7 @@ export function ComponentShowcase() {
           </DisabledButtonTooltip>
           
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Hover over the disabled button to see the tooltip explaining why it's disabled.
+            Hover over the disabled button to see the tooltip explaining why it&apos;s disabled.
           </p>
         </CardContent>
       </Card>
