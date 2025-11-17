@@ -50,6 +50,9 @@ export function ResourceSelector({
     try {
       setLoading(true)
       const supabase = createClient()
+      if (!supabase) {
+        throw new Error('Supabase client not initialized')
+      }
       const { data, error } = await supabase
         .from('resources')
         .select('id, type, data, created_at, source_name')
