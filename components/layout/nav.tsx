@@ -123,7 +123,7 @@ export function Nav() {
               href={link.href}
               prefetch={true}
               onMouseEnter={() => handleNavHover(link.href)}
-              onClick={(e) => {
+              onClick={() => {
                 // Ensure navigation happens immediately
                 router.push(link.href)
                 router.refresh()
