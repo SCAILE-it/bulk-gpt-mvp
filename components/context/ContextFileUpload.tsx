@@ -176,11 +176,24 @@ export function ContextFileUpload() {
       </div>
 
       {/* File List */}
-      <AutoSkeleton isLoading={isLoading && files.length === 0}>
-        {files.length > 0 ? (
-          <div className="space-y-3">
-          {/* Search and Filters */}
+      {isLoading && files.length === 0 ? (
         <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-2.5 border border-border rounded-md bg-secondary/20 animate-pulse">
+              <div className="flex items-center gap-2">
+                <div className="h-3.5 w-3.5 rounded bg-muted-foreground/20 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="h-3 w-40 rounded bg-muted-foreground/20 mb-1.5" />
+                  <div className="h-2 w-32 rounded bg-muted-foreground/10" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : files.length > 0 ? (
+        <div className="space-y-3">
+          {/* Search and Filters */}
+          <div className="space-y-2">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
@@ -269,99 +282,103 @@ export function ContextFileUpload() {
               return (
                 <div
                   key={file.id}
-                    className="group p-3 bg-secondary/40 border border-border rounded-lg hover:bg-secondary/60 transition-colors"
+                    className="group p-2.5 bg-secondary/40 border border-border rounded-lg hover:bg-secondary/60 transition-colors"
                 >
-                    <div className="flex items-start gap-3">
-                      <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div className="flex items-center gap-2.5">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-0.5">
                       <p className="text-xs font-medium truncate">{file.name}</p>
                       {file.fileType && file.fileType !== 'manual' && (
-                            <Badge variant="outline" className="text-xs px-1.5 py-0">
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
                           {file.fileType === 'input' ? 'Input' : 'Output'}
                             </Badge>
                       )}
                     </div>
-                        <p className="text-xs text-muted-foreground mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
                       {formatFileSize(file.size)} • {file.type || 'Unknown type'}
                     </p>
                         
                         {/* Tags */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {fileTags.map(tag => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-xs cursor-pointer h-5 px-1.5"
-                              onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                            >
-                              {tag}
-                              {isEditingTags && (
-                                <X
-                                  className="h-2.5 w-2.5 ml-1 inline-block hover:text-destructive"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    removeTag(file.id, tag)
-                                  }}
-                                />
-                              )}
-                            </Badge>
-                          ))}
-                          {isEditingTags && (
-                            <Input
-                              type="text"
-                              placeholder="Add tag..."
-                              value={newTagInput}
-                              onChange={(e) => setNewTagInput(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault()
-                                  addTag(file.id, newTagInput)
-                                } else if (e.key === 'Escape') {
-                                  setEditingTags(null)
-                                  setNewTagInput('')
-                                }
-                              }}
-                              onBlur={() => {
-                                if (newTagInput.trim()) {
-                                  addTag(file.id, newTagInput)
-                                } else {
-                                  setEditingTags(null)
-                                  setNewTagInput('')
-                                }
-                              }}
-                              className="h-5 px-1.5 text-xs w-24"
-                              autoFocus
-                            />
-                          )}
-                          {!isEditingTags && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingTags(file.id)}
-                              className="h-5 px-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Add tags"
-                            >
-                              <Tag className="h-3 w-3" />
-                            </Button>
-                          )}
+                        {(fileTags.length > 0 || isEditingTags) && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {fileTags.map(tag => (
+                              <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="text-[10px] cursor-pointer h-4 px-1"
+                                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                              >
+                                {tag}
+                                {isEditingTags && (
+                                  <X
+                                    className="h-2 w-2 ml-0.5 inline-block hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      removeTag(file.id, tag)
+                                    }}
+                                  />
+                                )}
+                              </Badge>
+                            ))}
+                            {isEditingTags && (
+                              <Input
+                                type="text"
+                                placeholder="Add tag..."
+                                value={newTagInput}
+                                onChange={(e) => setNewTagInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    addTag(file.id, newTagInput)
+                                  } else if (e.key === 'Escape') {
+                                    setEditingTags(null)
+                                    setNewTagInput('')
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if (newTagInput.trim()) {
+                                    addTag(file.id, newTagInput)
+                                  } else {
+                                    setEditingTags(null)
+                                    setNewTagInput('')
+                                  }
+                                }}
+                                className="h-4 px-1 text-[10px] w-20"
+                                autoFocus
+                              />
+                            )}
+                          </div>
+                        )}
+                        {!isEditingTags && fileTags.length === 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingTags(file.id)}
+                            className="h-4 px-1 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Add tags"
+                          >
+                            <Tag className="h-2.5 w-2.5" />
+                          </Button>
+                        )}
                         </div>
                   </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                   {isFileUploading ? (
-                          <div className="h-4 w-4 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
+                          <div className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
                   ) : (
                     <>
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFile(file.id)}
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
                         aria-label={`Remove ${file.name}`}
                               title="Delete file"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </>
                   )}
@@ -373,38 +390,7 @@ export function ContextFileUpload() {
             )}
           </div>
         </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="p-3 border border-border rounded-md bg-secondary/30">
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded flex-shrink-0" />
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="h-3 w-32 rounded" />
-                  <div className="h-2 w-24 rounded" />
-                </div>
-              </div>
-            </div>
-            <div className="p-3 border border-border rounded-md bg-secondary/30">
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded flex-shrink-0" />
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="h-3 w-32 rounded" />
-                  <div className="h-2 w-24 rounded" />
-                </div>
-              </div>
-            </div>
-            <div className="p-3 border border-border rounded-md bg-secondary/30">
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded flex-shrink-0" />
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="h-3 w-32 rounded" />
-                  <div className="h-2 w-24 rounded" />
-                </div>
-              </div>
-          </div>
-        </div>
-      )}
-      </AutoSkeleton>
+      ) : null}
 
       {/* Empty State */}
       {!isLoading && files.length === 0 && !isDragActive && (
