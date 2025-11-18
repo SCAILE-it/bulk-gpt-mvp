@@ -149,59 +149,59 @@ select:focus-visible,
     @apply font-sans;
   }
   :root {
-    /* Light theme - Cursor-inspired clean light mode */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 18%; /* Dark text on light */
-    --card: 0 0% 98%;
-    --card-foreground: 220 13% 18%;
+    /* Light theme - Cursor-inspired neutral monochrome */
+    --background: 0 0% 100%; /* Pure white */
+    --foreground: 0 0% 3%; /* Near black */
+    --card: 0 0% 98%; /* Off-white */
+    --card-foreground: 0 0% 3%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 18%;
-    --primary: 212 100% 50%; /* #0969da - Cursor's blue */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 13% 96%;
-    --secondary-foreground: 220 13% 18%;
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 220 13% 94%;
-    --accent-foreground: 220 13% 18%;
-    --destructive: 0 72% 51%;
+    --popover-foreground: 0 0% 3%;
+    --primary: 0 0% 0%; /* Black for primary actions */
+    --primary-foreground: 0 0% 100%; /* White text on black */
+    --secondary: 0 0% 96%; /* Light grey */
+    --secondary-foreground: 0 0% 3%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%; /* Medium grey */
+    --accent: 0 0% 94%; /* Slightly darker grey for hover */
+    --accent-foreground: 0 0% 3%;
+    --destructive: 0 0% 20%; /* Dark grey for errors (minimal color) */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 90%;
-    --input: 220 13% 96%;
-    --ring: 212 100% 50%;
-    --chart-1: 212 100% 50%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 0 72% 51%;
-    --chart-4: 45 93% 47%;
-    --chart-5: 280 65% 60%;
+    --border: 0 0% 90%; /* Light grey border */
+    --input: 0 0% 98%;
+    --ring: 0 0% 0%; /* Black focus ring */
+    --chart-1: 0 0% 20%; /* Neutral greys for charts */
+    --chart-2: 0 0% 40%;
+    --chart-3: 0 0% 60%;
+    --chart-4: 0 0% 30%;
+    --chart-5: 0 0% 50%;
     --radius: 0.5rem;
   }
   .dark {
-    /* Cursor's exact dark theme - precise color matching */
-    --background: 220 13% 9%; /* #0d1117 - Cursor's exact dark background */
-    --foreground: 213 31% 91%; /* #c9d1d9 - Cursor's exact text color */
-    --card: 220 13% 13%; /* #161b22 - Cursor's card/surface background */
-    --card-foreground: 213 31% 91%;
-    --popover: 220 13% 13%; /* #161b22 - Match card */
-    --popover-foreground: 213 31% 91%;
-    --primary: 212 100% 67%; /* #58a6ff - Cursor's exact primary blue */
-    --primary-foreground: 220 13% 9%; /* Dark text on blue */
-    --secondary: 215 16% 17%; /* #21262d - Cursor's exact secondary background */
-    --secondary-foreground: 213 31% 91%;
-    --muted: 215 16% 17%; /* #21262d - Same as secondary */
-    --muted-foreground: 215 20% 65%; /* #8b949e - Cursor's exact muted text */
-    --accent: 215 16% 19%; /* #1f2329 - Cursor's hover state (slightly lighter) */
-    --accent-foreground: 213 31% 91%;
-    --destructive: 0 63% 51%; /* #f85149 - Cursor's exact error red */
-    --destructive-foreground: 213 31% 91%;
-    --border: 215 16% 27%; /* #30363d - Cursor's exact border (solid, no opacity) */
-    --input: 215 16% 17%; /* #21262d - Cursor's input background */
-    --ring: 212 100% 67%; /* #58a6ff - Match primary for focus rings */
-    --chart-1: 212 100% 67%; /* #58a6ff - Primary blue */
-    --chart-2: 142 76% 36%; /* #3fb950 - Cursor's exact success green */
-    --chart-3: 0 63% 51%; /* #f85149 - Error red */
-    --chart-4: 45 93% 47%; /* #d29922 - Cursor's exact warning yellow */
-    --chart-5: 280 65% 60%;
+    /* Dark theme - Cursor-inspired neutral monochrome */
+    --background: 0 0% 9%; /* Dark grey/black */
+    --foreground: 0 0% 91%; /* Light grey/white */
+    --card: 0 0% 13%; /* Slightly lighter dark */
+    --card-foreground: 0 0% 91%;
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 91%;
+    --primary: 0 0% 100%; /* White for primary actions */
+    --primary-foreground: 0 0% 9%; /* Dark text on white */
+    --secondary: 0 0% 17%; /* Dark grey */
+    --secondary-foreground: 0 0% 91%;
+    --muted: 0 0% 17%;
+    --muted-foreground: 0 0% 65%; /* Medium grey */
+    --accent: 0 0% 19%; /* Slightly lighter for hover */
+    --accent-foreground: 0 0% 91%;
+    --destructive: 0 0% 80%; /* Light grey for errors (minimal color) */
+    --destructive-foreground: 0 0% 9%;
+    --border: 0 0% 27%; /* Medium grey border */
+    --input: 0 0% 17%;
+    --ring: 0 0% 100%; /* White focus ring */
+    --chart-1: 0 0% 80%; /* Neutral greys for charts */
+    --chart-2: 0 0% 60%;
+    --chart-3: 0 0% 40%;
+    --chart-4: 0 0% 70%;
+    --chart-5: 0 0% 50%;
   }
 }
 
@@ -211,6 +211,19 @@ select:focus-visible,
   --radius-md: 0.375rem; /* 6px */
   --radius-lg: 0.5rem;   /* 8px */
   --radius-xl: 0.75rem;  /* 12px */
+  
+  /* Global spacing system - tighter, more refined */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 0.75rem;    /* 12px */
+  --spacing-lg: 1rem;       /* 16px */
+  --spacing-xl: 1.5rem;     /* 24px */
+  --spacing-2xl: 2rem;      /* 32px */
+  
+  /* Section spacing - consistent vertical rhythm */
+  --section-gap: 1.5rem;    /* 24px - space between major sections */
+  --content-gap: 0.75rem;   /* 12px - space between related content */
+  --element-gap: 0.5rem;    /* 8px - space between form elements */
 }
 
 @layer base {
@@ -219,7 +232,8 @@ select:focus-visible,
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "SF Pro Display", system-ui, sans-serif;
+    /* Cursor-inspired font stack - system fonts first for native feel */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif, var(--font-geist-sans);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

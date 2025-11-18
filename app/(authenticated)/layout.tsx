@@ -10,7 +10,7 @@ export default function AuthenticatedLayout({
     <div className="h-screen flex flex-col">
       <SkipLink href="#main-content" />
       <Nav />
-      <main id="main-content" className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6" tabIndex={-1}>
+      <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
         {children}
       </main>
     </div>

@@ -207,15 +207,15 @@ export function ScheduleWidget({
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="end" sideOffset={8}>
-        <div className="p-4 space-y-4">
+        <div className="p-3 space-y-2.5">
           {/* Quick Options */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {quickOptions.map((option) => (
               <button
                 key={option.label}
                 type="button"
                 onClick={() => handleQuickOption(option)}
-                className="px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                className="px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
               >
                 {option.label}
               </button>
@@ -234,9 +234,9 @@ export function ScheduleWidget({
           </div>
 
           {/* Time and Recurring Row */}
-          <div className="flex items-end gap-3 pt-4 border-t border-border">
+          <div className="flex items-end gap-2 pt-2 border-t border-border">
             <div className="flex-1">
-              <Label htmlFor="schedule-time" className="text-xs font-medium text-foreground mb-1.5 block">
+              <Label htmlFor="schedule-time" className="text-[11px] font-medium text-foreground mb-1 block">
                 Time
               </Label>
               <Input
@@ -244,16 +244,16 @@ export function ScheduleWidget({
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="h-9 text-sm"
+                className="h-8 text-xs"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Switch
                 id="recurring"
                 checked={isRecurring}
                 onCheckedChange={setIsRecurring}
               />
-              <Label htmlFor="recurring" className="text-xs font-medium cursor-pointer whitespace-nowrap">
+              <Label htmlFor="recurring" className="text-[11px] font-medium cursor-pointer whitespace-nowrap">
                 Recurring
               </Label>
             </div>
@@ -261,9 +261,9 @@ export function ScheduleWidget({
 
           {/* Recurrence Options */}
           {isRecurring && (
-            <div className="flex gap-2 pt-4 border-t border-border">
+            <div className="flex gap-2 pt-2 border-t border-border">
               <div className="flex-1">
-                <Label htmlFor="recurrence-value" className="text-xs font-medium text-foreground mb-1.5 block">
+                <Label htmlFor="recurrence-value" className="text-[11px] font-medium text-foreground mb-1 block">
                   Every
                 </Label>
                 <Input
@@ -272,19 +272,19 @@ export function ScheduleWidget({
                   min="1"
                   value={recurrenceValue}
                   onChange={(e) => setRecurrenceValue(parseInt(e.target.value) || 1)}
-                  className="h-9 text-sm"
+                  className="h-8 text-xs"
                   placeholder="1"
                 />
               </div>
               <div className="flex-1">
-                <Label htmlFor="recurrence-unit" className="text-xs font-medium text-foreground mb-1.5 block">
+                <Label htmlFor="recurrence-unit" className="text-[11px] font-medium text-foreground mb-1 block">
                   Unit
                 </Label>
                 <Select
                   value={recurrenceUnit}
                   onValueChange={(value) => setRecurrenceUnit(value as RecurrenceUnit)}
                 >
-                  <SelectTrigger id="recurrence-unit" className="h-9 text-sm">
+                  <SelectTrigger id="recurrence-unit" className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -298,19 +298,19 @@ export function ScheduleWidget({
           )}
 
           {/* Preview */}
-          <div className="bg-secondary/50 border border-border rounded-md p-3">
-            <div className="text-xs font-medium text-muted-foreground mb-1">Preview</div>
-            <div className="text-sm font-semibold text-foreground">{schedulePreview}</div>
+          <div className="bg-secondary/50 border border-border rounded-md p-2">
+            <div className="text-[11px] font-medium text-muted-foreground mb-0.5">Preview</div>
+            <div className="text-xs font-semibold text-foreground">{schedulePreview}</div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-4 border-t border-border">
+          <div className="flex gap-2 pt-2 border-t border-border">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setOpen(false)}
               disabled={isCreating}
-              className="flex-1 h-9 text-sm"
+              className="flex-1 h-8 text-xs"
             >
               Cancel
             </Button>
@@ -329,11 +329,11 @@ export function ScheduleWidget({
               <Button
                 onClick={handleCreate}
                 disabled={isCreating || scheduleDateTime < new Date() || !prompt.trim() || !csvData}
-                className="flex-1 h-9 text-sm"
+                className="flex-1 h-8 text-xs"
               >
                 {isCreating ? (
                   <>
-                    <div className="h-3.5 w-3.5 mr-1.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    <div className="h-3 w-3 mr-1 rounded-full border-2 border-current border-t-transparent animate-spin" />
                     Creating...
                   </>
                 ) : (

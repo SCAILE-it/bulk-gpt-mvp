@@ -88,6 +88,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       status: status === 'completed' ? 'completed' : 'completed_with_errors',
       processed_rows: total_rows || batch.total_rows,  // Note: 'processed_rows', not 'completed_rows'
     }
+    
+    // Update total_rows if it was 0 and we now have the actual count
+    // This ensures usage tracking trigger fires correctly
+    if (batch.total_rows === 0 && total_rows && total_rows > 0) {
+      updateData.total_rows = total_rows
+    }
 
     logDebug('[WEBHOOK] Updating batch status:', updateData.status)
 

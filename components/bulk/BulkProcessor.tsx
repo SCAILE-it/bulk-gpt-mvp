@@ -772,10 +772,21 @@ export default function BulkProcessor() {
     if (csvParser.csvData && prompt) handleProcess()
   })
 
+  // Keyboard shortcut for help: Cmd+Shift+? (which is mod+shift+/)
+  // Also handle mod+? as fallback
   useHotkeys('mod+shift+/', (e) => {
     e.preventDefault()
     setShowKeyboardHelp(true)
-  })
+  }, { enableOnFormTags: true, enableOnContentEditable: true })
+  
+  // Alternative: mod+? (Cmd+? on Mac, Ctrl+? on Windows)
+  useHotkeys('mod+/', (e) => {
+    // Only trigger if shift is not pressed (to avoid conflict with mod+shift+/)
+    if (!e.shiftKey) {
+      e.preventDefault()
+      setShowKeyboardHelp(true)
+    }
+  }, { enableOnFormTags: true, enableOnContentEditable: true })
 
   // === OUTPUT FIELDS ===
   const addOutputField = useCallback(() => {
@@ -1638,9 +1649,11 @@ export default function BulkProcessor() {
       </a>
 
       {/* Main Content */}
-      <main id="main-content" className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden min-h-0" tabIndex={-1}>
-        {/* LEFT PANEL - Configuration */}
-        <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
+      <div className="h-full flex-1 overflow-hidden min-h-0 p-4 sm:p-6 lg:p-8">
+        <div className="h-full max-w-[1920px] mx-auto border border-border rounded-lg overflow-hidden bg-card shadow-sm">
+          <div className="h-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+            {/* LEFT PANEL - Configuration */}
+            <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 min-h-0">
             {/* Error - Use V2 error if available */}
             {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
@@ -1769,7 +1782,8 @@ export default function BulkProcessor() {
             )}
 
             {/* Validation Summary - Shows all validation errors at once */}
-            {(csvParser.csvData || prompt) && !variableValidation.isValid && variableValidation.missing.length > 0 && (
+            {/* Only show validation errors when CSV is uploaded - don't show errors for template prompt before user uploads CSV */}
+            {csvParser.csvData && prompt && !variableValidation.isValid && variableValidation.missing.length > 0 && (
               <ValidationSummary
                 errors={[
                   {
@@ -2028,7 +2042,7 @@ export default function BulkProcessor() {
                         <HelpCircle className="h-3.5 w-3.5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent side="bottom" sideOffset={6} collisionPadding={8}>
                       Keyboard shortcuts (⌘?)
                     </TooltipContent>
                   </Tooltip>
@@ -2105,10 +2119,9 @@ export default function BulkProcessor() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* RIGHT PANEL - Results */}
-        <div className="h-full overflow-hidden flex flex-col border-l border-border bg-muted/20">
+            {/* RIGHT PANEL - Results */}
+            <div className="h-full overflow-hidden flex flex-col bg-muted/20">
           {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
             <ResultsTable
               results={displayResults}
@@ -2144,8 +2157,10 @@ export default function BulkProcessor() {
               )}
             </EmptyState>
           )}
+          </div>
+          </div>
         </div>
-      </main>
+      </div>
 
 
       {/* TEMPLATE GALLERY MODAL */}

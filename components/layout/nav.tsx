@@ -93,6 +93,8 @@ export function Nav() {
     // Prefetch SWR data for the target route
     if (href === '/profile') {
       mutate('profile') // Prefetch profile data
+    } else if (href === '/executions') {
+      mutate('batches') // Prefetch executions/batch data
     } else if (href === '/context') {
       mutate('/api/context-files') // Prefetch context files
     } else if (href === '/agents') {
@@ -104,6 +106,7 @@ export function Nav() {
   }
 
   const navLinks = [
+    { href: '/executions', label: 'EXECUTIONS' },
     { href: '/context', label: 'CONTEXT' },
     { href: '/agents', label: 'AGENTS' },
     ...(userType === 'admin' ? [{ href: '/admin', label: 'ADMIN' }] : []),
@@ -154,26 +157,25 @@ export function Nav() {
             )}
           </Button>
 
-          {/* User Profile Dropdown */}
+          {/* User Profile Dropdown - Cursor-style minimal */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent min-h-[44px] sm:min-h-[36px] touch-manipulation" 
+                className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded transition-colors min-h-[32px] touch-manipulation" 
                 data-testid="user-menu-button"
                 aria-label="User menu"
                 aria-haspopup="true"
               >
-                <div className="flex items-center justify-center h-7 w-7 rounded-full bg-secondary">
-                  <User className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                </div>
-                {/* Show email on desktop */}
+                {/* Show email on desktop - Cursor style: just text, no avatar */}
                 {userEmail && (
-                  <span className="hidden lg:block text-xs text-muted-foreground max-w-[120px] truncate">
+                  <span className="hidden lg:block text-xs max-w-[140px] truncate">
                     {userEmail}
                   </span>
                 )}
-                <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                {/* Mobile: just show icon, no circle */}
+                <User className="h-3.5 w-3.5 lg:hidden" aria-hidden="true" />
+                <ChevronDown className="hidden sm:block h-3 w-3 text-muted-foreground" aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -191,8 +193,8 @@ export function Nav() {
               <DropdownMenuItem 
                 onClick={() => router.push('/profile')}
                 onMouseEnter={() => handleNavHover('/profile')}
+                className="cursor-pointer"
               >
-                <User className="mr-2 h-4 w-4" />
                 <span className="text-xs">PROFILE</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
