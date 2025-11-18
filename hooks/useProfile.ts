@@ -25,7 +25,7 @@ const fetcher = async (): Promise<UserProfile | null> => {
   // Fetch user profile from public.users table
   const { data, error: fetchError } = await supabase
     .from('users')
-    .select('id, email, full_name, avatar_url, organization')
+    .select('id, full_name, avatar_url, organization')
     .eq('id', user.id)
     .single()
 
@@ -37,19 +37,26 @@ const fetcher = async (): Promise<UserProfile | null> => {
         .from('users')
         .insert({
           id: user.id,
-          email: user.email || '',
         })
-        .select('id, email, full_name, avatar_url, organization')
+        .select('id, full_name, avatar_url, organization')
         .single()
 
       if (createError) throw createError
-      return newUser
+      // Return with email from auth user
+      return {
+        ...newUser,
+        email: user.email || '',
+      }
     } else {
       throw fetchError
     }
   }
 
-  return data
+  // Return with email from auth user (email is in auth.users, not public.users)
+  return {
+    ...data,
+    email: user.email || '',
+  }
 }
 
 export function useProfile() {
