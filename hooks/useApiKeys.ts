@@ -28,8 +28,11 @@ export function useApiKeys() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      revalidateOnMount: false,
       dedupingInterval: 5000,
       keepPreviousData: true,
+      staleTime: 60000, // Consider data fresh for 60 seconds
       fallbackData: [],
     }
   )

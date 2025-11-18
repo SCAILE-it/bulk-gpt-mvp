@@ -27,8 +27,11 @@ export function useUsageStats() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      revalidateOnMount: false,
       dedupingInterval: 300000, // 5 minutes
       keepPreviousData: true,
+      staleTime: 120000, // Consider data fresh for 2 minutes
     }
   )
 

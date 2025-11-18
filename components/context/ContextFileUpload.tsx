@@ -38,6 +38,23 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function formatUploadTime(uploadedAt: string): string {
+  const date = new Date(uploadedAt)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  
+  // For older files, show date
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined })
+}
+
 export function ContextFileUpload() {
   const { files, isLoading, uploadFile, deleteFile, updateFileTags } = useContextFiles()
   const [uploading, setUploading] = useState<string | null>(null)
@@ -297,7 +314,7 @@ export function ContextFileUpload() {
                     </div>
                         <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)} • {file.type || 'Unknown type'}
+                      {formatFileSize(file.size)} • {file.type || 'Unknown type'} • {formatUploadTime(file.uploadedAt)}
                     </p>
                         
                         {/* Tags */}

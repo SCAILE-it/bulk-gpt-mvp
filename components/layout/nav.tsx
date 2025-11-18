@@ -123,11 +123,6 @@ export function Nav() {
               href={link.href}
               prefetch={true}
               onMouseEnter={() => handleNavHover(link.href)}
-              onClick={() => {
-                // Ensure navigation happens immediately
-                router.push(link.href)
-                router.refresh()
-              }}
               className={cn(
                 'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer',
                 pathname === link.href
@@ -250,10 +245,7 @@ export function Nav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => {
-                    // Ensure navigation happens immediately
                     setMobileMenuOpen(false)
-                    router.push(link.href)
-                    router.refresh()
                   }}
                   onMouseEnter={() => handleNavHover(link.href)}
                   className={cn(
