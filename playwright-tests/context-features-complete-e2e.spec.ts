@@ -8,9 +8,9 @@ test.describe('Context Features - Complete E2E Tests', () => {
     await page.waitForLoadState('networkidle')
   })
 
-  test.describe('Context Variables Tab', () => {
+  test.describe('Business Context Tab', () => {
     test('should display all context variable fields', async ({ page }) => {
-      // Verify we're on Variables tab (default)
+      // Verify we're on Business Context tab (default)
       await expect(page.locator('text=Variables').or(page.locator('[role="tab"]:has-text("Variables")'))).toBeVisible()
       
       // Verify all fields are present
@@ -313,7 +313,7 @@ test.describe('Context Features - Complete E2E Tests', () => {
 
   test.describe('Tab Navigation', () => {
     test('should switch between tabs correctly', async ({ page }) => {
-      // Start on Variables tab (default)
+      // Start on Business Context tab (default)
       await expect(page.locator('text=Variables').or(page.locator('[role="tab"][aria-selected="true"]:has-text("Variables")'))).toBeVisible()
       
       // Switch to Files tab
