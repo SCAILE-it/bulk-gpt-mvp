@@ -331,7 +331,7 @@ export default function BulkProcessor() {
   // Check if user needs onboarding on mount (only once)
   useEffect(() => {
     // Only check on initial mount, not on every state change
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return undefined
     
     const hasSeenOnboarding = localStorage.getItem('bulk-gpt-onboarding-seen')
     const defaultPrompt = 'Write a bio for {{name}} at {{company}}'
@@ -345,6 +345,7 @@ export default function BulkProcessor() {
       }, 500)
       return () => clearTimeout(timer)
     }
+    return undefined
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run on mount - prompt and csvParser.csvData checked inside
 
