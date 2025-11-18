@@ -11,7 +11,7 @@ test.describe('Context Features - Complete E2E Tests', () => {
   test.describe('Business Context Tab', () => {
     test('should display all context variable fields', async ({ page }) => {
       // Verify we're on Business Context tab (default)
-      await expect(page.locator('text=Variables').or(page.locator('[role="tab"]:has-text("Variables")'))).toBeVisible()
+      await expect(page.locator('text=Business Context').or(page.locator('[role="tab"]:has-text("Business Context")'))).toBeVisible()
       
       // Verify all fields are present
       await expect(page.locator('label:has-text("Tone")')).toBeVisible()
