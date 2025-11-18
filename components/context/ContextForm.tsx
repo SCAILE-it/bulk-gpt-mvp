@@ -20,7 +20,7 @@ import type { BusinessContext as BusinessContextType, GTMPlaybook } from '@/lib/
 
 /**
  * ABOUTME: Context Form Component
- * ABOUTME: Allows users to set company business context variables manually or via website analysis
+ * ABOUTME: Allows users to set company business context manually or via website analysis
  * ABOUTME: Includes "Analyze Website" button that calls Gemini API to extract context
  */
 
@@ -158,7 +158,7 @@ export function ContextForm() {
 
       const data = await response.json()
 
-      // Update context variables with extracted data
+      // Update business context with extracted data
       const contextUpdates: Parameters<typeof updateContext>[0] = {}
       if (data.tone) contextUpdates.tone = data.tone
       if (data.targetCountries) contextUpdates.targetCountries = data.targetCountries
@@ -264,7 +264,7 @@ export function ContextForm() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Label className="text-xs font-medium">Business Context Variables</Label>
+            <Label className="text-xs font-medium">Business Context</Label>
             {showSavedIndicator && (
               <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 animate-in fade-in-0 duration-300">
                 <CheckCircle className="h-3 w-3" />
@@ -911,7 +911,7 @@ export function ContextForm() {
         }
       >
         <p className="text-xs text-muted-foreground">
-          This will clear all business context variables and business context. GTM profile will be preserved. This action cannot be undone.
+          This will clear all business context. GTM profile will be preserved. This action cannot be undone.
         </p>
       </Modal>
       </div>

@@ -1,6 +1,6 @@
 /**
  * GTM Classification Form Component
- * Standardized fields matching the pattern of other context variables
+ * Standardized fields matching the pattern of other business context fields
  */
 
 'use client';
