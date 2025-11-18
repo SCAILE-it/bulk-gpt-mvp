@@ -142,6 +142,7 @@ export default function BulkProcessor() {
       }, 300)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [csvParser.csvData, promptSectionOpen])
   
   // Auto-expand Output section when prompt is set (mobile only for better UX)
@@ -152,6 +153,7 @@ export default function BulkProcessor() {
       }, 500)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [isMobile, prompt, outputSettingsSectionOpen])
   
   const aiAssistantSection = useCollapsibleState({
