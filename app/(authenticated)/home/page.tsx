@@ -774,25 +774,80 @@ function HomePageContent() {
                 })()}
               </motion.div>
 
+              {/* KPI Cards - Subtle Summary Stats */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.38, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 sm:mb-8"
+              >
+                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Total Batches</div>
+                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 tabular-nums">{safeStats.totalBatches}</div>
+                    {safeStats.completedBatches > 0 && (
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
+                        {safeStats.completedBatches} completed
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Rows Processed</div>
+                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 tabular-nums">
+                      {safeStats.totalRowsProcessed.toLocaleString()}
+                    </div>
+                    {safeStats.rowsPerSecond > 0 && (
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
+                        {safeStats.rowsPerSecond.toFixed(1)} rows/sec avg
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Success Rate</div>
+                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 flex items-center gap-1.5 sm:gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
+                      <span className="tabular-nums">{safeStats.successRate}%</span>
+                    </div>
+                    {safeStats.totalBatches > 0 && (
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
+                        {safeStats.completedBatches}/{safeStats.totalBatches} batches
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
+                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 tabular-nums">
+                      {safeStats.totalTokens.toLocaleString()}
+                    </div>
+                    {safeStats.averageProcessingTime > 0 && (
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
+                        {Math.round(safeStats.averageProcessingTime)}s avg time
+                      </div>
+                    )}
+                  </div>
+              </motion.div>
+
               {/* Hero Section - CSV Transformation Demo (THE MAIN EVENT) */}
               {(showDemo || showReplay) && (
                 <motion.div
                   initial={{ opacity: 0, y: 0 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.34, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-                  className="mb-6 sm:mb-8"
+                  transition={{ duration: 0.34, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-4 sm:mb-6 relative z-10"
                 >
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.995 }}
+                    initial={{ opacity: 0, scale: 0.998 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.38, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                    className="border border-border/70 rounded-lg sm:rounded-xl overflow-hidden bg-background"
+                    transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="border border-border/60 rounded-xl sm:rounded-2xl overflow-hidden bg-background/95 backdrop-blur-sm"
                     style={{
-                      boxShadow: '0 10px 24px 0 rgba(0, 0, 0, 0.08), 0 3px 8px 0 rgba(0, 0, 0, 0.14)'
+                      boxShadow: '0 4px 16px 0 rgba(0, 0, 0, 0.06), 0 1px 4px 0 rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
                     }}
                   >
                     {/* Demo Header */}
-                    <div className="border-b border-border/50 px-3 sm:px-6 py-3 sm:py-4 bg-secondary/12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                    <div className="border-b border-border/40 px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-b from-secondary/8 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
                       <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                         <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
                           <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-red-500/60" />
@@ -822,9 +877,9 @@ function HomePageContent() {
                     </div>
 
                     {/* CSV Table - Hero Size */}
-                    <div className="p-3 sm:p-6">
-                      <div className="mb-3 sm:mb-4.5">
-                        <div className="text-[10px] sm:text-xs text-muted-foreground font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0">
+                    <div className="p-4 sm:p-6">
+                      <div className="mb-3 sm:mb-4">
+                        <div className="text-[10px] sm:text-xs text-muted-foreground/80 font-semibold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0">
                           <span className="uppercase tracking-wider">Input CSV</span>
                           {throughput.rowsPerSecond > 0 && currentProcessingRow && (
                             <span className="text-primary text-[10px] sm:text-xs font-mono tabular-nums">Processing row {currentProcessingRow}...</span>
@@ -832,9 +887,9 @@ function HomePageContent() {
                         </div>
                       </div>
                     
-                      <div className="border border-border/45 rounded-lg overflow-x-auto bg-background">
+                      <div className="border border-border/35 rounded-lg sm:rounded-md overflow-x-auto bg-background/50">
                         {/* Header Row */}
-                        <div className="grid grid-cols-[100px_1fr_1fr] sm:grid-cols-[140px_1fr_1fr] bg-secondary/18 border-b border-border/40 min-w-[600px]">
+                        <div className="grid grid-cols-[100px_1fr_1fr] sm:grid-cols-[140px_1fr_1fr] bg-secondary/12 border-b border-border/30 min-w-[600px]">
                           <div className="px-3 sm:px-5 py-3 sm:py-4 text-[10px] sm:text-xs font-semibold text-muted-foreground border-r border-border/30 uppercase tracking-wider leading-[1.25]">name</div>
                           <div className="px-3 sm:px-5 py-3 sm:py-4 text-[10px] sm:text-xs font-semibold text-muted-foreground border-r border-border/30 uppercase tracking-wider leading-[1.25]">description</div>
                           <div className="px-3 sm:px-5 py-3 sm:py-4 text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider leading-[1.25]">summary</div>
@@ -878,10 +933,14 @@ function HomePageContent() {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.34, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  className="mb-6 sm:mb-8"
+                  transition={{ duration: 0.34, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-6 sm:mb-8 relative z-0"
                 >
-                  <div className="border border-border/50 rounded-lg overflow-hidden bg-secondary/12">
+                  <div className="border border-border/40 rounded-lg sm:rounded-xl overflow-hidden bg-secondary/8 backdrop-blur-sm"
+                    style={{
+                      boxShadow: '0 2px 8px 0 rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02) inset'
+                    }}
+                  >
                     {/* Compact Header */}
                     <div className="border-b border-border/40 px-3 sm:px-5 py-2.5 sm:py-3.5 bg-secondary/18 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
                       <div className="flex items-center gap-2 sm:gap-3.5">
@@ -1043,61 +1102,6 @@ function HomePageContent() {
                   </div>
                 </motion.div>
               )}
-
-              {/* KPI Cards - Subtle Summary Stats */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.38, delay: 0.34, ease: [0.16, 1, 0.3, 1] }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5"
-              >
-                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
-                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Total Batches</div>
-                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 tabular-nums">{safeStats.totalBatches}</div>
-                    {safeStats.completedBatches > 0 && (
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">
-                        {safeStats.completedBatches} completed
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
-                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Rows Processed</div>
-                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 tabular-nums">
-                      {safeStats.totalRowsProcessed.toLocaleString()}
-                    </div>
-                    {safeStats.rowsPerSecond > 0 && (
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">
-                        {safeStats.rowsPerSecond.toFixed(1)} rows/sec avg
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
-                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Success Rate</div>
-                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 flex items-center gap-1.5 sm:gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
-                      <span className="tabular-nums">{safeStats.successRate}%</span>
-                    </div>
-                    {safeStats.totalBatches > 0 && (
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">
-                        {safeStats.completedBatches}/{safeStats.totalBatches} batches
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
-                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
-                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 tabular-nums">
-                      {safeStats.totalTokens.toLocaleString()}
-                    </div>
-                    {safeStats.averageProcessingTime > 0 && (
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">
-                        {Math.round(safeStats.averageProcessingTime)}s avg time
-                      </div>
-                    )}
-                  </div>
-              </motion.div>
             </div>
           ),
         },

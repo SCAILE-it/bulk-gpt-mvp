@@ -93,14 +93,10 @@ export function Nav() {
     // Prefetch SWR data for the target route
     if (href === '/profile') {
       mutate('profile') // Prefetch profile data
-    } else if (href === '/analytics') {
-      mutate('home-stats') // Prefetch analytics data (matches useHomeStats key)
     } else if (href === '/context') {
       mutate('/api/context-files') // Prefetch context files
     } else if (href === '/agents') {
       // Prefetch agents data if needed
-    } else if (href === '/resources') {
-      mutate('/api/resources') // Prefetch resources data
     } else if (href === '/admin') {
       mutate('/api/admin/clients') // Prefetch admin data
     }
@@ -110,8 +106,6 @@ export function Nav() {
   const navLinks = [
     { href: '/context', label: 'CONTEXT' },
     { href: '/agents', label: 'AGENTS' },
-    { href: '/resources', label: 'RESOURCES' },
-    { href: '/analytics', label: 'ANALYTICS' },
     ...(userType === 'admin' ? [{ href: '/admin', label: 'ADMIN' }] : []),
   ]
 
