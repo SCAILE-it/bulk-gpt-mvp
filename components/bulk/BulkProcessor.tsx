@@ -1654,174 +1654,174 @@ export default function BulkProcessor() {
           <div className="h-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
             {/* LEFT PANEL - Configuration */}
             <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 min-h-0">
-            {/* Error - Use V2 error if available */}
-            {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
-              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md space-y-2 animate-slide-in-up">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-xs sm:text-sm text-red-400 font-medium break-words">
-                      {fileUpload.error || csvParser.error || batchProcessor.error || error}
-                    </p>
-                    {/* Enhanced error recovery suggestions */}
-                    {(() => {
-                      const errorLower = (fileUpload.error || csvParser.error || batchProcessor.error || error || '').toLowerCase()
-                      
-                      if (errorLower.includes('limit reached') || errorLower.includes('limit resets') || errorLower.includes('daily limit')) {
-                        return (
-                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                            <p className="font-medium mb-1.5">What you can do:</p>
-                            <ul className="list-disc list-inside space-y-1 ml-1">
-                              <li>Wait for the limit to reset (shown in banner above)</li>
-                              <li>Review and delete old batches in Dashboard</li>
-                              <li>Contact support to upgrade your plan</li>
-                            </ul>
-                          </div>
-                        )
-                      }
-                      
-                      if (errorLower.includes('variable') || errorLower.includes('column') || errorLower.includes('missing')) {
-                        return (
-                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                            <p className="font-medium mb-1.5">How to fix:</p>
-                            <ul className="list-disc list-inside space-y-1 ml-1">
-                              <li>Check that all variables in your prompt match CSV column names exactly</li>
-                              <li>Use the &quot;Quick fix&quot; button in the prompt section to remove missing variables</li>
-                              <li>Or add the missing columns to your CSV file</li>
-                            </ul>
-                          </div>
-                        )
-                      }
-                      
-                      if (errorLower.includes('file type') || errorLower.includes('not supported') || (errorLower.includes('file') && errorLower.includes('csv'))) {
-                        return (
-                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                            <p className="font-medium mb-1.5">How to fix:</p>
-                            <ul className="list-disc list-inside space-y-1 ml-1">
-                              <li>Export your spreadsheet as CSV format</li>
-                              <li>In Excel: File → Save As → CSV (Comma delimited)</li>
-                              <li>In Google Sheets: File → Download → CSV</li>
-                            </ul>
-                          </div>
-                        )
-                      }
-                      
-                      if (errorLower.includes('too large') || errorLower.includes('size') || errorLower.includes('10mb')) {
-                        return (
-                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                            <p className="font-medium mb-1.5">How to fix:</p>
-                            <ul className="list-disc list-inside space-y-1 ml-1">
-                              <li>Split your CSV into smaller files (max 10MB each)</li>
-                              <li>Remove unnecessary columns to reduce file size</li>
-                              <li>Process files separately and combine results</li>
-                            </ul>
-                          </div>
-                        )
-                      }
-                      
-                      if (errorLower.includes('empty') || errorLower.includes('0 bytes') || errorLower.includes('no data')) {
-                        return (
-                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                            <p className="font-medium mb-1.5">How to fix:</p>
-                            <ul className="list-disc list-inside space-y-1 ml-1">
-                              <li>Check that your CSV file contains data rows</li>
-                              <li>Ensure the file wasn&apos;t corrupted during download</li>
-                              <li>Try re-exporting from your spreadsheet application</li>
-                            </ul>
-                          </div>
-                        )
-                      }
-                      
-                      if (errorLower.includes('google sheets') || errorLower.includes('spreadsheet') || errorLower.includes('permission')) {
-                        return (
-                          <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                            <p className="font-medium mb-1.5">How to fix:</p>
-                            <ul className="list-disc list-inside space-y-1 ml-1">
-                              <li>Ensure the Google Sheet is publicly accessible (View access)</li>
-                              <li>Or share it with the service account email</li>
-                              <li>Try downloading as CSV and uploading directly</li>
-                            </ul>
-                          </div>
-                        )
-                      }
-                      
-                      // Generic recovery for unknown errors
-                      return (
-                        <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
-                          <p className="font-medium mb-1.5">Try these steps:</p>
-                          <ul className="list-disc list-inside space-y-1 ml-1">
-                            <li>Refresh the page and try again</li>
-                            <li>Check your internet connection</li>
-                            <li>If the problem persists, contact support</li>
-                          </ul>
-                        </div>
-                      )
-                    })()}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 min-h-0">
+                {/* Error - Use V2 error if available */}
+                {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
+                  <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md space-y-2 animate-slide-in-up">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-xs sm:text-sm text-red-400 font-medium break-words">
+                          {fileUpload.error || csvParser.error || batchProcessor.error || error}
+                        </p>
+                        {/* Enhanced error recovery suggestions */}
+                        {(() => {
+                          const errorLower = (fileUpload.error || csvParser.error || batchProcessor.error || error || '').toLowerCase()
+                          
+                          if (errorLower.includes('limit reached') || errorLower.includes('limit resets') || errorLower.includes('daily limit')) {
+                            return (
+                              <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                                <p className="font-medium mb-1.5">What you can do:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-1">
+                                  <li>Wait for the limit to reset (shown in banner above)</li>
+                                  <li>Review and delete old batches in Dashboard</li>
+                                  <li>Contact support to upgrade your plan</li>
+                                </ul>
+                              </div>
+                            )
+                          }
+                          
+                          if (errorLower.includes('variable') || errorLower.includes('column') || errorLower.includes('missing')) {
+                            return (
+                              <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                                <p className="font-medium mb-1.5">How to fix:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-1">
+                                  <li>Check that all variables in your prompt match CSV column names exactly</li>
+                                  <li>Use the &quot;Quick fix&quot; button in the prompt section to remove missing variables</li>
+                                  <li>Or add the missing columns to your CSV file</li>
+                                </ul>
+                              </div>
+                            )
+                          }
+                          
+                          if (errorLower.includes('file type') || errorLower.includes('not supported') || (errorLower.includes('file') && errorLower.includes('csv'))) {
+                            return (
+                              <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                                <p className="font-medium mb-1.5">How to fix:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-1">
+                                  <li>Export your spreadsheet as CSV format</li>
+                                  <li>In Excel: File → Save As → CSV (Comma delimited)</li>
+                                  <li>In Google Sheets: File → Download → CSV</li>
+                                </ul>
+                              </div>
+                            )
+                          }
+                          
+                          if (errorLower.includes('too large') || errorLower.includes('size') || errorLower.includes('10mb')) {
+                            return (
+                              <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                                <p className="font-medium mb-1.5">How to fix:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-1">
+                                  <li>Split your CSV into smaller files (max 10MB each)</li>
+                                  <li>Remove unnecessary columns to reduce file size</li>
+                                  <li>Process files separately and combine results</li>
+                                </ul>
+                              </div>
+                            )
+                          }
+                          
+                          if (errorLower.includes('empty') || errorLower.includes('0 bytes') || errorLower.includes('no data')) {
+                            return (
+                              <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                                <p className="font-medium mb-1.5">How to fix:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-1">
+                                  <li>Check that your CSV file contains data rows</li>
+                                  <li>Ensure the file wasn&apos;t corrupted during download</li>
+                                  <li>Try re-exporting from your spreadsheet application</li>
+                                </ul>
+                              </div>
+                            )
+                          }
+                          
+                          if (errorLower.includes('google sheets') || errorLower.includes('spreadsheet') || errorLower.includes('permission')) {
+                            return (
+                              <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                                <p className="font-medium mb-1.5">How to fix:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-1">
+                                  <li>Ensure the Google Sheet is publicly accessible (View access)</li>
+                                  <li>Or share it with the service account email</li>
+                                  <li>Try downloading as CSV and uploading directly</li>
+                                </ul>
+                              </div>
+                            )
+                          }
+                          
+                          // Generic recovery for unknown errors
+                          return (
+                            <div className="text-xs text-red-300/80 mt-2 pt-2 border-t border-red-500/20">
+                              <p className="font-medium mb-1.5">Try these steps:</p>
+                              <ul className="list-disc list-inside space-y-1 ml-1">
+                                <li>Refresh the page and try again</li>
+                                <li>Check your internet connection</li>
+                                <li>If the problem persists, contact support</li>
+                              </ul>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    </div>
+                    {(error?.includes('wait for your current batch') || error?.includes('batch to complete')) && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/batch/reset', { method: 'POST' })
+                            if (response.ok) {
+                              setError(null)
+                            }
+                          } catch {
+                            // Silent failure - user can try again
+                          }
+                        }}
+                        className="text-xs px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded text-red-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                        aria-label="Reset stuck batch to allow new processing"
+                      >
+                        Reset Stuck Batch
+                      </button>
+                    )}
                   </div>
-                </div>
-                {(error?.includes('wait for your current batch') || error?.includes('batch to complete')) && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/batch/reset', { method: 'POST' })
-                        if (response.ok) {
-                          setError(null)
-                        }
-                      } catch {
-                        // Silent failure - user can try again
-                      }
-                    }}
-                    className="text-xs px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded text-red-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                    aria-label="Reset stuck batch to allow new processing"
-                  >
-                    Reset Stuck Batch
-                  </button>
                 )}
-              </div>
-            )}
 
-            {/* Validation Summary - Shows all validation errors at once */}
-            {/* Only show validation errors when CSV is uploaded - don't show errors for template prompt before user uploads CSV */}
-            {csvParser.csvData && prompt && !variableValidation.isValid && variableValidation.missing.length > 0 && (
-              <ValidationSummary
-                errors={[
-                  {
-                    field: 'prompt',
-                    message: `Prompt uses ${variableValidation.missing.map(v => `{{${v}}}`).join(', ')} but these columns don't exist in your CSV. Remove these variables or add these columns.`,
-                    scrollToField: () => {
-                      setPromptSectionOpen(true)
-                      setTimeout(() => {
-                        const textarea = document.querySelector('[data-testid="prompt-textarea"]') as HTMLTextAreaElement
-                        textarea?.focus()
-                        textarea?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }, 100)
-                    },
-                  },
-                ]}
-                title="Fix these issues to continue"
-                dismissible={false}
-                className="mb-4"
-              />
-            )}
+                {/* Validation Summary - Shows all validation errors at once */}
+                {/* Only show validation errors when CSV is uploaded - don't show errors for template prompt before user uploads CSV */}
+                {csvParser.csvData && prompt && !variableValidation.isValid && variableValidation.missing.length > 0 && (
+                  <ValidationSummary
+                    errors={[
+                      {
+                        field: 'prompt',
+                        message: `Prompt uses ${variableValidation.missing.map(v => `{{${v}}}`).join(', ')} but these columns don't exist in your CSV. Remove these variables or add these columns.`,
+                        scrollToField: () => {
+                          setPromptSectionOpen(true)
+                          setTimeout(() => {
+                            const textarea = document.querySelector('[data-testid="prompt-textarea"]') as HTMLTextAreaElement
+                            textarea?.focus()
+                            textarea?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                          }, 100)
+                        },
+                      },
+                    ]}
+                    title="Fix these issues to continue"
+                    dismissible={false}
+                    className="mb-4"
+                  />
+                )}
 
-            {/* Unused columns warning - Hidden to reduce noise */}
+                {/* Unused columns warning - Hidden to reduce noise */}
 
-            {/* WORKFLOW STEPS - Hidden to reduce visual noise, onboarding handles guidance */}
+                {/* WORKFLOW STEPS - Hidden to reduce visual noise, onboarding handles guidance */}
 
-            {/* INPUT SECTION */}
-            <CollapsibleSection
-              title="Input"
-              open={dataInputSection.isOpen}
-              onOpenChange={dataInputSection.setIsOpen}
-              className="border border-border rounded-md bg-card"
-              triggerClassName="hover:bg-accent/20"
-              contentClassName="px-0 pb-0"
-              status={csvParser.csvData ? 'ready' : undefined}
-              statusMessage={csvParser.csvData ? 'Ready' : undefined}
-            >
-              <div className="space-y-3">
-              <DataInputTabs
+                {/* INPUT SECTION */}
+                <CollapsibleSection
+                  title="Input"
+                  open={dataInputSection.isOpen}
+                  onOpenChange={dataInputSection.setIsOpen}
+                  className="border border-border rounded-md bg-card"
+                  triggerClassName="hover:bg-accent/20"
+                  contentClassName="px-0 pb-0"
+                  status={csvParser.csvData ? 'ready' : undefined}
+                  statusMessage={csvParser.csvData ? 'Ready' : undefined}
+                >
+                  <div className="space-y-3">
+                    <DataInputTabs
                 isParsing={csvParser.isParsing}
                 csvData={csvParser.csvData}
                 fileName={fileUpload.file?.name}
@@ -1830,77 +1830,77 @@ export default function BulkProcessor() {
                 onGoogleSheetsDataLoaded={handleGoogleSheetsDataLoaded}
                 onClearData={handleClearData}
                 selectedInputColumns={selectedInputColumns}
-                onInputColumnsChange={setSelectedInputColumns}
-              />
-                {fileUpload.file && csvParser.csvData && (
-                  <div className="px-4 pb-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveInputToContext}
-                      className="w-full text-xs"
-                    >
-                      <Save className="h-3.5 w-3.5 mr-1.5" />
-                      Save Input File to Context
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CollapsibleSection>
+                    onInputColumnsChange={setSelectedInputColumns}
+                  />
+                    {fileUpload.file && csvParser.csvData && (
+                    <div className="px-4 pb-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveInputToContext}
+                        className="w-full text-xs"
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1.5" />
+                        Save Input File to Context
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
 
-            {/* TASK SECTION */}
-            <CollapsibleSection
-              title="Task"
-              open={promptSectionOpen}
-              onOpenChange={setPromptSectionOpen}
-              className="border border-border rounded-md bg-card"
-              triggerClassName="hover:bg-accent/20"
-              contentClassName="px-0 pb-0"
-              status={
-                !csvParser.csvData ? undefined :
-                !prompt.trim() ? undefined :
-                !variableValidation.isValid ? 'error' :
-                'ready'
-              }
-              statusMessage={
-                !csvParser.csvData ? undefined :
-                !prompt.trim() ? undefined :
-                !variableValidation.isValid ? 'Missing variables' :
-                'Ready'
-              }
-            >
-              <PromptSection
-                prompt={prompt}
-                onPromptChange={setPrompt}
-                csvData={csvParser.csvData}
-                onOpenTemplates={() => setShowTemplateModal(true)}
-                selectedInputColumns={selectedInputColumns}
-                variableValidation={variableValidation}
-              />
-            </CollapsibleSection>
+              {/* TASK SECTION */}
+              <CollapsibleSection
+                title="Task"
+                open={promptSectionOpen}
+                onOpenChange={setPromptSectionOpen}
+                className="border border-border rounded-md bg-card"
+                triggerClassName="hover:bg-accent/20"
+                contentClassName="px-0 pb-0"
+                status={
+                  !csvParser.csvData ? undefined :
+                  !prompt.trim() ? undefined :
+                  !variableValidation.isValid ? 'error' :
+                  'ready'
+                }
+                statusMessage={
+                  !csvParser.csvData ? undefined :
+                  !prompt.trim() ? undefined :
+                  !variableValidation.isValid ? 'Missing variables' :
+                  'Ready'
+                }
+              >
+                <PromptSection
+                  prompt={prompt}
+                  onPromptChange={setPrompt}
+                  csvData={csvParser.csvData}
+                  onOpenTemplates={() => setShowTemplateModal(true)}
+                  selectedInputColumns={selectedInputColumns}
+                  variableValidation={variableValidation}
+                />
+              </CollapsibleSection>
 
-            {/* OUTPUT SECTION */}
-            <CollapsibleSection
-              title="Output"
-              open={outputSettingsSectionOpen}
-              onOpenChange={setOutputSettingsSectionOpen}
-              className="border border-border rounded-md bg-card"
-              triggerClassName="hover:bg-accent/20"
-              contentClassName="space-y-3"
-              status={
-                !csvParser.csvData || !prompt.trim() ? undefined :
-                outputFields.length === 0 ? 'warning' :
-                'ready'
-              }
-              statusMessage={
-                !csvParser.csvData || !prompt.trim() ? undefined :
-                outputFields.length === 0 ? 'No output fields' :
-                'Ready'
-              }
-            >
-              {/* OUTPUT COLUMNS - JSON mode always enabled for structured output */}
-              <div className="space-y-3">
+              {/* OUTPUT SECTION */}
+              <CollapsibleSection
+                title="Output"
+                open={outputSettingsSectionOpen}
+                onOpenChange={setOutputSettingsSectionOpen}
+                className="border border-border rounded-md bg-card"
+                triggerClassName="hover:bg-accent/20"
+                contentClassName="space-y-3"
+                status={
+                  !csvParser.csvData || !prompt.trim() ? undefined :
+                  outputFields.length === 0 ? 'warning' :
+                  'ready'
+                }
+                statusMessage={
+                  !csvParser.csvData || !prompt.trim() ? undefined :
+                  outputFields.length === 0 ? 'No output fields' :
+                  'Ready'
+                }
+              >
+                {/* OUTPUT COLUMNS - JSON mode always enabled for structured output */}
+                <div className="space-y-3">
                   <OutputFieldsSection
                     outputFields={outputFields}
                     newField={newField}
@@ -1914,25 +1914,25 @@ export default function BulkProcessor() {
                     selectedTools={selectedTools}
                     onToggleTool={toggleTool}
                   />
+                </div>
+              </CollapsibleSection>
+
+              {/* AI-OPTIMIZED JOB PREVIEW */}
+              {(optimizedPrompt || outputColumns.length > 0 || suggestedInputColumns.length > 0 || suggestedTools.length > 0 || isOptimizing) && (
+                <JobPreview
+                  optimizedPrompt={optimizedPrompt || undefined}
+                  setOptimizedPrompt={setOptimizedPrompt}
+                  outputColumns={outputColumns}
+                  suggestedInputColumns={suggestedInputColumns}
+                  suggestedTools={suggestedTools}
+                  reasoning={reasoning}
+                  isOptimizing={isOptimizing}
+                  onAccept={handleAcceptOptimization}
+                  onReject={handleRejectOptimization}
+                />
+              )}
               </div>
-
-            </CollapsibleSection>
-
-            {/* AI-OPTIMIZED JOB PREVIEW */}
-            {(optimizedPrompt || outputColumns.length > 0 || suggestedInputColumns.length > 0 || suggestedTools.length > 0 || isOptimizing) && (
-              <JobPreview
-                optimizedPrompt={optimizedPrompt || undefined}
-                setOptimizedPrompt={setOptimizedPrompt}
-                outputColumns={outputColumns}
-                suggestedInputColumns={suggestedInputColumns}
-                suggestedTools={suggestedTools}
-                reasoning={reasoning}
-                isOptimizing={isOptimizing}
-                onAccept={handleAcceptOptimization}
-                onReject={handleRejectOptimization}
-              />
-            )}
-          </div>
+            </div>
 
           {/* AI OPTIMIZATION - Global, above actions */}
           {csvParser.csvData && prompt && (
@@ -2006,7 +2006,7 @@ export default function BulkProcessor() {
                       </>
                     )}
                   </button>
-          </div>
+                </div>
               </CollapsibleSection>
             </div>
           )}
@@ -2118,11 +2118,11 @@ export default function BulkProcessor() {
                 </TooltipProvider>
               </div>
             </div>
-          </div>
+            </div>
 
             {/* RIGHT PANEL - Results */}
             <div className="h-full overflow-hidden flex flex-col bg-muted/20">
-          {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
+              {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
             <ResultsTable
               results={displayResults}
               columns={selectedInputColumns.length > 0 ? selectedInputColumns : (csvParser.csvData?.columns || [])}
