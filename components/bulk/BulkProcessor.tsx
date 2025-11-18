@@ -966,7 +966,7 @@ export default function BulkProcessor() {
     // Create a single-row CSV for retry
     const retryCSVData = {
       ...csvParser.csvData,
-      rows: [{ data: failedResult.input }],
+      rows: [{ data: failedResult.input, rowIndex: 0 }],
       totalRows: 1,
     }
 
@@ -1480,17 +1480,21 @@ export default function BulkProcessor() {
       // Get all unique keys from results
       const allKeys = new Set<string>()
       results.forEach(row => {
-        if (row.output_data) {
-          const output = typeof row.output_data === 'string' 
-            ? JSON.parse(row.output_data) 
-            : row.output_data
-          Object.keys(output).forEach(key => allKeys.add(key))
+        if (row.output) {
+          try {
+            const output = typeof row.output === 'string' 
+              ? JSON.parse(row.output) 
+              : row.output
+            if (typeof output === 'object' && output !== null) {
+              Object.keys(output).forEach(key => allKeys.add(key))
+            }
+          } catch {
+            // If output is not JSON, treat as plain text
+            allKeys.add('output')
+          }
         }
-        if (row.input_data) {
-          const input = typeof row.input_data === 'string'
-            ? JSON.parse(row.input_data)
-            : row.input_data
-          Object.keys(input).forEach(key => allKeys.add(key))
+        if (row.input) {
+          Object.keys(row.input).forEach(key => allKeys.add(key))
         }
       })
 
@@ -1500,21 +1504,25 @@ export default function BulkProcessor() {
       // Add data rows
       results.forEach(row => {
         const values = headers.map(header => {
-          if (row.output_data) {
-            const output = typeof row.output_data === 'string'
-              ? JSON.parse(row.output_data)
-              : row.output_data
-            if (output[header] !== undefined) {
-              return `"${String(output[header]).replace(/"/g, '""')}"`
+          if (row.output) {
+            try {
+              const output = typeof row.output === 'string'
+                ? JSON.parse(row.output)
+                : row.output
+              if (typeof output === 'object' && output !== null && output[header] !== undefined) {
+                return `"${String(output[header]).replace(/"/g, '""')}"`
+              } else if (header === 'output') {
+                return `"${String(row.output).replace(/"/g, '""')}"`
+              }
+            } catch {
+              // If output is not JSON, treat as plain text
+              if (header === 'output') {
+                return `"${String(row.output).replace(/"/g, '""')}"`
+              }
             }
           }
-          if (row.input_data) {
-            const input = typeof row.input_data === 'string'
-              ? JSON.parse(row.input_data)
-              : row.input_data
-            if (input[header] !== undefined) {
-              return `"${String(input[header]).replace(/"/g, '""')}"`
-            }
+          if (row.input && row.input[header] !== undefined) {
+            return `"${String(row.input[header]).replace(/"/g, '""')}"`
           }
           return ''
         })
@@ -1559,7 +1567,7 @@ export default function BulkProcessor() {
           setError(null)
           fileUpload.clearError?.()
           csvParser.clearError?.()
-          batchProcessor.clearError?.()
+          // batchProcessor doesn't have clearError, errors are managed via state
         }
       }
     }
@@ -1595,20 +1603,10 @@ export default function BulkProcessor() {
                     {/* Mobile: Stack on separate lines for clarity */}
                     <span className="sm:hidden flex flex-col gap-0.5">
                       <span>{usage.batchesToday}/{usage.dailyBatchLimit} batches today</span>
-                      {usage.dailyRowLimit && (
-                        <span className="text-[10px]">{usage.dailyRowLimit.toLocaleString()} rows per batch</span>
-                      )}
                     </span>
                     {/* Desktop: Single line */}
                     <span className="hidden sm:flex items-center gap-1.5">
                       <span>{usage.batchesToday}/{usage.dailyBatchLimit} batches today</span>
-                      {usage.dailyRowLimit && (
-                        <>
-                          <span>•</span>
-                          <span className="hidden md:inline">{usage.dailyRowLimit.toLocaleString()} rows per batch</span>
-                          <span className="md:hidden">{Math.floor(usage.dailyRowLimit / 1000)}k rows/batch</span>
-                        </>
-                      )}
                     </span>
                   </span>
                   {usage.batchesToday >= usage.dailyBatchLimit && (

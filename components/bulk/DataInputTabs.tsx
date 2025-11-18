@@ -42,7 +42,7 @@ export const DataInputTabs = memo(function DataInputTabs({
   const showSheetsPreview = csvData && csvData.rows.length > 0 && !isUploading && !isParsing && activeTab === 'sheets'
   
   // Track data source to determine which tab should be active when data loads
-  const [dataSource, setDataSource] = useState<'csv' | 'sheets' | null>(null)
+  const [dataSource, setDataSource] = useState<'csv' | 'sheets' | 'context' | null>(null)
   
   // Auto-switch to appropriate tab when data loads
   useEffect(() => {
@@ -122,5 +122,4 @@ export const DataInputTabs = memo(function DataInputTabs({
     </Tabs>
   )
 })
-
 

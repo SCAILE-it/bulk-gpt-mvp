@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useContextFiles } from '@/hooks/useContextFiles'
-import { AutoSkeleton } from '@/components/ui/auto-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 
 const ACCEPTED_FILE_TYPES = {

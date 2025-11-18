@@ -20,17 +20,11 @@ import {
 interface GTMClassificationFormProps {
   initialContext?: BusinessContext;
   onUpdate: (playbook: GTMPlaybook | null, productType: string | null) => void;
-  icp?: string;
-  products?: string[];
-  countries?: string[];
 }
 
 export function GTMClassificationForm({
   initialContext,
-  onUpdate,
-  icp,
-  products,
-  countries
+  onUpdate
 }: GTMClassificationFormProps) {
   const [playbook, setPlaybook] = useState<GTMPlaybook | null>(
     (initialContext?.gtm_playbook as GTMPlaybook) || null
