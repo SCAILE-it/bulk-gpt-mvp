@@ -417,9 +417,6 @@ export function BusinessContextForm() {
               toast.error('Failed to update GTM profile')
             }
           }}
-          icp={formData.icp}
-          products={formData.products}
-          countries={formData.countries}
         />
       </div>
 

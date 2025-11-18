@@ -46,6 +46,7 @@ export function ContextForm() {
       const timer = setTimeout(() => setShowSavedIndicator(false), 2000)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [context, hasContext, hasUserMadeChanges])
 
   // Track when user makes manual changes (not from website analysis)
@@ -859,14 +860,6 @@ export function ContextForm() {
         initialContext={gtmProfile ? {
           gtm_playbook: gtmProfile.gtmPlaybook as GTMPlaybook | null,
           product_type: gtmProfile.productType,
-          gtm_playbook_confidence: gtmProfile.gtmPlaybookConfidence,
-          product_type_confidence: gtmProfile.productTypeConfidence,
-          gtm_playbook_ai_suggested: gtmProfile.gtmPlaybookAISuggested,
-          product_type_ai_suggested: gtmProfile.productTypeAISuggested,
-          gtm_playbook_manually_overridden: gtmProfile.gtmPlaybookManuallyOverridden,
-          product_type_manually_overridden: gtmProfile.productTypeManuallyOverridden,
-          gtm_playbook_ai_suggestion: gtmProfile.gtmPlaybookAISuggestion as GTMPlaybook | null,
-          product_type_ai_suggestion: gtmProfile.productTypeAISuggestion,
         } as BusinessContextType : undefined}
         onUpdate={async (playbook, productType) => {
           setHasUserMadeChanges(true)
@@ -875,9 +868,6 @@ export function ContextForm() {
             productType: productType || undefined,
           })
         }}
-        icp={businessContext.icp}
-        products={businessContext.products}
-        countries={businessContext.countries}
       />
 
       {/* Clear All Confirmation Modal */}

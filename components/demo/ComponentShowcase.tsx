@@ -222,7 +222,7 @@ export function ComponentShowcase() {
             <h4 className="font-medium">Banner Variant:</h4>
             <ErrorDisplay
               message="Failed to load data"
-              onRetry={() => setError(null)}
+              onRetry={() => {}}
               variant="banner"
               details="Please check your connection and try again."
             />

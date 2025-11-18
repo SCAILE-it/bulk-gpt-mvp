@@ -886,8 +886,11 @@ export function AnalyticsDashboard() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Select 
-              value={dateRange} 
-              onValueChange={(value) => setDateRange(value as DateRange)}
+              value={typeof dateRange === 'string' ? dateRange : 'custom'} 
+              onValueChange={(value) => {
+                if (value === 'custom') return
+                setDateRange(value as DateRangePreset)
+              }}
               disabled={isLoading}
             >
               <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs">
@@ -1063,7 +1066,7 @@ export function AnalyticsDashboard() {
                 {/* Date Range - Most Important */}
                 <DateRangePicker
                   value={typeof dateRange === 'string' ? dateRange : dateRange}
-                  onChange={(range) => setDateRange(range)}
+                  onChange={(range) => setDateRange(range as DateRange)}
                 />
                 
                 {/* Model Filter */}
@@ -1407,12 +1410,12 @@ export function AnalyticsDashboard() {
               current={{
                 label: 'Current Period',
                 value: analytics.tokenStats.totalTokens,
-                formatValue: formatNumber,
+                formatValue: (value: string | number) => formatNumber(Number(value)),
               }}
               previous={{
                 label: 'Previous Period',
                 value: analytics.previousPeriod.tokenStats.totalTokens,
-                formatValue: formatNumber,
+                formatValue: (value: string | number) => formatNumber(Number(value)),
               }}
               comparison={tokenComparison}
               isMobile={isMobile}
@@ -1423,12 +1426,12 @@ export function AnalyticsDashboard() {
               current={{
                 label: 'Current Period',
                 value: totalCost,
-                formatValue: formatCost,
+                formatValue: (value: string | number) => formatCost(Number(value)),
               }}
               previous={{
                 label: 'Previous Period',
                 value: previousTotalCost,
-                formatValue: formatCost,
+                formatValue: (value: string | number) => formatCost(Number(value)),
               }}
               comparison={costComparison}
               isMobile={isMobile}
@@ -1720,7 +1723,7 @@ export function AnalyticsDashboard() {
           tokenStats={analytics.tokenStats}
           recentActivity={analytics.recentActivity}
           previousPeriod={analytics.previousPeriod}
-          dateRange={dateRange}
+          dateRange={typeof dateRange === 'string' ? dateRange : 'all'}
         />
       )}
           
@@ -1852,7 +1855,7 @@ export function AnalyticsDashboard() {
                     <YAxis 
                       stroke="hsl(var(--muted-foreground))"
                       style={{ fontSize: '11px' }}
-                      tickFormatter={(value) => formatNumber(value)}
+                      tickFormatter={(value: string | number) => formatNumber(Number(value))}
                       tickLine={false}
                     />
                     <Tooltip 
@@ -2016,9 +2019,9 @@ export function AnalyticsDashboard() {
               <BarChart 
                 data={statusChartData}
                 aria-label="Batch status distribution chart showing completed, failed, and processing batches"
-                onClick={(data) => {
+                onClick={(data: { activePayload?: Array<{ payload: Record<string, unknown> }> }) => {
                   if (data && data.activePayload && data.activePayload[0]) {
-                    handleChartClick(data.activePayload[0].payload, 'status')
+                    handleChartClick(data.activePayload[0].payload as { name?: string }, 'status')
                   }
                 }}
               >
@@ -2145,9 +2148,9 @@ export function AnalyticsDashboard() {
                 data={modelChartData} 
                 layout="vertical"
                 aria-label="Model breakdown chart showing token usage by model"
-                onClick={(data) => {
+                onClick={(data: { activePayload?: Array<{ payload: Record<string, unknown> }> }) => {
                   if (data && data.activePayload && data.activePayload[0]) {
-                    handleChartClick(data.activePayload[0].payload, 'model')
+                    handleChartClick(data.activePayload[0].payload as { name?: string }, 'model')
                   }
                 }}
               >
@@ -2156,7 +2159,7 @@ export function AnalyticsDashboard() {
                   type="number"
                   stroke="hsl(var(--muted-foreground))"
                   style={{ fontSize: '11px' }}
-                  tickFormatter={(value) => formatNumber(value)}
+                  tickFormatter={(value: string | number) => formatNumber(Number(value))}
                   tickLine={false}
                 />
                 <YAxis 
@@ -2316,7 +2319,7 @@ export function AnalyticsDashboard() {
         title="Token Usage Over Time"
         icon={TrendingUp}
         chartRef={expandedTokenUsageRef}
-        dateRange={dateRange}
+        dateRange={typeof dateRange === 'string' ? dateRange : undefined}
       >
         {analytics && tokenActivityChartData.length > 0 && (() => {
           // Calculate annotations for expanded chart - use 'value' key to calculate total (input + output)
@@ -2346,7 +2349,7 @@ export function AnalyticsDashboard() {
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
                   style={{ fontSize: '12px' }}
-                  tickFormatter={(value) => formatNumber(value)}
+                  tickFormatter={(value: string | number) => formatNumber(Number(value))}
                   tickLine={false}
                 />
                 <Tooltip 
@@ -2422,17 +2425,17 @@ export function AnalyticsDashboard() {
         title="Batch Status Distribution"
         icon={BarChart3}
         chartRef={expandedBatchStatusRef}
-        dateRange={dateRange}
+        dateRange={typeof dateRange === 'string' ? dateRange : undefined}
       >
         {analytics && statusChartData.length > 0 && (
           <ResponsiveContainer width="100%" height={isMobile ? 400 : 600}>
             <BarChart 
               data={statusChartData}
-              onClick={(data) => {
-                if (data && data.activePayload && data.activePayload[0]) {
-                  handleChartClick(data.activePayload[0].payload, 'status')
-                }
-              }}
+                onClick={(data: { activePayload?: Array<{ payload: Record<string, unknown> }> }) => {
+                  if (data && data.activePayload && data.activePayload[0]) {
+                    handleChartClick(data.activePayload[0].payload as { name?: string }, 'status')
+                  }
+                }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
               <XAxis 
@@ -2469,16 +2472,16 @@ export function AnalyticsDashboard() {
         title="Model Breakdown"
         icon={Zap}
         chartRef={expandedModelBreakdownRef}
-        dateRange={dateRange}
+        dateRange={typeof dateRange === 'string' ? dateRange : undefined}
       >
         {analytics && modelChartData.length > 1 && (
           <ResponsiveContainer width="100%" height={isMobile ? 400 : 600}>
             <BarChart 
               data={modelChartData} 
               layout="vertical"
-              onClick={(data) => {
+              onClick={(data: { activePayload?: Array<{ payload: Record<string, unknown> }> }) => {
                 if (data && data.activePayload && data.activePayload[0]) {
-                  handleChartClick(data.activePayload[0].payload, 'model')
+                  handleChartClick(data.activePayload[0].payload as { name?: string }, 'model')
                 }
               }}
             >
@@ -2487,7 +2490,7 @@ export function AnalyticsDashboard() {
                 type="number"
                 stroke="hsl(var(--muted-foreground))"
                 style={{ fontSize: '12px' }}
-                tickFormatter={(value) => formatNumber(value)}
+                tickFormatter={(value: string | number) => formatNumber(Number(value))}
                 tickLine={false}
               />
               <YAxis 
@@ -2532,7 +2535,7 @@ export function AnalyticsDashboard() {
         title="Recent Activity"
         icon={Clock}
         chartRef={expandedRecentActivityRef}
-        dateRange={dateRange}
+        dateRange={typeof dateRange === 'string' ? dateRange : undefined}
       >
         {analytics && activityChartData.length > 0 && (
           <ResponsiveContainer width="100%" height={isMobile ? 400 : 600}>

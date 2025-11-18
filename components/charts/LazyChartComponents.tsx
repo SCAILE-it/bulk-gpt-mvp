@@ -55,9 +55,9 @@ export const LazyLegend = dynamic(
 ) as ComponentType<Record<string, unknown>>
 
 export const LazyResponsiveContainer = dynamic(
-  () => import('recharts').then(mod => mod.ResponsiveContainer),
+  () => import('recharts').then(mod => mod.ResponsiveContainer) as Promise<ComponentType<Record<string, unknown>>>,
   { ssr: false }
-) as ComponentType<Record<string, unknown>>
+)
 
 export const LazyReferenceLine = dynamic(
   () => import('recharts').then(mod => mod.ReferenceLine),
