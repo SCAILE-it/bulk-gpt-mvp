@@ -11,9 +11,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AlertCircle, User, Key, BarChart3, CreditCard } from 'lucide-react'
+import { AlertCircle, User, BarChart3, CreditCard } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
-import { ApiKeyList } from '@/components/api-keys/ApiKeyList'
 import { UsageDisplay } from '@/components/usage/UsageDisplay'
 import { InvoiceList } from '@/components/billing/InvoiceList'
 import { AutoSkeleton } from '@/components/ui/auto-skeleton'
@@ -196,19 +195,6 @@ function ProfilePageContent() {
     </div>
   )
 
-  const apiKeysContent = (
-    <div className="container mx-auto max-w-2xl px-4 sm:px-6 py-4 sm:py-6">
-      <div className="bg-secondary/40 border border-border rounded-md overflow-hidden">
-        <div className="px-4 sm:px-6 py-4 border-b border-border">
-          <h2 className="text-sm font-medium text-foreground">API Access</h2>
-        </div>
-        <div className="p-4 sm:p-6">
-          <ApiKeyList />
-        </div>
-      </div>
-    </div>
-  )
-
   const usageContent = (
     <div className="container mx-auto max-w-2xl px-4 sm:px-6 py-4 sm:py-6">
       <div className="bg-secondary/40 border border-border rounded-md overflow-hidden">
@@ -272,12 +258,6 @@ function ProfilePageContent() {
             label: 'Account',
             icon: <User className="h-3.5 w-3.5" />,
             content: accountContent,
-          },
-          {
-            value: 'api-keys',
-            label: 'API Keys',
-            icon: <Key className="h-3.5 w-3.5" />,
-            content: apiKeysContent,
           },
           {
             value: 'usage',

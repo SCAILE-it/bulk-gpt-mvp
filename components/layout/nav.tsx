@@ -123,8 +123,13 @@ export function Nav() {
               href={link.href}
               prefetch={true}
               onMouseEnter={() => handleNavHover(link.href)}
+              onClick={(e) => {
+                // Ensure navigation happens immediately
+                router.push(link.href)
+                router.refresh()
+              }}
               className={cn(
-                'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer',
                 pathname === link.href
                   ? 'text-foreground bg-accent'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -244,10 +249,15 @@ export function Nav() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    // Ensure navigation happens immediately
+                    setMobileMenuOpen(false)
+                    router.push(link.href)
+                    router.refresh()
+                  }}
                   onMouseEnter={() => handleNavHover(link.href)}
                   className={cn(
-                    'block px-4 py-3 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] flex items-center touch-manipulation',
+                    'block px-4 py-3 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] flex items-center touch-manipulation cursor-pointer',
                     pathname === link.href
                       ? 'text-foreground bg-accent'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent/50 active:bg-accent'
