@@ -249,7 +249,7 @@ export function Nav() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  onClick={(e) => {
+                  onClick={() => {
                     // Ensure navigation happens immediately
                     setMobileMenuOpen(false)
                     router.push(link.href)
