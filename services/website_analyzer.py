@@ -322,21 +322,62 @@ async def analyze_website(
     
     logger.info(f"Starting website analysis: url={url}, mode={mode}, use_google_search={use_google_search}")
     
-    # No HTML fetching needed - Gemini will access URL directly with grounding
-    logger.debug(f"Using Gemini URL context with grounding for: {url}")
+    # Fetch HTML content - Gemini's URL context doesn't work reliably, so we fetch HTML ourselves
+    # Then pass it to Gemini with search grounding for enhanced analysis
+    logger.debug(f"Fetching HTML content from: {url}")
+    
+    try:
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30), headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }) as response:
+                if response.status != 200:
+                    raise ValueError(f"Failed to fetch URL: HTTP {response.status}")
+                html_content = await response.text()
+                
+        if not html_content or len(html_content) < 100:
+            raise ValueError("No meaningful content retrieved from URL")
+        
+        # Extract text content (simplified - remove scripts, styles, etc.)
+        import re
+        # Remove script and style tags
+        html_content = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+        html_content = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+        # Extract text from HTML (simplified)
+        from html.parser import HTMLParser
+        class TextExtractor(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.text = []
+            def handle_data(self, data):
+                if data.strip():
+                    self.text.append(data.strip())
+        parser = TextExtractor()
+        parser.feed(html_content)
+        text_content = ' '.join(parser.text)[:max_content_length]
+        
+        logger.debug(f"HTML fetched: {url}, text_length={len(text_content)}")
+    except Exception as e:
+        logger.error(f"Exception during HTML fetch: {url}, error: {str(e)}", exc_info=True)
+        raise ValueError(f"Failed to fetch website content: {str(e)}")
 
     # Use Gemini API for analysis
     try:
         logger.debug(f"Starting Gemini analysis: {url}")
         genai.configure(api_key=api_key)
         
+        # Build prompt with actual website content
         extraction_prompt = f"""{system_prompt}
 
 ---
 
 Website URL: {url}
 
-{"Analyze this website and use web search to find additional information about this company, their products, competitors, and market position. Then extract the requested information and return JSON." if use_google_search else "Extract the requested information from the website and return JSON."}"""
+Website Content (extracted text):
+{text_content}
+
+{"IMPORTANT: Use Google Search to find additional information about this company, their products, competitors, market position, team members, legal information (imprint), funding, investors, and any other relevant details that might not be visible on the website. Then extract the requested information and return JSON." if use_google_search else "Extract the requested information from the website content above and return JSON."}"""
 
         # Try new API first (v0.2.0+)
         try:
@@ -360,37 +401,31 @@ Website URL: {url}
                 "response_mime_type": "application/json",
             }
             
-            # Use URL context - Gemini can fetch URLs directly
+            # Use search grounding when enabled
             if use_google_search:
                 try:
-                    # Try with grounding and URL context
+                    # Remove response_mime_type when using tools (not supported)
+                    config_without_mime = generation_config.copy()
+                    config_without_mime.pop("response_mime_type", None)
+                    
+                    # Use google_search tool for grounding
                     response = model.generate_content(
-                        [extraction_prompt, url],  # Pass URL as separate part
-                        generation_config=generation_config,
-                        tools=[{"google_search": {}}] if hasattr(genai, 'types') else None,
+                        extraction_prompt,
+                        generation_config=config_without_mime,
+                        tools=[{"google_search": {}}],
                     )
+                    logger.debug("Used Google Search grounding")
                 except Exception as e:
-                    logger.warning(f"Grounding with URL failed: {e}, trying without grounding")
-                    try:
-                        # Fallback: URL in prompt
-                        response = model.generate_content(
-                            f"{extraction_prompt}\n\nWebsite URL: {url}",
-                            generation_config=generation_config,
-                        )
-                    except:
-                        response = model.generate_content(extraction_prompt, generation_config=generation_config)
+                    logger.warning(f"Grounding failed: {e}, trying without grounding")
+                    response = model.generate_content(
+                        extraction_prompt,
+                        generation_config=generation_config,
+                    )
             else:
-                # URL context without grounding
-                try:
-                    response = model.generate_content(
-                        [extraction_prompt, url],
-                        generation_config=generation_config,
-                    )
-                except:
-                    response = model.generate_content(
-                        f"{extraction_prompt}\n\nWebsite URL: {url}",
-                        generation_config=generation_config,
-                    )
+                response = model.generate_content(
+                    extraction_prompt,
+                    generation_config=generation_config,
+                )
             
             response_text = response.text.strip()
         except (ImportError, AttributeError):
@@ -400,9 +435,9 @@ Website URL: {url}
                 import requests
                 import json as json_lib
                 
-                # Build payload - Gemini can access URLs directly when passed in prompt
-                # Include URL in the prompt text - Gemini will fetch it automatically
-                prompt_with_url = f"{extraction_prompt}\n\nPlease analyze the website at: {url}"
+                # Build payload - Use Gemini's URL context properly
+                # Gemini needs explicit instruction to fetch URL content
+                prompt_with_url = extraction_prompt
                 
                 # Note: Can't use responseMimeType with tools (google_search)
                 generation_config = {
