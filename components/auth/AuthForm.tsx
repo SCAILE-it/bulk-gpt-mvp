@@ -166,7 +166,6 @@ export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/agents' 
               onBlur={emailValidation.setTouched}
               required
               disabled={isLoadingEmail}
-              autoComplete="email"
               aria-label="Email address"
               aria-describedby={error ? "form-error" : emailValidation.touched && emailValidation.errors[0] ? "email-error" : undefined}
               aria-invalid={emailValidation.touched && !emailValidation.isValid}
@@ -190,7 +189,6 @@ export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/agents' 
               onBlur={passwordValidation.setTouched}
               required
               disabled={isLoadingEmail}
-              autoComplete="current-password"
               aria-label="Password"
               aria-describedby={error ? "form-error" : passwordValidation.touched && passwordValidation.errors[0] ? "password-error" : undefined}
               aria-invalid={passwordValidation.touched && !passwordValidation.isValid}

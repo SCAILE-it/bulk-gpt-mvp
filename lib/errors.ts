@@ -8,6 +8,8 @@ export type ErrorCode =
   | 'FILE_TOO_LARGE'
   | 'EMPTY_CSV'
   | 'NO_COLUMNS'
+  | 'EMPTY_COLUMN_NAMES'
+  | 'DUPLICATE_COLUMN_NAMES'
   | 'TOO_MANY_COLUMNS'
   | 'TOO_MANY_ROWS'
   | 'CSV_PARSE_ERROR'

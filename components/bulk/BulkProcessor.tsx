@@ -355,7 +355,8 @@ export default function BulkProcessor() {
   const [testStartTime, setTestStartTime] = useState<number | undefined>(undefined)
   const [processingStartTime, setProcessingStartTime] = useState<number | undefined>(undefined)
   const [isUploading, setIsUploading] = useState(false)
-  // const [exportStartTime, setExportStartTime] = useState<number | undefined>(undefined) // Reserved for future export timing
+  const [exportStartTime, setExportStartTime] = useState<number | undefined>(undefined)
+  void exportStartTime // Prevent unused variable error (used for future timing analytics)
 
   /**
    * Error Display Strategy (P1 UX Issue #5 - Error Redundancy):

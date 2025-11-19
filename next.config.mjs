@@ -8,6 +8,8 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Enable compression for responses
+  compress: true,
   // Performance optimizations
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
