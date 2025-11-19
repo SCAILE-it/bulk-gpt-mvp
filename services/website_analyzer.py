@@ -278,9 +278,19 @@ async def analyze_website(
     """
     try:
         import google.generativeai as genai
-        from crawl4ai import AsyncWebCrawler
     except ImportError as e:
-        raise ImportError(f"Missing required dependencies: {e}. Install with: pip install google-generativeai crawl4ai")
+        raise ImportError(f"Missing required dependency: {e}. Install with: pip install google-generativeai")
+    
+    # Try crawl4ai, fallback to requests if not available
+    try:
+        from crawl4ai import AsyncWebCrawler
+        USE_CRAWL4AI = True
+    except ImportError:
+        try:
+            import aiohttp
+            USE_CRAWL4AI = False
+        except ImportError:
+            raise ImportError("Missing required dependency: Install either 'crawl4ai' or 'aiohttp'. Recommended: pip install crawl4ai")
 
     # Get API key from environment
     api_key = os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
@@ -321,36 +331,48 @@ async def analyze_website(
     
     logger.info(f"Starting website analysis: url={url}, mode={mode}, use_google_search={use_google_search}")
     
-    # Fetch HTML content using crawl4ai
+    # Fetch HTML content
     try:
         logger.debug(f"Fetching HTML from: {url}")
-        async with AsyncWebCrawler(verbose=False, headless=True, browser_type="chromium") as crawler:
-            crawl_result = await crawler.arun(
-                url=url,
-                bypass_cache=True,
-                timeout=30,
-                wait_for="networkidle",
-                delay_before_return_html=2.0,
-                js_code=["window.scrollTo(0, document.body.scrollHeight);"],
-            )
-            
-            if not crawl_result.success:
-                error_msg = "Failed to access the URL. Please check that the URL is valid and accessible."
-                if "ERR_NAME_NOT_RESOLVED" in str(crawl_result.error_message):
-                    error_msg = "Domain not found. Please check the URL is correct."
-                elif "ERR_CONNECTION_REFUSED" in str(crawl_result.error_message):
-                    error_msg = "Connection refused. The website may be down or blocking requests."
-                elif "ERR_CONNECTION_TIMED_OUT" in str(crawl_result.error_message):
-                    error_msg = "Connection timed out. The website took too long to respond."
-                logger.error(f"Failed to fetch HTML: {url}, error: {crawl_result.error_message}")
-                raise ValueError(error_msg)
-            
-            html_content = crawl_result.markdown or crawl_result.html or ""
-            if not html_content:
-                logger.error(f"No content retrieved from URL: {url}")
-                raise ValueError("No content retrieved from URL")
-            
-            logger.debug(f"HTML fetched: {url}, content_length={len(html_content)}")
+        
+        if USE_CRAWL4AI:
+            # Use crawl4ai for JS-rendered pages
+            async with AsyncWebCrawler(verbose=False, headless=True, browser_type="chromium") as crawler:
+                crawl_result = await crawler.arun(
+                    url=url,
+                    bypass_cache=True,
+                    timeout=30,
+                    wait_for="networkidle",
+                    delay_before_return_html=2.0,
+                    js_code=["window.scrollTo(0, document.body.scrollHeight);"],
+                )
+                
+                if not crawl_result.success:
+                    error_msg = "Failed to access the URL. Please check that the URL is valid and accessible."
+                    if "ERR_NAME_NOT_RESOLVED" in str(crawl_result.error_message):
+                        error_msg = "Domain not found. Please check the URL is correct."
+                    elif "ERR_CONNECTION_REFUSED" in str(crawl_result.error_message):
+                        error_msg = "Connection refused. The website may be down or blocking requests."
+                    elif "ERR_CONNECTION_TIMED_OUT" in str(crawl_result.error_message):
+                        error_msg = "Connection timed out. The website took too long to respond."
+                    logger.error(f"Failed to fetch HTML: {url}, error: {crawl_result.error_message}")
+                    raise ValueError(error_msg)
+                
+                html_content = crawl_result.markdown or crawl_result.html or ""
+        else:
+            # Fallback: use aiohttp for simple HTML fetching (no JS rendering)
+            import aiohttp
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                    if response.status != 200:
+                        raise ValueError(f"Failed to fetch URL: HTTP {response.status}")
+                    html_content = await response.text()
+        
+        if not html_content:
+            logger.error(f"No content retrieved from URL: {url}")
+            raise ValueError("No content retrieved from URL")
+        
+        logger.debug(f"HTML fetched: {url}, content_length={len(html_content)}")
     except Exception as e:
         logger.error(f"Exception during HTML fetch: {url}, error: {str(e)}", exc_info=True)
         raise
