@@ -128,7 +128,7 @@ function ProfilePageContent() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={isSaving}
-                  autocomplete="name"
+                  autoComplete="name"
                   className="bg-secondary/70 border-border text-foreground placeholder:text-muted-foreground"
                   aria-describedby={error ? "full_name-error" : undefined}
                 />
@@ -144,7 +144,7 @@ function ProfilePageContent() {
                   value={organization}
                   onChange={(e) => setOrganization(e.target.value)}
                   disabled={isSaving}
-                  autocomplete="organization"
+                  autoComplete="organization"
                   className="bg-secondary/70 border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
@@ -159,7 +159,7 @@ function ProfilePageContent() {
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   disabled={isSaving}
-                  autocomplete="photo"
+                  autoComplete="photo"
                   className="bg-secondary/70 border-border text-foreground placeholder:text-muted-foreground"
                 />
                 <p className="text-xs text-muted-foreground">

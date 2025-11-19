@@ -51,13 +51,13 @@ export async function parseCSV(file: File): Promise<ParsedCSV> {
       return
     }
 
-    // Validate file size (50MB limit)
-    const maxSizeBytes = 50 * 1024 * 1024
+    // Validate file size (10MB limit to match dropzone)
+    const maxSizeBytes = 10 * 1024 * 1024
     if (file.size > maxSizeBytes) {
       reject(
         new BulkGPTError(
           'FILE_TOO_LARGE',
-          `File size must be less than 50MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+          `File too large. Maximum size: 10MB. Your file: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
           { fileSize: file.size, maxSize: maxSizeBytes }
         )
       )
@@ -96,6 +96,34 @@ export async function parseCSV(file: File): Promise<ParsedCSV> {
               'NO_COLUMNS',
               'CSV file has no columns',
               { filename: file.name }
+            )
+          }
+
+          // Validate column names
+          const emptyColumns = columns.filter(col => !col || !col.trim())
+          if (emptyColumns.length > 0) {
+            throw new BulkGPTError(
+              'EMPTY_COLUMN_NAMES',
+              'CSV has empty column names. All columns must have a name.',
+              { filename: file.name, emptyColumnCount: emptyColumns.length }
+            )
+          }
+
+          // Check for duplicate column names
+          const columnCounts = new Map<string, number>()
+          columns.forEach(col => {
+            const count = columnCounts.get(col) || 0
+            columnCounts.set(col, count + 1)
+          })
+          const duplicates = Array.from(columnCounts.entries())
+            .filter(([_, count]) => count > 1)
+            .map(([col]) => col)
+
+          if (duplicates.length > 0) {
+            throw new BulkGPTError(
+              'DUPLICATE_COLUMN_NAMES',
+              `CSV has duplicate column names: ${duplicates.join(', ')}. Each column must have a unique name.`,
+              { filename: file.name, duplicateColumns: duplicates }
             )
           }
 

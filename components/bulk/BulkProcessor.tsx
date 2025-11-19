@@ -355,6 +355,7 @@ export default function BulkProcessor() {
   const [testStartTime, setTestStartTime] = useState<number | undefined>(undefined)
   const [processingStartTime, setProcessingStartTime] = useState<number | undefined>(undefined)
   const [isUploading, setIsUploading] = useState(false)
+  const [exportStartTime, setExportStartTime] = useState<number | undefined>(undefined)
 
   /**
    * Error Display Strategy (P1 UX Issue #5 - Error Redundancy):
@@ -1065,6 +1066,8 @@ export default function BulkProcessor() {
     }
 
     try {
+      const startTime = Date.now()
+      setExportStartTime(startTime)
       toast.loading('Preparing Google Sheets export...', { id: `export-gsheets-${currentBatchId}` })
 
       // Fetch results (same logic as CSV export)
@@ -1251,11 +1254,14 @@ export default function BulkProcessor() {
       // Open Google Sheet in new tab
       window.open(spreadsheetUrl, '_blank')
 
+      const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1)
       toast.success('Google Sheet Created!', {
-        description: `Opened in new tab (${responseData.rowsWritten || sheetData.length - 1} rows)`,
+        description: `Opened in new tab (${responseData.rowsWritten || sheetData.length - 1} rows) in ${elapsedSeconds}s`,
         id: `export-gsheets-${currentBatchId}`
       })
+      setExportStartTime(undefined)
     } catch (err) {
+      setExportStartTime(undefined)
       logError(err instanceof Error ? err : new Error('Google Sheets export failed'), {
         source: 'BulkProcessor/handleExportToGoogleSheets',
         batchId: batchProcessor.batchId
@@ -1278,6 +1284,8 @@ export default function BulkProcessor() {
     }
 
     try {
+      const startTime = Date.now()
+      setExportStartTime(startTime)
       toast.loading('Preparing download...', { id: `export-${currentBatchId}` })
 
       // First try to fetch from status API (includes batch info)
@@ -1414,11 +1422,14 @@ export default function BulkProcessor() {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
+      const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1)
       toast.success('Download Complete', {
-        description: `Successfully downloaded ${results.length} result rows.`,
+        description: `Successfully downloaded ${results.length} result rows in ${elapsedSeconds}s.`,
         id: `export-${currentBatchId}`
       })
+      setExportStartTime(undefined)
     } catch (err) {
+      setExportStartTime(undefined)
       logError(err instanceof Error ? err : new Error('Export failed'), {
         source: 'BulkProcessor/handleExport',
         batchId: currentBatchId

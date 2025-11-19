@@ -81,14 +81,16 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
         // Show CSV Preview when file is loaded and has data
         <>
           <div className="border border-border rounded-md overflow-hidden">
-            <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/20">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                <span className="text-xs text-foreground font-medium">{fileName || 'data.csv'}</span>
+            <div className="px-3 py-2 border-b border-border bg-muted/20">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                  <span className="text-xs text-foreground font-medium">{fileName || 'data.csv'}</span>
+                </div>
+                <span className="text-xs text-muted-foreground" data-testid="row-count-display">
+                  {csvData.totalRows} rows • {csvData.columns.length} columns
+                </span>
               </div>
-              <span className="text-xs text-muted-foreground" data-testid="row-count-display">
-                {csvData.totalRows} rows • {csvData.columns.length} columns
-              </span>
             </div>
             <div className="overflow-x-auto max-h-[120px] overflow-y-auto -mx-1 sm:mx-0">
               <div className="min-w-full inline-block">
@@ -187,10 +189,13 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
               {fileRejections.map(({ file, errors }) => (
                 <div key={file.name}>
                   <p className="font-medium">{file.name}</p>
+                  <p className="text-red-300/60 text-[10px] mb-1">
+                    File size: {(file.size / 1024 / 1024).toFixed(2)}MB
+                  </p>
                   {errors.map((e) => (
                     <p key={e.code} className="text-red-300/80">
                       {e.code === 'file-too-large'
-                        ? `File too large (max 10MB)`
+                        ? `File too large. Maximum: 10MB`
                         : e.code === 'file-invalid-type'
                         ? 'Only CSV files are accepted'
                         : e.message}

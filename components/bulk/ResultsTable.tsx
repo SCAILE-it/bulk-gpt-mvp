@@ -319,8 +319,10 @@ export const ResultsTable = memo(function ResultsTable({
                       <button
                         onClick={() => toggleCellExpansion(cellId)}
                         className="text-left w-full flex items-start gap-1 cursor-pointer hover:opacity-80 transition-opacity min-h-[44px] sm:min-h-[32px] py-1 touch-manipulation"
+                        aria-label={isExpanded ? `Collapse ${col} text` : `Expand ${col} text`}
+                        aria-expanded={isExpanded}
                       >
-                        <ChevronDown className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
                         <span className={`text-xs leading-relaxed whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-2'}`}>
                           {displayValue}
                         </span>
@@ -364,8 +366,10 @@ export const ResultsTable = memo(function ResultsTable({
                       <button
                         onClick={() => toggleCellExpansion(cellId)}
                         className="text-left w-full flex items-start gap-1 cursor-pointer hover:opacity-80 transition-opacity min-h-[44px] sm:min-h-[32px] py-1 touch-manipulation"
+                        aria-label={isExpanded ? 'Collapse error message' : 'Expand error message'}
+                        aria-expanded={isExpanded}
                       >
-                        <ChevronDown className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
                         <span className={`text-red-400 text-xs ${isExpanded ? 'whitespace-pre-wrap break-words' : 'line-clamp-2'}`}>
                           {result.error}
                         </span>
@@ -386,8 +390,10 @@ export const ResultsTable = memo(function ResultsTable({
                       <button
                         onClick={() => toggleCellExpansion(cellId)}
                         className="text-left w-full flex items-start gap-1 cursor-pointer hover:opacity-80 transition-opacity min-h-[44px] sm:min-h-[32px] py-1 touch-manipulation"
+                        aria-label={isExpanded ? 'Collapse output text' : 'Expand output text'}
+                        aria-expanded={isExpanded}
                       >
-                        <ChevronDown className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
                         <span className={`text-xs leading-relaxed whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-2'}`}>
                           {displayValue}
                         </span>

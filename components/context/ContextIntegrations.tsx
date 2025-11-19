@@ -158,6 +158,7 @@ export function ContextIntegrations() {
                               [config.id]: e.target.value,
                             }))
                           }
+                          autoComplete="off"
                           className="text-xs"
                         />
                         <p className="text-xs text-muted-foreground">

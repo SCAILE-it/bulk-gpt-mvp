@@ -22,7 +22,7 @@ interface AuthFormProps {
  * Authentication form component - Email/Password for testing, LinkedIn OAuth for production
  * Follows SOLID principles: Single Responsibility, Open/Closed
  */
-export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormProps) {
+export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/agents' }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoadingEmail, setIsLoadingEmail] = useState(false)
@@ -166,7 +166,7 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormPro
               onBlur={emailValidation.setTouched}
               required
               disabled={isLoadingEmail}
-              autocomplete="email"
+              autoComplete="email"
               aria-label="Email address"
               aria-describedby={error ? "form-error" : emailValidation.touched && emailValidation.errors[0] ? "email-error" : undefined}
               aria-invalid={emailValidation.touched && !emailValidation.isValid}
@@ -190,7 +190,7 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormPro
               onBlur={passwordValidation.setTouched}
               required
               disabled={isLoadingEmail}
-              autocomplete="current-password"
+              autoComplete="current-password"
               aria-label="Password"
               aria-describedby={error ? "form-error" : passwordValidation.touched && passwordValidation.errors[0] ? "password-error" : undefined}
               aria-invalid={passwordValidation.touched && !passwordValidation.isValid}
