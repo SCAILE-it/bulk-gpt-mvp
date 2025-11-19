@@ -8,12 +8,22 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { useContextStorage } from '@/hooks/useContextStorage'
+import { GTM_PLAYBOOKS, PRODUCT_TYPES } from '@/lib/config/gtm-config'
+import type { GTMPlaybook, ProductType } from '@/lib/types/business-context'
 import { toast } from 'sonner'
 
 /**
@@ -24,6 +34,8 @@ import { toast } from 'sonner'
 
 export function ContextForm() {
   const { context, businessContext, updateContext, updateBusinessContext, clearContext, hasContext, isLoading } = useContextStorage()
+  const [gtmPlaybook, setGtmPlaybook] = useState<GTMPlaybook | null>(null)
+  const [productType, setProductType] = useState<ProductType | null>(null)
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [analyzedUrl, setAnalyzedUrl] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -329,8 +341,15 @@ export function ContextForm() {
           )}
         </div>
 
-        {/* Tone */}
-        <div className={`space-y-2 ${context.tone ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+        {/* Cluster 1: Core Business Info */}
+        <CollapsibleSection
+          title="Core Business Info"
+          defaultOpen={true}
+        >
+          <div className="space-y-4 pt-4">
+
+            {/* Tone */}
+            <div className={`space-y-2 ${context.tone ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="tone" className="text-xs">
               Tone
@@ -355,19 +374,175 @@ export function ContextForm() {
                 </div>
               </TooltipContent>
             </Tooltip>
+            </div>
+            <Input
+              id="tone"
+              type="text"
+              placeholder="e.g., Professional, Friendly, Technical"
+              value={context.tone || ''}
+              onChange={(e) => handleManualUpdate({ tone: e.target.value })}
+              className={`text-xs ${context.tone ? 'bg-background' : ''}`}
+            />
           </div>
-          <Input
-            id="tone"
-            type="text"
-            placeholder="e.g., Professional, Friendly, Technical"
-            value={context.tone || ''}
-            onChange={(e) => handleManualUpdate({ tone: e.target.value })}
-            className={`text-xs ${context.tone ? 'bg-background' : ''}`}
-          />
-        </div>
 
-        {/* ICP */}
-        <div className={`space-y-2 ${businessContext.icp ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+          {/* Product Description */}
+          <div className={`space-y-2 ${context.productDescription ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="productDescription" className="text-xs">
+                Product Description
+              </Label>
+              {context.productDescription && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about product description"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Product Description</p>
+                    <p className="text-muted-foreground">
+                      Brief overview of your product or service. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.productDescription</code>.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              id="productDescription"
+              placeholder="Brief description of your product or service"
+              value={context.productDescription || ''}
+              onChange={(e) => handleManualUpdate({ productDescription: e.target.value })}
+              rows={3}
+              className={`text-xs resize-none ${context.productDescription ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Competitors */}
+          <div className={`space-y-2 ${context.competitors ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="competitors" className="text-xs">
+                Competitors
+              </Label>
+              {context.competitors && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about competitors"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Competitors</p>
+                    <p className="text-muted-foreground">
+                      Main competitors to reference in content. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.competitors</code>.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              id="competitors"
+              type="text"
+              placeholder="e.g., Salesforce, HubSpot"
+              value={context.competitors || ''}
+              onChange={(e) => handleManualUpdate({ competitors: e.target.value })}
+              className={`text-xs ${context.competitors ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Target Industries */}
+          <div className={`space-y-2 ${context.targetIndustries ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="targetIndustries" className="text-xs">
+                Target Industries
+              </Label>
+              {context.targetIndustries && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about target industries"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Target Industries</p>
+                    <p className="text-muted-foreground">
+                      Industries your content targets. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.targetIndustries</code>.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              id="targetIndustries"
+              type="text"
+              placeholder="e.g., SaaS, Technology, Healthcare"
+              value={context.targetIndustries || ''}
+              onChange={(e) => handleManualUpdate({ targetIndustries: e.target.value })}
+              className={`text-xs ${context.targetIndustries ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Compliance Flags */}
+          <div className={`space-y-2 ${context.complianceFlags ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="complianceFlags" className="text-xs">
+                Compliance Flags
+              </Label>
+              {context.complianceFlags && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about compliance flags"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Compliance Flags</p>
+                    <p className="text-muted-foreground">
+                      Compliance standards to mention in content. Use in prompts with <code className="text-xs bg-secondary px-1 rounded">context.complianceFlags</code>.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              id="complianceFlags"
+              type="text"
+              placeholder="e.g., SOC2, GDPR, HIPAA"
+              value={context.complianceFlags || ''}
+              onChange={(e) => handleManualUpdate({ complianceFlags: e.target.value })}
+              className={`text-xs ${context.complianceFlags ? 'bg-background' : ''}`}
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Cluster 2: Target Audience */}
+      <CollapsibleSection
+        title="Target Audience"
+        defaultOpen={true}
+      >
+        <div className="space-y-4 pt-4">
+          {/* ICP */}
+          <div className={`space-y-2 ${businessContext.icp ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="icp" className="text-xs">
               Ideal Customer Profile (ICP)
@@ -403,8 +578,8 @@ export function ContextForm() {
           />
         </div>
 
-        {/* Value Proposition */}
-        <div className={`space-y-2 ${businessContext.valueProposition ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+          {/* Value Proposition */}
+          <div className={`space-y-2 ${businessContext.valueProposition ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="value-proposition" className="text-xs">
               Value Proposition
@@ -902,6 +1077,218 @@ export function ContextForm() {
             </div>
           )}
         </div>
+      </CollapsibleSection>
+
+      {/* Cluster 3: Competitive Intelligence */}
+      <CollapsibleSection
+        title="Competitive Intelligence"
+        defaultOpen={false}
+      >
+        <div className="space-y-4 pt-4">
+          {/* Target Keywords */}
+          <div className={`space-y-2 ${businessContext.targetKeywords && businessContext.targetKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs">Target Keywords</Label>
+              {businessContext.targetKeywords && businessContext.targetKeywords.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about target keywords"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Target Keywords</p>
+                    <p className="text-muted-foreground">
+                      Keywords to target in your content and campaigns.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add target keyword"
+                value={newTargetKeyword}
+                onChange={(e) => setNewTargetKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addTargetKeyword()
+                  }
+                }}
+                className="text-xs"
+              />
+              <Button type="button" size="sm" onClick={addTargetKeyword}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            {businessContext.targetKeywords && businessContext.targetKeywords.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {businessContext.targetKeywords.map((keyword, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
+                  >
+                    {keyword}
+                    <button
+                      type="button"
+                      onClick={() => removeTargetKeyword(index)}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Competitor Keywords */}
+          <div className={`space-y-2 ${businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs">Competitor Keywords</Label>
+              {businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about competitor keywords"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Competitor Keywords</p>
+                    <p className="text-muted-foreground">
+                      Keywords to track for competitor monitoring.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add competitor keyword to track"
+                value={newCompetitorKeyword}
+                onChange={(e) => setNewCompetitorKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addCompetitorKeyword()
+                  }
+                }}
+                className="text-xs"
+              />
+              <Button type="button" size="sm" onClick={addCompetitorKeyword}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            {businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {businessContext.competitorKeywords.map((keyword, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
+                  >
+                    {keyword}
+                    <button
+                      type="button"
+                      onClick={() => removeCompetitorKeyword(index)}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Cluster 4: GTM Classification */}
+      <CollapsibleSection
+        title="GTM Classification"
+        defaultOpen={false}
+      >
+        <div className="space-y-4 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="gtmPlaybook" className="text-xs">GTM Playbook</Label>
+              <Select
+                value={gtmPlaybook || ''}
+                onValueChange={async (value) => {
+                  const newPlaybook = value === '' ? null : (value as GTMPlaybook)
+                  setGtmPlaybook(newPlaybook)
+                  try {
+                    await fetch('/api/business-context/context-variables', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ gtmPlaybook: newPlaybook }),
+                    })
+                    toast.success('GTM Playbook updated')
+                  } catch (error) {
+                    console.error('Error updating GTM playbook:', error)
+                    toast.error('Failed to update GTM Playbook')
+                  }
+                }}
+              >
+                <SelectTrigger id="gtmPlaybook" className="text-xs">
+                  <SelectValue placeholder="Select GTM Playbook" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {Object.values(GTM_PLAYBOOKS).map((playbook) => (
+                    <SelectItem key={playbook.id} value={playbook.id}>
+                      {playbook.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="productType" className="text-xs">Product Type</Label>
+              <Select
+                value={productType || ''}
+                onValueChange={async (value) => {
+                  const newType = value === '' ? null : (value as ProductType)
+                  setProductType(newType)
+                  try {
+                    await fetch('/api/business-context/context-variables', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ productType: newType }),
+                    })
+                    toast.success('Product Type updated')
+                  } catch (error) {
+                    console.error('Error updating product type:', error)
+                    toast.error('Failed to update Product Type')
+                  }
+                }}
+              >
+                <SelectTrigger id="productType" className="text-xs">
+                  <SelectValue placeholder="Select Product Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {Object.values(PRODUCT_TYPES).map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
       </div>
 
       {/* Clear All Confirmation Modal */}
