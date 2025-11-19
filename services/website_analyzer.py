@@ -281,16 +281,7 @@ async def analyze_website(
     except ImportError as e:
         raise ImportError(f"Missing required dependency: {e}. Install with: pip install google-generativeai")
     
-    # Try crawl4ai, fallback to requests if not available
-    try:
-        from crawl4ai import AsyncWebCrawler
-        USE_CRAWL4AI = True
-    except ImportError:
-        try:
-            import aiohttp
-            USE_CRAWL4AI = False
-        except ImportError:
-            raise ImportError("Missing required dependency: Install either 'crawl4ai' or 'aiohttp'. Recommended: pip install crawl4ai")
+    # No HTML fetching needed - Gemini handles URL context directly
 
     # Get API key from environment
     api_key = os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
@@ -331,51 +322,8 @@ async def analyze_website(
     
     logger.info(f"Starting website analysis: url={url}, mode={mode}, use_google_search={use_google_search}")
     
-    # Fetch HTML content
-    try:
-        logger.debug(f"Fetching HTML from: {url}")
-        
-        if USE_CRAWL4AI:
-            # Use crawl4ai for JS-rendered pages
-            async with AsyncWebCrawler(verbose=False, headless=True, browser_type="chromium") as crawler:
-                crawl_result = await crawler.arun(
-                    url=url,
-                    bypass_cache=True,
-                    timeout=30,
-                    wait_for="networkidle",
-                    delay_before_return_html=2.0,
-                    js_code=["window.scrollTo(0, document.body.scrollHeight);"],
-                )
-                
-                if not crawl_result.success:
-                    error_msg = "Failed to access the URL. Please check that the URL is valid and accessible."
-                    if "ERR_NAME_NOT_RESOLVED" in str(crawl_result.error_message):
-                        error_msg = "Domain not found. Please check the URL is correct."
-                    elif "ERR_CONNECTION_REFUSED" in str(crawl_result.error_message):
-                        error_msg = "Connection refused. The website may be down or blocking requests."
-                    elif "ERR_CONNECTION_TIMED_OUT" in str(crawl_result.error_message):
-                        error_msg = "Connection timed out. The website took too long to respond."
-                    logger.error(f"Failed to fetch HTML: {url}, error: {crawl_result.error_message}")
-                    raise ValueError(error_msg)
-                
-                html_content = crawl_result.markdown or crawl_result.html or ""
-        else:
-            # Fallback: use aiohttp for simple HTML fetching (no JS rendering)
-            import aiohttp
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                    if response.status != 200:
-                        raise ValueError(f"Failed to fetch URL: HTTP {response.status}")
-                    html_content = await response.text()
-        
-        if not html_content:
-            logger.error(f"No content retrieved from URL: {url}")
-            raise ValueError("No content retrieved from URL")
-        
-        logger.debug(f"HTML fetched: {url}, content_length={len(html_content)}")
-    except Exception as e:
-        logger.error(f"Exception during HTML fetch: {url}, error: {str(e)}", exc_info=True)
-        raise
+    # No HTML fetching needed - Gemini will access URL directly with grounding
+    logger.debug(f"Using Gemini URL context with grounding for: {url}")
 
     # Use Gemini API for analysis
     try:
@@ -388,10 +336,7 @@ async def analyze_website(
 
 Website URL: {url}
 
-Website HTML Content:
-{html_content[:max_content_length]}
-
-{"Analyze this website content and use web search to find additional information about this company, their products, competitors, and market position. Then extract the requested information and return JSON." if use_google_search else "Extract the requested information from the website content and return JSON."}"""
+{"Analyze this website and use web search to find additional information about this company, their products, competitors, and market position. Then extract the requested information and return JSON." if use_google_search else "Extract the requested information from the website and return JSON."}"""
 
         # Try new API first (v0.2.0+)
         try:
@@ -415,18 +360,37 @@ Website HTML Content:
                 "response_mime_type": "application/json",
             }
             
+            # Use URL context - Gemini can fetch URLs directly
             if use_google_search:
                 try:
+                    # Try with grounding and URL context
                     response = model.generate_content(
-                        extraction_prompt,
+                        [extraction_prompt, url],  # Pass URL as separate part
                         generation_config=generation_config,
                         tools=[{"google_search": {}}] if hasattr(genai, 'types') else None,
                     )
-                except:
-                    logger.warning("Grounding not available, falling back to standard generation")
-                    response = model.generate_content(extraction_prompt, generation_config=generation_config)
+                except Exception as e:
+                    logger.warning(f"Grounding with URL failed: {e}, trying without grounding")
+                    try:
+                        # Fallback: URL in prompt
+                        response = model.generate_content(
+                            f"{extraction_prompt}\n\nWebsite URL: {url}",
+                            generation_config=generation_config,
+                        )
+                    except:
+                        response = model.generate_content(extraction_prompt, generation_config=generation_config)
             else:
-                response = model.generate_content(extraction_prompt, generation_config=generation_config)
+                # URL context without grounding
+                try:
+                    response = model.generate_content(
+                        [extraction_prompt, url],
+                        generation_config=generation_config,
+                    )
+                except:
+                    response = model.generate_content(
+                        f"{extraction_prompt}\n\nWebsite URL: {url}",
+                        generation_config=generation_config,
+                    )
             
             response_text = response.text.strip()
         except (ImportError, AttributeError):
@@ -436,17 +400,30 @@ Website HTML Content:
                 import requests
                 import json as json_lib
                 
-                # Build payload first
+                # Build payload - Gemini can access URLs directly when passed in prompt
+                # Include URL in the prompt text - Gemini will fetch it automatically
+                prompt_with_url = f"{extraction_prompt}\n\nPlease analyze the website at: {url}"
+                
+                # Note: Can't use responseMimeType with tools (google_search)
+                generation_config = {
+                    "temperature": 0,
+                    "maxOutputTokens": 8192,
+                }
+                
+                # Only add responseMimeType if not using search grounding
+                if not use_google_search:
+                    generation_config["responseMimeType"] = "application/json"
+                
                 payload = {
                     "contents": [{
-                        "parts": [{"text": extraction_prompt}]
+                        "parts": [{"text": prompt_with_url}]
                     }],
-                    "generationConfig": {
-                        "temperature": 0,
-                        "maxOutputTokens": 8192,
-                        "responseMimeType": "application/json"
-                    }
+                    "generationConfig": generation_config
                 }
+                
+                # Add grounding config if using search
+                if use_google_search:
+                    payload["tools"] = [{"google_search": {}}]
                 
                 # Use REST API directly for newer API keys - Try Gemini 2.5 Flash first
                 models_to_try = [
@@ -476,10 +453,20 @@ Website HTML Content:
                                 break
                     except requests.exceptions.HTTPError as e:
                         last_error = e
+                        error_detail = ""
+                        try:
+                            error_detail = e.response.text
+                            logger.debug(f"API error for {model_name}: {error_detail}")
+                        except:
+                            pass
                         if e.response.status_code == 404:
                             continue  # Try next model
+                        elif e.response.status_code == 400:
+                            # Bad request - might be payload issue, try next model
+                            logger.warning(f"400 error for {model_name}: {error_detail}")
+                            continue
                         else:
-                            raise  # Re-raise if not 404
+                            raise  # Re-raise if not 404 or 400
                     except Exception as e:
                         last_error = e
                         continue
