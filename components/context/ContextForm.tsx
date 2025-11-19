@@ -25,10 +25,21 @@ import { toast } from 'sonner'
 export function ContextForm() {
   const { context, businessContext, updateContext, updateBusinessContext, clearContext, hasContext, isLoading } = useContextStorage()
   const [websiteUrl, setWebsiteUrl] = useState('')
+  const [analyzedUrl, setAnalyzedUrl] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [showClearConfirmation, setShowClearConfirmation] = useState(false)
   const [showSavedIndicator, setShowSavedIndicator] = useState(false)
   const [hasUserMadeChanges, setHasUserMadeChanges] = useState(false)
+  
+  // Load analyzed URL from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('bulk-gpt-analyzed-url')
+      if (stored && hasContext) {
+        setAnalyzedUrl(stored)
+      }
+    }
+  }, [hasContext])
   
   // Array field inputs
   const [newCountry, setNewCountry] = useState('')
@@ -184,6 +195,13 @@ export function ContextForm() {
         updateBusinessContext(businessUpdates)
       }
 
+      // Store the analyzed URL
+      const normalizedUrl = websiteUrl.trim().startsWith('http') ? websiteUrl.trim() : `https://${websiteUrl.trim()}`
+      setAnalyzedUrl(normalizedUrl)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bulk-gpt-analyzed-url', normalizedUrl)
+      }
+
       toast.success('Website analyzed successfully')
       // Keep URL visible - don't clear it so user can see what was analyzed
     } catch (error) {
@@ -195,8 +213,12 @@ export function ContextForm() {
 
   const handleClearAll = useCallback(() => {
     clearContext()
+    setAnalyzedUrl(null)
     setHasUserMadeChanges(false)
     setShowClearConfirmation(false)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('bulk-gpt-analyzed-url')
+    }
     toast.success('Context cleared')
   }, [clearContext])
 
@@ -220,6 +242,23 @@ export function ContextForm() {
             Analyze Website
           </Label>
         </div>
+        
+        {/* Show analyzed URL if data exists */}
+        {analyzedUrl && hasContext && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-background/50 border border-primary/20 rounded-md">
+            <CheckCircle className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+            <span className="text-xs text-muted-foreground">Data from:</span>
+            <a 
+              href={analyzedUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline font-medium truncate flex-1"
+            >
+              {analyzedUrl}
+            </a>
+          </div>
+        )}
+        
         <div className="flex gap-2">
           <Input
             id="website-url"
@@ -260,10 +299,10 @@ export function ContextForm() {
       <div className="border-t border-border" />
 
       {/* Manual Context Fields */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Label className="text-xs font-medium">Business Context</Label>
+            <Label className="text-sm font-semibold">Business Context</Label>
             {showSavedIndicator && (
               <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 animate-in fade-in-0 duration-300">
                 <CheckCircle className="h-3 w-3" />
