@@ -264,12 +264,12 @@ function HomePageContent() {
 
       {/* Cursor-style layered cards - Two separate cards with depth */}
       <div className="mb-6 sm:mb-8 relative min-h-[500px] sm:min-h-[700px]">
-        {/* BACK CARD: processing.log - Positioned left and down - LARGER width */}
+        {/* BACK CARD: processing.log - Positioned left and down - SMALLER width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute left-0 top-[60px] w-full sm:w-[40%] z-10"
+          className="absolute left-0 top-[80px] w-full sm:w-[35%] z-10"
         >
           <div className="border border-amber-500/30 rounded-xl sm:rounded-2xl overflow-hidden bg-amber-950/20"
           >
@@ -443,13 +443,13 @@ function HomePageContent() {
           </div>
         </motion.div>
 
-        {/* FRONT CARD: CSV Demo - Positioned right and up - SMALLER width */}
+        {/* FRONT CARD: CSV Demo - Positioned right and up - LARGER width with overlay */}
         {hasBatches && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 top-0 w-full sm:w-[60%] z-20"
+            className="absolute right-0 top-0 w-full sm:w-[65%] z-20"
           >
             <CSVDemo
               hasBatches={hasBatches}
