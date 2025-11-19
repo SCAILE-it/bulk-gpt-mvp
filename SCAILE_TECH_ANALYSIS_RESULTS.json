@@ -1,0 +1,196 @@
+INFO:website_analyzer:Starting website analysis: url=https://scaile.tech, mode=full, use_google_search=True
+INFO:website_analyzer:Website analysis success: https://scaile.tech, mode=full, fields_returned=5
+{
+  "Business Context": {
+    "Tone": "Professional, innovative, results-oriented, focused on AI and automation.",
+    "Target Countries": [
+      "Germany",
+      "Global (for AI Surface Domination tier)"
+    ],
+    "Product Description": "SCAILE provides AI-Powered Go-To-Market Machines and a Visibility Engine that helps brands appear in Google AI Overviews & ChatGPT results. They optimize entity, category, and trust signals for AI understanding and create AI-optimized blog content. Their services include building AI-powered sales engines that autonomously deliver qualified leads 24/7, covering the entire funnel from attention to retention.",
+    "Competitors": null,
+    "Target Industries": [
+      "Companies seeking AI visibility",
+      "Early-stage teams",
+      "Companies expanding across multiple markets/languages",
+      "Category leaders",
+      "German B2B market",
+      "Mittelstand",
+      "SMEs",
+      "Startups"
+    ],
+    "Compliance Flags": null,
+    "ICP": {
+      "Description": "Early-stage teams, companies expanding across multiple markets/languages, category leaders, German B2B market, Mittelstand, SMEs, startups.",
+      "Countries": [
+        "Germany",
+        "Global"
+      ],
+      "Products": [
+        "AI Surface Entry",
+        "AI Surface Expansion",
+        "AI Surface Domination",
+        "AI-powered Sales Engine",
+        "LLM-focused SEO",
+        "Social Media Content",
+        "Programmatic Advertising",
+        "High Value Backlinking",
+        "Lead Magnets",
+        "Proprietary Lead Crawling",
+        "Cold Outreach",
+        "A/B-tested Landing Pages",
+        "Dynamic Lead Forms",
+        "Conversational Chatbots",
+        "Multi-Channel-Nurturing",
+        "Omnichannel-CRM & Scoring",
+        "E-Mail & WhatsApp Auto-Flows"
+      ],
+      "Target Keywords": [
+        "AI visibility",
+        "AI Overviews",
+        "ChatGPT ranking",
+        "Go-To-Market",
+        "AI-powered marketing",
+        "AI sales engine",
+        "niche domination",
+        "lead generation",
+        "sales automation",
+        "digital GTM"
+      ],
+      "Competitor Keywords": null
+    }
+  },
+  "SEO Information": {
+    "Meta Title": "SCAILE | AI-Powered Go-To-Market Machines for Niche Domination",
+    "Meta Description": "Unlock predictable growth with Scaile's autonomous GTM systems. Build, launch & scale hyper-focused campaigns with AI precision.",
+    "Primary Keywords": [
+      "AI visibility",
+      "AI Overviews",
+      "ChatGPT ranking",
+      "Go-To-Market",
+      "AI-powered marketing",
+      "AI sales engine"
+    ],
+    "Secondary Keywords": [
+      "Entity strengthening",
+      "Category strengthening",
+      "AEO-optimized content",
+      "Multilingual content",
+      "Lead generation",
+      "Sales automation",
+      "Digital GTM",
+      "B2B marketing",
+      "Mittelstand",
+      "SMEs",
+      "Startups"
+    ],
+    "Content Structure": [
+      "The Visibility Engine",
+      "Our Clients",
+      "How we work",
+      "Our Services",
+      "Our References",
+      "Our PRICING",
+      "Our blog"
+    ],
+    "Headings": [
+      "H1: The Visibility Engine That Puts You into ChatGPT",
+      "H2: ATTRACT",
+      "H2: CONVERT",
+      "H2: Our Clients",
+      "H2: How we work",
+      "H2: Our Services",
+      "H2: Our References",
+      "H2: Our PRICING",
+      "H2: Our blog"
+    ]
+  },
+  "Competitive Intelligence": {
+    "Market Position": "Fast-growing startup aiming to help companies dominate hyper-niches.",
+    "Differentiators": [
+      "Productized engine",
+      "KPI-first",
+      "Fast",
+      "Automated",
+      "Doesn't sell hours",
+      "Focuses on AI Overviews & ChatGPT",
+      "Autonomous GTM systems"
+    ],
+    "Pricing Model": "Tiered pricing: AI Surface Entry, AI Surface Expansion, AI Surface Domination.",
+    "Target Audience": [
+      "Early-stage teams",
+      "Companies expanding across multiple markets/languages",
+      "Category leaders",
+      "German B2B market",
+      "Mittelstand",
+      "SMEs",
+      "Startups"
+    ],
+    "Value Proposition": "Increase inbound leads, gain unique visitors, impressions, recurring revenue, #1 ranking, attract relevant visitors, predictable growth, autonomous GTM systems."
+  },
+  "Company Intelligence": {
+    "Company Name": "SCAILE",
+    "Legal Name": "SCAILE Technologies GmbH",
+    "Founded Year": null,
+    "Headquarters": "Jungfrauenthal 8, 20149 Hamburg, Germany",
+    "Locations": [
+      "Hamburg, Germany",
+      "Munich, Germany (registered office)"
+    ],
+    "Company Type": "GmbH (Limited Liability Company), Startup",
+    "Industry": [
+      "Technology",
+      "Information and Internet",
+      "AI",
+      "Marketing",
+      "Sales Automation",
+      "Consulting"
+    ],
+    "Team Size": "1-10 employees",
+    "Team Members": [
+      "Victoria Frey (Founders Associate, Project Management)"
+    ],
+    "Founders": [
+      "Federico De Ponte (Co-Founder, Product & Growth)",
+      "Simon Wilhelm (Co-Founder, Sales & Operations)",
+      "Anton Billstein (Co-Founder, Tech & Automation)",
+      "Sebastian Johnston (Co-Founder, Strategy & Partnerships)"
+    ],
+    "Executives": [
+      "Federico de Ponte (Managing Director)",
+      "Simon Wilhelm (Managing Director)"
+    ],
+    "Contact Email": "info@scaile.tech",
+    "Contact Phone": "+49 40 23834416",
+    "Address": "Jungfrauenthal 8, 20149 Hamburg, Germany",
+    "Imprint": "https://scaile.tech/imprint",
+    "Legal Entity": "SCAILE Technologies GmbH",
+    "VAT Number": "DE454366220",
+    "Registration Number": "HRB 191310, Commercial Register at the Hamburg District Court",
+    "Social Media Links": {
+      "LinkedIn": "https://www.linkedin.com/company/scaile-technologies-gmbh/",
+      "Twitter": null,
+      "GitHub": null,
+      "Crunchbase": null,
+      "Slack Community": null
+    },
+    "Funding": "SCAILE has not raised any funding rounds yet.",
+    "Investors": [
+      "IFB Innovationsstarter GmbH",
+      "NCA",
+      "Google Cloud for startups",
+      "Notion",
+      "Microsoft Founders Hub",
+      "Next Media Hamburg"
+    ],
+    "Description": "SCAILE builds AI-powered Go-To-Market machines that autonomously deliver qualified leads 24/7 and cover the entire funnel—from attention to retention. It helps ambitious companies dominate hyper-niches on autopilot by mixing data, creativity, and code to turn growth into a science.",
+    "Mission": "To build AI go-to-market engines that let ambitious companies dominate hyper-niches on autopilot.",
+    "Values": null,
+    "Culture": null,
+    "Careers Page": "https://scaile.tech/about-us"
+  },
+  "_metadata": {
+    "mode": "full",
+    "url": "https://scaile.tech"
+  }
+}

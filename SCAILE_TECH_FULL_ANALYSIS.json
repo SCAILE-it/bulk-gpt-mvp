@@ -1,0 +1,162 @@
+{
+  "Business Context": {
+    "Tone": "Professional, innovative, empowering, data-driven, expert",
+    "Target Countries": ["Germany", "DACH region", "Europe", "Global (vision)"],
+    "Product Description": "An end-to-end AI platform for businesses, enabling data preparation, model building, deployment, monitoring, and collaboration to build, deploy, and manage AI solutions at scale. Focuses on predictive analytics, customer churn prediction, fraud detection, demand forecasting, and personalized recommendations.",
+    "Competitors": [
+      "DataRobot",
+      "H2O.ai",
+      "Alteryx",
+      "SAS",
+      "Google Cloud AI Platform",
+      "AWS SageMaker",
+      "Microsoft Azure Machine Learning"
+    ],
+    "Target Industries": [
+      "Financial Services",
+      "Retail",
+      "Healthcare",
+      "Manufacturing",
+      "Energy",
+      "Telecommunications"
+    ],
+    "Compliance Flags": ["GDPR"],
+    "ICP": {
+      "Countries": ["Germany", "DACH region", "Europe"],
+      "Products": [
+        "AI platform",
+        "MLOps solutions",
+        "data science automation tools",
+        "predictive analytics software"
+      ],
+      "Target Keywords": [
+        "AI platform for business",
+        "end-to-end AI solution",
+        "data science automation",
+        "MLOps platform",
+        "predictive analytics software",
+        "AI for financial services",
+        "AI for retail",
+        "enterprise AI platform"
+      ],
+      "Competitor Keywords": [
+        "automated machine learning",
+        "enterprise AI platform",
+        "data science workbench",
+        "AI development platform",
+        "machine learning operations"
+      ]
+    }
+  },
+  "SEO Information": {
+    "Meta Title": "Scaile.tech - The AI Platform for Business",
+    "Meta Description": "Unlock the full potential of your data with Scaile.tech, an end-to-end AI platform designed to empower businesses to build, deploy, and manage AI solutions at scale.",
+    "Primary Keywords": [
+      "AI platform",
+      "business AI",
+      "data science platform",
+      "MLOps",
+      "predictive analytics"
+    ],
+    "Secondary Keywords": [
+      "data preparation",
+      "model building",
+      "AI deployment",
+      "AI monitoring",
+      "customer churn prediction",
+      "fraud detection AI",
+      "demand forecasting AI",
+      "personalized recommendations AI",
+      "AI solutions for enterprises"
+    ],
+    "Content Structure": "The website introduces the AI platform on the homepage, detailing key features, use cases, and target industries. Dedicated 'Solutions' pages elaborate on specific applications. 'About Us' provides company background, mission, vision, and values. Legal information is provided via 'Imprint' and 'Privacy Policy'.",
+    "Headings": [
+      "H1: The AI Platform for Business",
+      "H2: Unlock the full potential of your data",
+      "H2: Key Features",
+      "H2: Use Cases",
+      "H2: Industries We Serve",
+      "H2: Our Mission",
+      "H2: Our Vision",
+      "H2: Our Values"
+    ]
+  },
+  "Competitive Intelligence": {
+    "Market Position": "A relatively new entrant (founded 2022) in the competitive AI/ML platform market, positioning itself as an accessible, end-to-end solution for businesses. It aims to democratize AI and accelerate innovation, likely operating as a challenger or niche player.",
+    "Differentiators": [
+      "End-to-end platform (from data preparation to deployment and monitoring)",
+      "Focus on business outcomes and driving growth",
+      "Emphasis on ease of use and accessibility ('democratizing AI')",
+      "Comprehensive feature set for the entire AI lifecycle",
+      "Collaboration features for data science teams"
+    ],
+    "Pricing Model": "Not publicly disclosed; likely enterprise/subscription-based, requiring direct contact for a demo and custom quote.",
+    "Target Audience": [
+      "Data scientists",
+      "Business analysts",
+      "IT leaders",
+      "C-suite executives (CDO, CIO)",
+      "Mid-to-large enterprises looking to implement or scale AI solutions"
+    ],
+    "Value Proposition": "Empowers businesses to harness AI, accelerate innovation, drive business growth, transform data into strategic assets, and gain competitive advantage by making advanced analytics accessible and actionable at scale."
+  },
+  "Company Intelligence": {
+    "Company Name": "Scaile.tech",
+    "Legal Name": "Scaile.tech GmbH",
+    "Founded Year": 2022,
+    "Headquarters": "Hamburg, Germany",
+    "Locations": ["Hamburg, Germany"],
+    "Company Type": "Private, GmbH (limited liability company)",
+    "Industry": [
+      "Artificial Intelligence",
+      "Machine Learning",
+      "Data Science",
+      "Software Development",
+      "Information Technology"
+    ],
+    "Team Size": "11-50 employees",
+    "Team Members": [],
+    "Founders": [
+      "Dr. Christian Brand (CEO)",
+      "Dr. Jan-Philipp Bladt (CTO)"
+    ],
+    "Executives": [
+      "Dr. Christian Brand (CEO)",
+      "Dr. Jan-Philipp Bladt (CTO)"
+    ],
+    "Contact Email": "info@scaile.tech",
+    "Contact Phone": "+49 40 2286 8888",
+    "Address": "Am Sandtorkai 27, 20457 Hamburg, Germany",
+    "Imprint": "Available on the website, includes legal entity, address, managing directors, commercial register, and VAT ID.",
+    "Legal Entity": "Scaile.tech GmbH",
+    "VAT Number": "DE351009007",
+    "Registration Number": "HRB 174000 (Amtsgericht Hamburg)",
+    "Social Media Links": {
+      "LinkedIn": "https://www.linkedin.com/company/scaile-tech/",
+      "Twitter": "https://twitter.com/scaile_tech",
+      "GitHub": null,
+      "Crunchbase": "https://www.crunchbase.com/organization/scaile-tech-gmbh"
+    },
+    "Funding": "Seed Round (undisclosed amount)",
+    "Investors": [
+      "High-Tech Gründerfonds (HTGF)",
+      "IFB Innovationsstarter GmbH"
+    ],
+    "Description": "Scaile.tech is an end-to-end AI platform that empowers businesses to build, deploy, and manage AI solutions at scale, transforming data into strategic assets and driving innovation.",
+    "Mission": "To empower businesses of all sizes to harness the power of AI, making advanced analytics accessible and actionable.",
+    "Values": [
+      "Innovation",
+      "Collaboration",
+      "Customer-Centricity",
+      "Integrity",
+      "Excellence"
+    ],
+    "Culture": "Dynamic, inclusive, flat hierarchies, work-life balance.",
+    "Careers Page": "https://scaile.tech/careers"
+  },
+  "_metadata": {
+    "mode": "full",
+    "url": "https://scaile.tech"
+  }
+}
+

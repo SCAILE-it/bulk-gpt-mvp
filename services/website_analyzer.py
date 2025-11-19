@@ -22,7 +22,8 @@ ANALYSIS_MODES = {
         "fields": [
             "tone", "targetCountries", "productDescription", "competitors",
             "targetIndustries", "complianceFlags", "valueProposition", "icp",
-            "marketingGoals", "countries", "products", "targetKeywords", "competitorKeywords"
+            "marketingGoals", "countries", "products", "targetKeywords", "competitorKeywords",
+            "gtmPlaybook", "productType", "legalEntity", "imprintUrl", "vatNumber", "registrationNumber"
         ]
     },
     "seo": {
@@ -70,7 +71,7 @@ BUSINESS_CONTEXT_PROMPT = """You are an expert at analyzing company websites and
 
 Given a website's HTML content, extract the following information:
 
-**Context Variables:**
+**Context Variables (Extract from website content):**
 1. **Tone**: The communication style/tone used on the website (e.g., "Professional", "Friendly", "Technical", "Casual", "Formal")
 2. **Target Countries**: Countries or regions the company targets (comma-separated string, e.g., "US, UK, Canada")
 3. **Product Description**: A brief description of the main product or service (2-3 sentences max)
@@ -79,7 +80,7 @@ Given a website's HTML content, extract the following information:
 6. **Compliance Flags**: Any compliance certifications or standards mentioned (comma-separated string, e.g., "SOC2, GDPR")
 7. **Value Proposition**: The main value proposition statement (what makes the company/product unique and valuable)
 
-**Business Context:**
+**Business Context (Extract from website content):**
 8. **ICP (Ideal Customer Profile)**: Describe the ideal customer based on website content - company size, industry, pain points, etc. (2-3 sentences)
 9. **Marketing Goals**: Array of marketing objectives/goals mentioned on the website (e.g., ["Generate qualified leads", "Increase brand awareness", "Drive customer acquisition", "Improve conversion rates"])
 10. **Countries**: Array of specific countries/regions mentioned (e.g., ["United States", "United Kingdom", "Canada"])
@@ -87,7 +88,32 @@ Given a website's HTML content, extract the following information:
 12. **Target Keywords**: Array of key terms/phrases the company seems to target (e.g., ["crm software", "sales automation", "lead management"])
 13. **Competitor Keywords**: Array of competitor names or brands mentioned (e.g., ["Salesforce", "HubSpot", "Pipedrive"])
 
-Return ONLY a valid JSON object with these fields. If a field cannot be determined, omit it or set arrays to empty arrays []."""
+**GTM Classification (Classify based on website content, ICP, products, and business model):**
+14. **GTM Playbook**: Classify the go-to-market motion. Must be one of: "sales_led", "plg", "hybrid", "channel_led", "enterprise_infra"
+   - sales_led: Sales team drives acquisition, high-touch sales process
+   - plg: Product-Led Growth, self-service signup and onboarding
+   - hybrid: Mix of sales-led and PLG approaches
+   - channel_led: Partner/reseller channel drives distribution
+   - enterprise_infra: Enterprise infrastructure, complex sales cycles
+   Return as object: {"value": "sales_led", "confidence": 0.85, "reasoning": "explanation"}
+
+15. **Product Type**: Classify the product category. Must be one of: "devtools", "sales_marketing", "fintech", "hr", "cx", "security", "other"
+   - devtools: Developer tools and infrastructure
+   - sales_marketing: Sales and marketing software
+   - fintech: Financial technology products
+   - hr: Human resources and people management
+   - cx: Customer experience and support tools
+   - security: Security and compliance products
+   - other: Other product categories
+   Return as object: {"value": "devtools", "confidence": 0.90, "reasoning": "explanation"}
+
+**Legal/Company Info (Extract if available - useful context):**
+16. **Legal Entity**: Legal company name (e.g., "Company Name GmbH", "Company Name Inc.")
+17. **Imprint URL**: URL to imprint/legal page (e.g., "https://example.com/imprint")
+18. **VAT Number**: VAT/TAX ID if mentioned (e.g., "DE123456789")
+19. **Registration Number**: Company registration number if mentioned (e.g., "HRB 12345")
+
+Return ONLY a valid JSON object with these fields. For GTM Playbook and Product Type, include confidence (0.0-1.0) and reasoning. If a field cannot be determined, omit it or set arrays to empty arrays []. Use null for missing values."""
 
 SEO_PROMPT = """You are an SEO expert analyzing a website. Extract the following SEO-related information:
 
@@ -228,10 +254,7 @@ def _get_fields_for_mode(mode: str, custom_fields: Optional[List[str]] = None) -
 def _clean_response(parsed: Dict[str, Any], expected_fields: List[str]) -> Dict[str, Any]:
     """Clean and validate response based on expected fields.
     
-    Maps extracted fields to UI form field names:
-    - valueProposition -> Value Proposition (in Business Context)
-    - marketingGoals -> Marketing Goals (in Business Context)
-    - GTM Playbook and Product Type are NOT extracted (they're classifications, not website data)
+    Maps extracted fields to UI form field names and handles nested structures.
     """
     result = {}
     
@@ -250,37 +273,48 @@ def _clean_response(parsed: Dict[str, Any], expected_fields: List[str]) -> Dict[
         "products": "Products",
         "targetKeywords": "Target Keywords",
         "competitorKeywords": "Competitor Keywords",
+        "gtmPlaybook": "GTM Playbook",
+        "productType": "Product Type",
+        "legalEntity": "Legal Entity",
+        "imprintUrl": "Imprint URL",
+        "vatNumber": "VAT Number",
+        "registrationNumber": "Registration Number",
     }
+    
+    def clean_value(value: Any) -> Any:
+        """Clean a single value."""
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        elif isinstance(value, list):
+            cleaned = [item.strip() if isinstance(item, str) else item for item in value if item]
+            return cleaned if cleaned else None
+        elif isinstance(value, dict):
+            # Handle nested structures (e.g., gtmPlaybook, productType)
+            cleaned = {}
+            for k, v in value.items():
+                if v is not None:
+                    cleaned[k] = clean_value(v)
+            return cleaned if cleaned else None
+        elif value is not None:
+            return value
+        return None
     
     if expected_fields == "all":
         # Full mode - return all fields found, map to UI names
         for key, value in parsed.items():
-            # Use mapped name if available, otherwise use original key
             mapped_key = field_mapping.get(key, key)
-            
-            if isinstance(value, str) and value.strip():
-                result[mapped_key] = value.strip()
-            elif isinstance(value, list):
-                cleaned = [item.strip() for item in value if isinstance(item, str) and item.strip()]
-                if cleaned:
-                    result[mapped_key] = cleaned
-            elif value is not None:
-                result[mapped_key] = value
+            cleaned_val = clean_value(value)
+            if cleaned_val is not None:
+                result[mapped_key] = cleaned_val
     else:
         # Specific mode - only return requested fields
         for field in expected_fields:
             if field in parsed:
                 value = parsed[field]
                 mapped_key = field_mapping.get(field, field)
-                
-                if isinstance(value, str) and value.strip():
-                    result[mapped_key] = value.strip()
-                elif isinstance(value, list):
-                    cleaned = [item.strip() for item in value if isinstance(item, str) and item.strip()]
-                    if cleaned:
-                        result[mapped_key] = cleaned
-                elif value is not None:
-                    result[mapped_key] = value
+                cleaned_val = clean_value(value)
+                if cleaned_val is not None:
+                    result[mapped_key] = cleaned_val
     
     return result
 

@@ -14,9 +14,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useContextStorage } from '@/hooks/useContextStorage'
-import { GTMClassificationForm } from '@/components/context/GTMClassificationForm'
 import { toast } from 'sonner'
-import type { BusinessContext as BusinessContextType, GTMPlaybook } from '@/lib/types/business-context'
 
 /**
  * ABOUTME: Context Form Component
@@ -25,7 +23,7 @@ import type { BusinessContext as BusinessContextType, GTMPlaybook } from '@/lib/
  */
 
 export function ContextForm() {
-  const { context, businessContext, gtmProfile, updateContext, updateBusinessContext, updateGTMProfile, clearContext, hasContext, isLoading } = useContextStorage()
+  const { context, businessContext, updateContext, updateBusinessContext, clearContext, hasContext, isLoading } = useContextStorage()
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [showClearConfirmation, setShowClearConfirmation] = useState(false)
@@ -867,21 +865,6 @@ export function ContextForm() {
         </div>
       </div>
 
-      {/* GTM Classification - Integrated naturally with other fields */}
-      <GTMClassificationForm
-        initialContext={gtmProfile ? {
-          gtm_playbook: gtmProfile.gtmPlaybook as GTMPlaybook | null,
-          product_type: gtmProfile.productType,
-        } as BusinessContextType : undefined}
-        onUpdate={async (playbook, productType) => {
-          setHasUserMadeChanges(true)
-          await updateGTMProfile({
-            gtmPlaybook: playbook || undefined,
-            productType: productType || undefined,
-          })
-        }}
-      />
-
       {/* Clear All Confirmation Modal */}
       <Modal
         isOpen={showClearConfirmation}
@@ -913,7 +896,7 @@ export function ContextForm() {
         }
       >
         <p className="text-xs text-muted-foreground">
-          This will clear all business context. GTM profile will be preserved. This action cannot be undone.
+          This will clear all business context. This action cannot be undone.
         </p>
       </Modal>
       </div>

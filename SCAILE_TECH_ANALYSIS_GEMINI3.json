@@ -1,0 +1,154 @@
+INFO:website_analyzer:Starting website analysis: url=https://scaile.tech, mode=full, use_google_search=True
+INFO:website_analyzer:Website analysis success: https://scaile.tech, mode=full, fields_returned=5
+Running analysis with Gemini 3.0 Pro Preview...
+{
+  "BusinessContext": {
+    "Tone": "Professional, innovative, results-oriented",
+    "TargetCountries": [
+      "Germany"
+    ],
+    "ProductDescription": "SCAILE provides AI-powered Go-To-Market machines designed for niche domination. Their 'Visibility Engine' helps businesses appear in AI search results like Google AI Overviews and ChatGPT. They also help AI understand a business by fixing entity, category, and trust signals, and create content specifically for AI Overviews.",
+    "Competitors": null,
+    "TargetIndustries": [
+      "German Mittelstand (SMEs)",
+      "B2B Startups"
+    ],
+    "ComplianceFlags": null,
+    "ICP": "Ambitious companies looking to dominate hyper-niches.",
+    "Countries": [
+      "Germany"
+    ],
+    "Products": [
+      "AI Surface Entry",
+      "AI Surface Expansion",
+      "AI Surface Domination"
+    ],
+    "TargetKeywords": [
+      "AI visibility",
+      "AI search",
+      "Google AI Overviews",
+      "ChatGPT results",
+      "Go-To-Market",
+      "Sales Automation",
+      "Best X for Y"
+    ],
+    "CompetitorKeywords": null
+  },
+  "SEOInformation": {
+    "MetaTitle": "SCAILE | AI-Powered Go-To-Market Machines for Niche Domination",
+    "MetaDescription": "Unlock predictable growth with Scaile's autonomous GTM systems. Build, launch & scale hyper-focused campaigns with AI precision.",
+    "PrimaryKeywords": [
+      "AI-Powered Go-To-Market",
+      "Niche Domination",
+      "AI Search",
+      "AI Visibility"
+    ],
+    "SecondaryKeywords": [
+      "Google AI Overviews",
+      "ChatGPT",
+      "Sales Automation",
+      "German B2B market"
+    ],
+    "ContentStructure": "The website is structured with a clear value proposition on the hero section, followed by sections explaining how their service works, their specific services, client testimonials, pricing tiers, and a blog. The footer contains links to legal pages and other resources.",
+    "Headings": [
+      "The Visibility Engine That Puts You into ChatGPT",
+      "Your customers now search in AI. We make sure you are the answer.",
+      "How we work",
+      "Our Services",
+      "Our References",
+      "Our PRICING",
+      "Our blog"
+    ]
+  },
+  "CompetitiveIntelligence": {
+    "MarketPosition": "A specialized provider of AI-driven marketing and sales solutions, focusing on visibility in AI search and chat platforms.",
+    "Differentiators": "Their core differentiator is the focus on the 'AI Surface' (ChatGPT and Google AI Overviews), a productized service model instead of hourly consulting, and a strategy centered on dominating hyper-niches.",
+    "PricingModel": "Tiered subscription model with three levels: AI Surface Entry, AI Surface Expansion, and AI Surface Domination.",
+    "TargetAudience": "Early-stage teams, companies wanting to expand to multiple markets/languages, and category leaders aiming for global AI surface domination.",
+    "ValueProposition": "To turn a company into an AI-visible brand quickly and efficiently, using an automated, KPI-first engine to increase inbound leads and revenue."
+  },
+  "CompanyIntelligence": {
+    "CompanyName": "SCAILE",
+    "LegalName": null,
+    "FoundedYear": null,
+    "Headquarters": "Hamburg, Germany",
+    "Locations": [
+      "Jungfrauenthal 8, 20149 Hamburg, Germany"
+    ],
+    "CompanyType": "Private",
+    "Industry": "AI, Marketing, Sales Automation, Go-to-Market Strategy",
+    "TeamSize": null,
+    "TeamMembers": [
+      {
+        "name": "Federico De Ponte",
+        "title": "Co-Founder, Product & Growth"
+      },
+      {
+        "name": "Simon Wilhelm",
+        "title": "Co-Founder, Sales & Operations"
+      },
+      {
+        "name": "Anton Billstein",
+        "title": "Co-Founder, Tech & Automation"
+      },
+      {
+        "name": "Sebastian Johnston",
+        "title": "Co-Founder, Strategy & Partnerships"
+      },
+      {
+        "name": "Victoria Frey",
+        "title": "Founders Associate, Project Management"
+      }
+    ],
+    "Founders": [
+      {
+        "name": "Federico De Ponte",
+        "title": "Co-Founder, Product & Growth"
+      },
+      {
+        "name": "Simon Wilhelm",
+        "title": "Co-Founder, Sales & Operations"
+      },
+      {
+        "name": "Anton Billstein",
+        "title": "Co-Founder, Tech & Automation"
+      },
+      {
+        "name": "Sebastian Johnston",
+        "title": "Co-Founder, Strategy & Partnerships"
+      }
+    ],
+    "Executives": [],
+    "ContactEmail": null,
+    "ContactPhone": null,
+    "Address": "Jungfrauenthal 8, 20149 Hamburg, Germany",
+    "Imprint": "https://scaile.tech/imprint",
+    "LegalEntity": null,
+    "VATNumber": null,
+    "RegistrationNumber": null,
+    "SocialMediaLinks": {
+      "LinkedIn": null,
+      "Twitter": null,
+      "GitHub": null,
+      "Crunchbase": null
+    },
+    "Funding": "Tracxn lists the company as unfunded. However, the company's 'About Us' page states they are 'Backed by Global, Experienced Supporters' including 'public innovation funds, international accelerator programs, and leading tech providers'.",
+    "Investors": [
+      "IFB Innovationsstarter GmbH",
+      "NCA",
+      "Google Cloud for startups",
+      "Notion",
+      "Microsoft Founders Hub",
+      "Next Media Hamburg"
+    ],
+    "Description": "SCAILE builds AI go-to-market engines that let ambitious companies dominate hyper-niches on autopilot. Founded in Hamburg and connected across the world, their team mixes data, creativity and code to turn growth into a science.",
+    "Mission": "To build AI go-to-market engines that let ambitious companies dominate hyper-niches on autopilot.",
+    "Values": null,
+    "Culture": "A mix of data, creativity, and code to turn growth into a science, and sharing that knowledge with partners.",
+    "CareersPage": null
+  },
+  "_metadata": {
+    "mode": "full",
+    "url": "https://scaile.tech"
+  }
+}
