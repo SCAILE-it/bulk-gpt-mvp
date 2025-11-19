@@ -6,11 +6,28 @@
 
 'use client'
 
+import dynamic from 'next/dynamic'
 import { ContextForm } from '@/components/context/ContextForm'
-import { ContextFileUpload } from '@/components/context/ContextFileUpload'
-import { ContextIntegrations } from '@/components/context/ContextIntegrations'
 import { FileText, Upload, Plug } from 'lucide-react'
 import { PageWithTabs } from '@/components/layout/PageWithTabs'
+import { Skeleton } from '@/components/ui/skeleton'
+
+// Lazy load non-default tabs - they only load when user clicks on them
+const ContextFileUpload = dynamic(
+  () => import('@/components/context/ContextFileUpload').then(mod => ({ default: mod.ContextFileUpload })),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false,
+  }
+)
+
+const ContextIntegrations = dynamic(
+  () => import('@/components/context/ContextIntegrations').then(mod => ({ default: mod.ContextIntegrations })),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false,
+  }
+)
 
 export default function ContextPage() {
   return (
