@@ -233,6 +233,7 @@ select:focus-visible,
   }
   
   /* Global radius overrides - Langdock-style subtle curves */
+  /* Note: Using !important here to override Tailwind's utility classes consistently */
   .rounded-sm { border-radius: 0.25rem !important; } /* 4px */
   .rounded { border-radius: 0.375rem !important; }    /* 6px */
   .rounded-md { border-radius: 0.375rem !important; } /* 6px */
@@ -394,6 +395,7 @@ select:focus-visible,
 }
 
 /* Auto-Skeleton: Automatically generate skeletons from component structure */
+/* Note: Using !important here to ensure skeleton state overrides all component styles */
 .skeleton-auto {
   pointer-events: none;
   user-select: none;
@@ -608,6 +610,7 @@ tbody tr:hover {
 }
 
 /* Disable tooltip animations - Radix uses transforms for positioning */
+/* Note: Using !important to override Radix's default animations which can cause positioning issues */
 [data-radix-tooltip-content],
 [data-radix-portal] [data-radix-tooltip-content],
 [data-radix-tooltip-content][data-state],
@@ -627,11 +630,10 @@ tbody tr:hover {
   visibility: hidden !important;
 }
 
-/* Recharts Tooltip Overrides - Remove white background */
-/* Based on gtm-os-v2 fix */
+/* Recharts Tooltip Overrides - Remove default white background */
+/* Note: Using !important to override Recharts' inline styles */
 .recharts-tooltip-wrapper {
   background-color: transparent !important;
-  background: transparent !important;
   outline: none !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -639,20 +641,16 @@ tbody tr:hover {
   box-shadow: none !important;
 }
 
-/* Target all possible wrapper variations */
 .recharts-tooltip-wrapper,
 .recharts-tooltip-wrapper > div,
 .recharts-default-tooltip-wrapper {
   background-color: transparent !important;
-  background: transparent !important;
   padding: 0 !important;
   margin: 0 !important;
 }
 
-/* Override default tooltip content styles - make wrapper transparent */
 .recharts-default-tooltip {
   background-color: transparent !important;
-  background: transparent !important;
   border: none !important;
   padding: 0 !important;
   margin: 0 !important;

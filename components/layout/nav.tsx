@@ -29,7 +29,6 @@ export function Nav() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [userType, setUserType] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Close mobile menu on Escape key
@@ -61,19 +60,6 @@ export function Nav() {
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
         setUserEmail(user?.email || null)
-        
-        // Fetch user profile to determine user type
-        if (user) {
-          try {
-            const response = await fetch('/api/user/profile')
-            if (response.ok) {
-              const data = await response.json()
-              setUserType(data.profile?.user_type || 'self_service')
-            }
-          } catch (error) {
-            console.error('Error fetching user profile:', error)
-          }
-        }
       }
     }
     getUser()
@@ -88,28 +74,36 @@ export function Nav() {
     }
   }
 
-  // Prefetch data on navigation hover - Cursor-style instant loading
+  // Non-blocking prefetch on hover - doesn't delay clicks
   const handleNavHover = (href: string) => {
-    // Prefetch SWR data for the target route
-    if (href === '/profile') {
-      mutate('profile') // Prefetch profile data
-    } else if (href === '/executions') {
-      mutate('batches') // Prefetch executions/batch data
-    } else if (href === '/context') {
-      mutate('/api/context-files') // Prefetch context files
-    } else if (href === '/agents') {
-      // Prefetch agents data if needed
-    } else if (href === '/admin') {
-      mutate('/api/admin/clients') // Prefetch admin data
+    // Use requestIdleCallback for non-blocking prefetch, fallback to setTimeout
+    if (typeof window !== 'undefined') {
+      const prefetchData = () => {
+        // Prefetch SWR data for the target route (non-blocking)
+        if (href === '/profile') {
+          mutate('profile').catch(() => {}) // Ignore errors
+        } else if (href === '/executions') {
+          mutate('batches').catch(() => {})
+        } else if (href === '/context') {
+          mutate('/api/context-files').catch(() => {})
+        }
+      }
+      
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(prefetchData, { timeout: 100 })
+      } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(prefetchData, 0)
+      }
     }
-    // Next.js Link already handles route prefetching
+    // Next.js Link already handles route prefetching automatically
   }
 
+  // Reordered navigation: RUN (primary action) → CONTEXT → EXECUTIONS (history)
   const navLinks = [
-    { href: '/executions', label: 'EXECUTIONS' },
     { href: '/context', label: 'CONTEXT' },
-    { href: '/agents', label: 'AGENTS' },
-    ...(userType === 'admin' ? [{ href: '/admin', label: 'ADMIN' }] : []),
+    { href: '/agents', label: 'RUN' },
+    { href: '/executions', label: 'LOG' },
   ]
 
   return (
@@ -118,7 +112,7 @@ export function Nav() {
         {/* Logo */}
         <Logo size="sm" />
 
-        {/* Desktop Navigation Links */}
+        {/* Desktop Navigation Links - Now visible on all pages including homepage */}
         <nav className="hidden sm:flex items-center gap-1 xs:gap-1.5 sm:gap-2 md:gap-3 flex-1 justify-center max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" aria-label="Main navigation">
           {navLinks.map((link) => (
             <Link
@@ -127,12 +121,18 @@ export function Nav() {
               prefetch={true}
               onMouseEnter={() => handleNavHover(link.href)}
               className={cn(
-                'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer',
+                'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer select-none touch-manipulation',
+                'active:scale-[0.98] transition-transform duration-75',
                 pathname === link.href
                   ? 'text-foreground bg-accent'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               )}
               aria-current={pathname === link.href ? 'page' : undefined}
+              style={{ 
+                WebkitTapHighlightColor: 'transparent',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+              }}
             >
               {link.label}
             </Link>
@@ -141,7 +141,7 @@ export function Nav() {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 flex-shrink-0">
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - Now visible on all pages */}
           <Button
             variant="ghost"
             size="icon"
@@ -191,9 +191,15 @@ export function Nav() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => router.push('/profile')}
+                onClick={(e) => {
+                  e.preventDefault()
+                  router.push('/profile')
+                }}
                 onMouseEnter={() => handleNavHover('/profile')}
-                className="cursor-pointer"
+                className="cursor-pointer select-none touch-manipulation"
+                style={{ 
+                  WebkitTapHighlightColor: 'transparent',
+                }}
               >
                 <span className="text-xs">PROFILE</span>
               </DropdownMenuItem>
@@ -218,7 +224,16 @@ export function Nav() {
                 {theme === 'system' && <span className="ml-auto text-xs">✓</span>}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleSignOut()
+                }}
+                className="select-none touch-manipulation"
+                style={{ 
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span className="text-xs">SIGN OUT</span>
               </DropdownMenuItem>
@@ -227,7 +242,7 @@ export function Nav() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Now visible on all pages */}
       {mobileMenuOpen && (
         <>
           {/* Backdrop */}
@@ -247,16 +262,24 @@ export function Nav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => {
+                    // Immediate navigation - don't wait for anything
                     setMobileMenuOpen(false)
+                    // Let Next.js handle navigation immediately
                   }}
                   onMouseEnter={() => handleNavHover(link.href)}
                   className={cn(
-                    'block px-4 py-3 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] flex items-center touch-manipulation cursor-pointer',
+                    'block px-4 py-3 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] flex items-center touch-manipulation cursor-pointer select-none',
+                    'active:scale-[0.98] transition-transform duration-75',
                     pathname === link.href
                       ? 'text-foreground bg-accent'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent/50 active:bg-accent'
                   )}
                   aria-current={pathname === link.href ? 'page' : undefined}
+                  style={{ 
+                    WebkitTapHighlightColor: 'transparent',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                  }}
                 >
                   {link.label}
                 </Link>

@@ -22,7 +22,7 @@ export async function GET() {
       )
     }
 
-    // Fetch recent batches with agent info in single query (eliminates N+1)
+    // Fetch recent batches
     const { data: batches, error: batchesError} = await supabase
       .from('batches')
       .select(`
@@ -33,8 +33,7 @@ export async function GET() {
         processed_rows,
         created_at,
         updated_at,
-        agent_id,
-        agent_definitions(name, icon)
+        agent_id
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -46,6 +45,21 @@ export async function GET() {
         { error: 'Failed to fetch batches' },
         { status: 500 }
       )
+    }
+
+    // Fetch agent definitions separately to avoid relying on non-existent foreign key
+    const agentIds = Array.from(new Set((batches || []).map(b => b.agent_id).filter(Boolean)))
+    let agentMap: Record<string, { name?: string, icon?: string }> = {}
+
+    if (agentIds.length > 0) {
+      const { data: agents } = await supabase
+        .from('agent_definitions')
+        .select('id, name, icon')
+        .in('id', agentIds)
+
+      if (agents) {
+        agentMap = Object.fromEntries(agents.map(a => [a.id, { name: a.name, icon: a.icon }]))
+      }
     }
 
     const allBatches = batches || []
@@ -92,9 +106,9 @@ export async function GET() {
       campaigns: 0,
     }
 
-    // Include recent batches - agent info already joined
+    // Include recent batches - agent info from agentMap
     const recentBatches = allBatches.slice(0, 5).map(b => {
-      const agentInfo = b.agent_definitions as { name?: string, icon?: string } | null
+      const agentInfo = b.agent_id ? agentMap[b.agent_id] : null
       return {
         id: b.id,
         csv_filename: b.csv_filename || `${agentInfo?.name || 'Agent'} Run`,

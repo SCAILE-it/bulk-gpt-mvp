@@ -282,7 +282,7 @@ export function CSVDemo({ hasBatches, recentBatches, onCurrentProcessingChange, 
       setThroughput({ rowsPerSecond: 0, tokensUsed: 0 })
       return undefined
     }
-  }, [hasBatches, summaries, demoRows, replayRows.length, isLoadingReplay])
+  }, [hasBatches, summaries, replayRows.length, isLoadingReplay])
 
   const completedBatches = useMemo(() =>
     recentBatches.filter(b =>
@@ -465,7 +465,7 @@ export function CSVDemo({ hasBatches, recentBatches, onCurrentProcessingChange, 
     }
 
     fetchReplayData()
-  }, [hasBatches, recentBatches, completedBatches, isLoadingReplay, replayRows.length])
+  }, [hasBatches, recentBatches, completedBatches, isLoadingReplay, replayRows.length, demoRows])
 
   // Replay animation
   const replayAnimationStartedRef = useRef(false)
@@ -600,24 +600,25 @@ export function CSVDemo({ hasBatches, recentBatches, onCurrentProcessingChange, 
       initial={{ opacity: 0, y: 0 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.34, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-      className="mb-4 sm:mb-6 relative z-10"
+      className="relative z-10"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.998 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="border border-border/60 rounded-xl sm:rounded-2xl overflow-hidden bg-background/95 backdrop-blur-sm"
+        className="border border-border/80 rounded-xl sm:rounded-2xl overflow-hidden bg-background backdrop-blur-xl"
         style={{
-          boxShadow: '0 4px 16px 0 rgba(0, 0, 0, 0.06), 0 1px 4px 0 rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.05) inset'
+          boxShadow: '0 40px 100px 0 rgba(0, 0, 0, 0.35), 0 8px 32px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
         }}
       >
-        {/* Demo Header */}
-        <div className="border-b border-border/40 px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-b from-secondary/8 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+        {/* Demo Header - Cursor Style */}
+        <div className="border-b border-border/50 px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-b from-secondary/12 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            {/* Cursor-style traffic light dots */}
             <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
-              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-red-500/60" />
-              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-yellow-500/60" />
-              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500/60" />
+              <div className="h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500/70 shadow-sm" />
+              <div className="h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full bg-yellow-500/70 shadow-sm" />
+              <div className="h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full bg-green-500/70 shadow-sm" />
             </div>
             <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
               {showReplay && replayBatchAgentIcon && (
@@ -627,9 +628,24 @@ export function CSVDemo({ hasBatches, recentBatches, onCurrentProcessingChange, 
                 {showReplay ? replayBatchName : 'csv-transformation.csv'}
               </span>
               {showReplay && (
-                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-primary/18 text-primary border border-primary/35 rounded sm:rounded-md text-[10px] sm:text-xs font-medium leading-tight flex-shrink-0">
+                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-primary/20 text-primary border border-primary/40 rounded sm:rounded-md text-[10px] sm:text-xs font-medium leading-tight flex-shrink-0 shadow-sm">
                   REPLAY
                 </span>
+              )}
+              {/* Cursor-style activity indicator */}
+              {throughput.rowsPerSecond > 0 && currentProcessingRow && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full border-2 border-primary border-t-transparent"
+                  />
+                  <span className="text-primary font-mono">Processing...</span>
+                </motion.div>
               )}
             </div>
           </div>
