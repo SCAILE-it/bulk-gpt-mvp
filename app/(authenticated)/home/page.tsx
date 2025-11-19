@@ -157,7 +157,7 @@ function HomePageContent() {
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground tracking-tight leading-tight">
                   {greeting}
                 </h1>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl lg:max-w-3xl">
                   Process CSV data at scale with AI agents. Transform leads, keywords, content, and more with intelligent automation.
                 </p>
               </div>
