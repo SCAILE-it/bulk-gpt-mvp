@@ -100,19 +100,6 @@ select:focus-visible,
   }
 }
 
-/* Focus indicators for interactive elements */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-[role="button"]:focus-visible,
-[role="link"]:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
-}
-
 /* Remove default focus outline for mouse users */
 *:focus:not(:focus-visible) {
   outline: none;
@@ -125,20 +112,6 @@ select:focus-visible,
 
 .pt-safe {
   padding-top: env(safe-area-inset-top);
-}
-
-/* Fade-in animation for skeleton loaders */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.2s ease-in;
 }
 
 @import "react-day-picker/dist/style.css";
@@ -305,30 +278,6 @@ select:focus-visible,
   .hover\:scale-105:hover {
     transform: scale(1.05);
   }
-
-  /* Enhanced focus indicators for accessibility (WCAG AA compliant) */
-  *:focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-    border-radius: 0.375rem;
-  }
-
-  /* Ensure focus indicators are visible on all interactive elements */
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible,
-  select:focus-visible,
-  [role="button"]:focus-visible,
-  [tabindex]:focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-  }
-
-  /* Remove default focus outline for mouse users, keep for keyboard */
-  *:focus:not(:focus-visible) {
-    outline: none;
-  }
 }
 
 /* Custom animations for UX improvements */
@@ -339,6 +288,10 @@ select:focus-visible,
   to {
     opacity: 1;
   }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-in;
 }
 
 @keyframes slide-in-up {
