@@ -271,10 +271,10 @@ function HomePageContent() {
           transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="absolute left-0 top-[80px] w-full sm:w-[55%] z-10"
         >
-          <div className="border border-amber-500/30 rounded-xl sm:rounded-2xl overflow-hidden bg-amber-950/20"
+          <div className="border border-border/80 rounded-xl sm:rounded-2xl overflow-hidden bg-card"
           >
             {/* Compact Header */}
-            <div className="border-b border-amber-500/20 px-4 sm:px-6 py-3.5 sm:py-4 bg-amber-900/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="border-b border-border/50 px-4 sm:px-6 py-2.5 xs:py-2.5 sm:py-3 md:py-3.5 lg:py-4 bg-background/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-2 sm:gap-4">
                 <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
                   <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57] border border-black/10" />
