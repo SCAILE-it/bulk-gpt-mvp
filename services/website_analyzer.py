@@ -392,11 +392,11 @@ Return JSON with null for unverified fields. NO HALLUCINATIONS."""
             "tools": tools_list
         }
         
-        # Use REST API directly - Try Gemini 3.0 Pro Preview first for best quality
+        # Use REST API directly - Try Gemini 2.5 Flash first (faster, good quality)
         models_to_try = [
-            'gemini-3.0-pro-preview',  # Primary model - best quality
+            'gemini-2.5-flash',  # Primary model - fast and accurate
             'gemini-2.5-pro',
-            'gemini-2.5-flash',  # Fallback
+            'gemini-3.0-pro-preview',  # Fallback for best quality
             'gemini-2.0-flash-exp',
             'gemini-1.5-pro',
         ]
@@ -407,7 +407,7 @@ Return JSON with null for unverified fields. NO HALLUCINATIONS."""
         for model_name in models_to_try:
             try:
                 api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                response = requests.post(api_url, json=payload, timeout=45)
+                response = requests.post(api_url, json=payload, timeout=90)  # Increased timeout for URL context + search
                 response.raise_for_status()
                 
                 result = response.json()
@@ -436,9 +436,9 @@ Return JSON with null for unverified fields. NO HALLUCINATIONS."""
                 error_detail = ""
                 try:
                     error_detail = e.response.text
-                    logger.debug(f"API error for {model_name}: {error_detail[:200]}")
+                    logger.error(f"HTTP error for {model_name} ({e.response.status_code}): {error_detail[:500]}")
                 except:
-                    pass
+                    logger.error(f"HTTP error for {model_name} ({e.response.status_code}): {str(e)}")
                 if e.response.status_code == 404:
                     continue  # Try next model
                 elif e.response.status_code == 400:
@@ -449,10 +449,23 @@ Return JSON with null for unverified fields. NO HALLUCINATIONS."""
                     raise  # Re-raise if not 404 or 400
             except Exception as e:
                 last_error = e
+                logger.error(f"Exception for {model_name}: {str(e)}", exc_info=True)
                 continue
         
         if not response_text:
-            raise ValueError(f"Failed to generate content with any Gemini model. Last error: {last_error}")
+            error_msg = f"Failed to generate content with any Gemini model."
+            if last_error:
+                if isinstance(last_error, requests.exceptions.HTTPError):
+                    try:
+                        error_detail = last_error.response.text[:500]
+                        error_msg += f" Last error ({last_error.response.status_code}): {error_detail}"
+                    except:
+                        error_msg += f" Last error: {str(last_error)}"
+                else:
+                    error_msg += f" Last error: {str(last_error)}"
+            else:
+                error_msg += " No error details available."
+            raise ValueError(error_msg)
         
         # Clean markdown code blocks
         if response_text.startswith("```json"):
