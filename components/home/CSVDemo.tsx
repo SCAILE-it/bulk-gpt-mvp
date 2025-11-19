@@ -282,7 +282,7 @@ export function CSVDemo({ hasBatches, recentBatches, onCurrentProcessingChange, 
       setThroughput({ rowsPerSecond: 0, tokensUsed: 0 })
       return undefined
     }
-  }, [hasBatches, summaries, replayRows.length, isLoadingReplay])
+  }, [demoRows, hasBatches, summaries, replayRows.length, isLoadingReplay])
 
   const completedBatches = useMemo(() =>
     recentBatches.filter(b =>

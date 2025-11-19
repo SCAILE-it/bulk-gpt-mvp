@@ -1,12 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth-middleware'
-import { exec } from 'child_process'
-import { promisify } from 'util'
+import { spawn } from 'child_process'
 import path from 'path'
 import { writeFile, unlink } from 'fs/promises'
 import { tmpdir } from 'os'
 
-const execAsync = promisify(exec)
+/**
+ * Helper function to run Python script with stdin input
+ */
+function runPythonScript(
+  scriptPath: string,
+  inputData: string,
+  env: NodeJS.ProcessEnv,
+  timeoutMs: number = 28000
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const process = spawn('python3', [scriptPath], {
+      env,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: timeoutMs,
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    process.stdout?.on('data', (data) => {
+      stdout += data.toString()
+    })
+
+    process.stderr?.on('data', (data) => {
+      stderr += data.toString()
+    })
+
+    process.on('error', (error) => {
+      reject(error)
+    })
+
+    process.on('close', (code) => {
+      if (code !== 0 && !stdout) {
+        reject(new Error(`Python process exited with code ${code}: ${stderr}`))
+      } else {
+        resolve({ stdout, stderr })
+      }
+    })
+
+    // Send input via stdin
+    process.stdin?.write(inputData)
+    process.stdin?.end()
+  })
+}
 
 /**
  * POST /api/analyse-website
@@ -110,7 +152,6 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     // Call Python website analyzer script
     try {
-      const scriptPath = path.join(process.cwd(), 'services', 'website_analyzer.py')
       const tempScriptPath = path.join(tmpdir(), `analyze_${Date.now()}.py`)
       
       // Create a temporary script that calls the analyzer function
@@ -156,15 +197,7 @@ if __name__ == '__main__':
         GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY || '',
       }
       
-      const { stdout, stderr } = await execAsync(
-        `python3 "${tempScriptPath}"`,
-        {
-          input: inputData,
-          env,
-          timeout: 28000, // 28s timeout
-          maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-        }
-      )
+      const { stdout, stderr } = await runPythonScript(tempScriptPath, inputData, env, 28000)
       
       // Clean up temp script
       await unlink(tempScriptPath).catch(() => {})
