@@ -25,8 +25,6 @@ import { toast } from 'sonner'
 
 export function ContextForm() {
   const { context, businessContext, updateContext, updateBusinessContext, clearContext, hasContext, isLoading } = useContextStorage()
-  const [gtmPlaybook, setGtmPlaybook] = useState<GTMPlaybook | null>(null)
-  const [productType, setProductType] = useState<ProductType | null>(null)
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [analyzedUrl, setAnalyzedUrl] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -521,6 +519,43 @@ export function ContextForm() {
               value={context.complianceFlags || ''}
               onChange={(e) => handleManualUpdate({ complianceFlags: e.target.value })}
               className={`text-xs ${context.complianceFlags ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Product Type */}
+          <div className={`space-y-2 ${context.productType ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="productType" className="text-xs">
+                Product Type
+              </Label>
+              {context.productType && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about product type"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Product Type</p>
+                    <p className="text-muted-foreground">
+                      Category or type of your product (e.g., devtools, sales_marketing, fintech). Used for GTM classification and content generation.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Input
+              id="productType"
+              type="text"
+              placeholder="e.g., devtools, sales_marketing, fintech"
+              value={context.productType || ''}
+              onChange={(e) => handleManualUpdate({ productType: e.target.value })}
+              className={`text-xs ${context.productType ? 'bg-background' : ''}`}
             />
           </div>
         </div>
@@ -1059,83 +1094,6 @@ export function ContextForm() {
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* Cluster 4: GTM Classification */}
-      <CollapsibleSection
-        title="GTM Classification"
-        defaultOpen={false}
-      >
-        <div className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="gtmPlaybook" className="text-xs">GTM Playbook</Label>
-              <Select
-                value={gtmPlaybook || ''}
-                onValueChange={async (value) => {
-                  const newPlaybook = value === '' ? null : (value as GTMPlaybook)
-                  setGtmPlaybook(newPlaybook)
-                  try {
-                    await fetch('/api/business-context/context-variables', {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ gtmPlaybook: newPlaybook }),
-                    })
-                    toast.success('GTM Playbook updated')
-                  } catch (error) {
-                    console.error('Error updating GTM playbook:', error)
-                    toast.error('Failed to update GTM Playbook')
-                  }
-                }}
-              >
-                <SelectTrigger id="gtmPlaybook" className="text-xs">
-                  <SelectValue placeholder="Select GTM Playbook" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {Object.values(GTM_PLAYBOOKS).map((playbook) => (
-                    <SelectItem key={playbook.id} value={playbook.id}>
-                      {playbook.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="productType" className="text-xs">Product Type</Label>
-              <Select
-                value={productType || ''}
-                onValueChange={async (value) => {
-                  const newType = value === '' ? null : (value as ProductType)
-                  setProductType(newType)
-                  try {
-                    await fetch('/api/business-context/context-variables', {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ productType: newType }),
-                    })
-                    toast.success('Product Type updated')
-                  } catch (error) {
-                    console.error('Error updating product type:', error)
-                    toast.error('Failed to update Product Type')
-                  }
-                }}
-              >
-                <SelectTrigger id="productType" className="text-xs">
-                  <SelectValue placeholder="Select Product Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {Object.values(PRODUCT_TYPES).map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
       </CollapsibleSection>
