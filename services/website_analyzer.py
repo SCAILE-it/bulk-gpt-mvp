@@ -396,10 +396,15 @@ Website HTML Content:
         # Try new API first (v0.2.0+)
         try:
             from google.generativeai import GenerativeModel
+            # Use Gemini 3.0 Pro
             try:
-                model = GenerativeModel('gemini-2.0-flash-exp')
+                model = GenerativeModel('gemini-3.0-pro')
             except:
-                model = GenerativeModel('gemini-1.5-flash')
+                # Fallback to gemini-2.0 if 3.0 not available
+                try:
+                    model = GenerativeModel('gemini-2.0-flash-exp')
+                except:
+                    model = GenerativeModel('gemini-1.5-flash')
             
             generation_config = {
                 "temperature": 0,
@@ -428,8 +433,8 @@ Website HTML Content:
                 import requests
                 import json as json_lib
                 
-                # Use REST API directly for newer API keys
-                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                # Use REST API directly for newer API keys - Gemini 3.0 Pro
+                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:generateContent?key={api_key}"
                 
                 payload = {
                     "contents": [{
@@ -456,9 +461,10 @@ Website HTML Content:
                     raise ValueError("No candidates in Gemini API response")
                     
             except ImportError:
-                # Fallback to old generate_text API
+                # Fallback to old generate_text API - try gemini-3.0-pro first
                 try:
-                    model_name = 'models/gemini-1.5-flash'
+                    # Try gemini-3.0-pro
+                    model_name = 'models/gemini-3.0-pro'
                     response = genai.generate_text(
                         model=model_name,
                         prompt=extraction_prompt,
@@ -466,9 +472,20 @@ Website HTML Content:
                         max_output_tokens=8192,
                     )
                     response_text = response.result.strip() if hasattr(response, 'result') else str(response).strip()
-                except Exception as e:
-                    logger.error(f"Legacy API failed: {e}")
-                    raise ValueError(f"Failed to generate content with Gemini API: {str(e)}")
+                except:
+                    # Fallback to gemini-1.5-flash if 3.0 not available
+                    try:
+                        model_name = 'models/gemini-1.5-flash'
+                        response = genai.generate_text(
+                            model=model_name,
+                            prompt=extraction_prompt,
+                            temperature=0,
+                            max_output_tokens=8192,
+                        )
+                        response_text = response.result.strip() if hasattr(response, 'result') else str(response).strip()
+                    except Exception as e:
+                        logger.error(f"Legacy API failed: {e}")
+                        raise ValueError(f"Failed to generate content with Gemini API: {str(e)}")
             except Exception as e:
                 logger.error(f"REST API failed: {e}")
                 raise ValueError(f"Failed to generate content with Gemini API: {str(e)}")
