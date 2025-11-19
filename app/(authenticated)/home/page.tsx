@@ -7,11 +7,12 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  CheckCircle2, BarChart3
+import {
+  CheckCircle2, BarChart3, FileText
 } from 'lucide-react'
 import { useHomeStats } from '@/hooks/useHomeStats'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/client'
 import { DataErrorBoundary } from '@/components/ErrorBoundary'
 import { PageWithTabs } from '@/components/layout/PageWithTabs'
@@ -762,14 +763,14 @@ function HomePageContent() {
                   const hour = new Date().getHours()
                   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
                   return (
-                    <>
-                      <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-2.5 sm:mb-3.5 tracking-tight leading-[1.15]">
+                    <div className="flex flex-col xs:flex-row xs:items-center xs:gap-2 sm:gap-3 md:gap-4">
+                      <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold text-foreground mb-2.5 xs:mb-0 tracking-tight leading-[1.15]">
                         {greeting}
                       </h1>
-                      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                      <p className="text-xs xs:text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
                         Process CSV data at scale with AI agents. Transform leads, keywords, content, and more with intelligent automation.
                       </p>
-                    </>
+                    </div>
                   )
                 })()}
               </motion.div>
@@ -779,13 +780,13 @@ function HomePageContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.38, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 sm:mb-8"
+                className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:gap-7 xl:gap-8 mb-6 sm:mb-7 md:mb-8 lg:mb-10"
               >
-                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
-                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2 sm:mb-3.5 uppercase tracking-wider leading-[1.25]">Total Batches</div>
-                    <div className="text-base sm:text-lg font-bold text-foreground mb-1.5 sm:mb-2.5 tabular-nums">{safeStats.totalBatches}</div>
+                  <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+                    <div className="text-[10px] xs:text-xs sm:text-sm md:text-base font-semibold text-muted-foreground mb-2 xs:mb-2.5 sm:mb-3 md:mb-3.5 lg:mb-4 uppercase tracking-wider leading-[1.25]">Total Batches</div>
+                    <div className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-foreground mb-1.5 xs:mb-2 sm:mb-2.5 md:mb-3 lg:mb-3.5 tabular-nums">{safeStats.totalBatches}</div>
                     {safeStats.completedBatches > 0 && (
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">
+                      <div className="text-[10px] xs:text-xs sm:text-sm md:text-base text-muted-foreground">
                         {safeStats.completedBatches} completed
                       </div>
                     )}
@@ -1094,9 +1095,18 @@ function HomePageContent() {
                       )}
 
                       {processingBatches.length === 0 && completedBatches.length === 0 && (
-                        <div className="text-muted-foreground py-6 text-center text-[10px] sm:text-xs">
-                          <span className="text-muted-foreground/50 font-mono">$</span> No processing activity
-                        </div>
+                        <EmptyState
+                          icon={FileText}
+                          title="No batches yet"
+                          description="Get started by uploading a CSV file and processing it with an AI agent"
+                          action={{
+                            label: "Create First Batch",
+                            onClick: () => router.push('/agents/bulk'),
+                            variant: 'default'
+                          }}
+                          size="md"
+                          variant="default"
+                        />
                       )}
                     </div>
                   </div>

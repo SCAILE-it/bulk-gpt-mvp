@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { Search } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface ResultRow {
   id: string
@@ -91,80 +93,102 @@ export function ResultsTable({
         )}
       </div>
 
-      {/* Results Table */}
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border bg-muted">
-            <tr>
-              <th className="px-4 py-2 text-left font-semibold text-foreground">
-                Row
-              </th>
-              <th className="px-4 py-2 text-left font-semibold text-foreground">
-                Input
-              </th>
-              <th className="px-4 py-2 text-left font-semibold text-foreground">
-                Output
-              </th>
-              <th className="px-4 py-2 text-center font-semibold text-foreground">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedResults.map((result, index) => (
-              <tr
-                key={result.id}
-                className="border-b border-border last:border-b-0 hover:bg-muted/50"
-              >
-                <td className="px-4 py-2 text-muted-foreground">
-                  {startIndex + index + 1}
-                </td>
-                <td className="max-w-xs truncate px-4 py-2 text-foreground">
-                  {typeof result.input === 'string' ? result.input : JSON.stringify(result.input)}
-                </td>
-                <td className="max-w-sm truncate px-4 py-2 text-foreground">
-                  {result.output}
-                </td>
-                <td className="px-4 py-2 text-center">
-                  <span
-                    className={`inline-block rounded px-2 py-1 text-xs font-medium ${
-                      result.status === 'success'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {result.status === 'success' ? '✓ Success' : '✗ Error'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Empty State for Search Results */}
+      {filteredResults.length === 0 && results.length > 0 && (
+        <EmptyState
+          icon={Search}
+          title="No results found"
+          description={`No results match "${searchTerm}". Try adjusting your search.`}
+          clearFilter={{
+            label: "Clear search",
+            onClick: () => {
+              setSearchTerm('')
+              setCurrentPage(1)
+            }
+          }}
+          size="sm"
+          variant="search"
+        />
+      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
+      {/* Results Table */}
+      {filteredResults.length > 0 && (
+        <>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border bg-muted">
+                <tr>
+                  <th className="px-4 py-2 text-left font-semibold text-foreground">
+                    Row
+                  </th>
+                  <th className="px-4 py-2 text-left font-semibold text-foreground">
+                    Input
+                  </th>
+                  <th className="px-4 py-2 text-left font-semibold text-foreground">
+                    Output
+                  </th>
+                  <th className="px-4 py-2 text-center font-semibold text-foreground">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedResults.map((result, index) => (
+                  <tr
+                    key={result.id}
+                    className="border-b border-border last:border-b-0 hover:bg-muted/50"
+                  >
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {startIndex + index + 1}
+                    </td>
+                    <td className="max-w-xs truncate px-4 py-2 text-foreground">
+                      {typeof result.input === 'string' ? result.input : JSON.stringify(result.input)}
+                    </td>
+                    <td className="max-w-sm truncate px-4 py-2 text-foreground">
+                      {result.output}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <span
+                        className={`inline-block rounded px-2 py-1 text-xs font-medium ${
+                          result.status === 'success'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {result.status === 'success' ? '✓ Success' : '✗ Error'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="rounded-lg border border-border bg-background px-3 py-1 text-sm hover:bg-muted disabled:opacity-50"
-            >
-              ← Previous
-            </button>
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="rounded-lg border border-border bg-background px-3 py-1 text-sm hover:bg-muted disabled:opacity-50"
-            >
-              Next →
-            </button>
-          </div>
-        </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg border border-border bg-background px-3 py-1 text-sm hover:bg-muted disabled:opacity-50"
+                >
+                  ← Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg border border-border bg-background px-3 py-1 text-sm hover:bg-muted disabled:opacity-50"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
