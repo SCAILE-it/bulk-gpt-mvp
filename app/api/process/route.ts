@@ -222,8 +222,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     // ========================================================================
     // MODAL PROCESSOR - Default flow (no tools) or fallback if GTM fails
     // ========================================================================
-    // Create batch record in Supabase
-    const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Create batch record in Supabase with cryptographically secure ID
+    const batchId = `batch_${crypto.randomUUID()}`
     
     try {
       const { error } = await supabaseAdmin

@@ -177,10 +177,17 @@ export function flattenBatchResultsForExport(
 
     // Parse and spread input fields
     if (result.input_data) {
-      const inputData = typeof result.input_data === 'string'
-        ? JSON.parse(result.input_data)
-        : result.input_data
-      
+      let inputData: unknown = result.input_data
+      if (typeof result.input_data === 'string') {
+        try {
+          inputData = JSON.parse(result.input_data)
+        } catch (parseError) {
+          // If parsing fails, log and skip input parsing (don't crash export)
+          console.error('Failed to parse input_data:', parseError)
+          inputData = null
+        }
+      }
+
       if (typeof inputData === 'object' && inputData !== null) {
         Object.assign(flat, inputData)
       }
@@ -259,36 +266,52 @@ export function formatForEmail<T extends Record<string, unknown>>(
     return '<p>No results to display.</p>'
   }
 
+  // SECURITY: Helper function to escape HTML entities and prevent XSS
+  const escapeHtml = (text: unknown): string => {
+    if (text === null || text === undefined) return '-'
+    const str = String(text)
+    return str.replace(/[&<>"']/g, char => {
+      const escapeMap: { [key: string]: string } = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }
+      return escapeMap[char]
+    })
+  }
+
   const columns = Object.keys(data[0])
   const rowCount = data.length
-  
+
   let html = `<div style="font-family: Arial, sans-serif;">`
   html += `<p><strong>${rowCount} results</strong></p>`
   html += `<table style="border-collapse: collapse; width: 100%; max-width: 600px;">`
-  
+
   // Header
   html += `<thead><tr style="background-color: #f3f4f6;">`
   columns.forEach(col => {
-    html += `<th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">${col}</th>`
+    html += `<th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">${escapeHtml(col)}</th>`
   })
   html += `</tr></thead>`
-  
+
   // Rows (limit to first 10 for email)
   html += `<tbody>`
   data.slice(0, 10).forEach(row => {
     html += `<tr>`
     columns.forEach(col => {
       const value = row[col]
-      html += `<td style="border: 1px solid #d1d5db; padding: 8px;">${value ?? '-'}</td>`
+      html += `<td style="border: 1px solid #d1d5db; padding: 8px;">${escapeHtml(value)}</td>`
     })
     html += `</tr>`
   })
   html += `</tbody></table>`
-  
+
   if (rowCount > 10) {
     html += `<p><em>Showing first 10 of ${rowCount} results</em></p>`
   }
-  
+
   html += `</div>`
   return html
 }

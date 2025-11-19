@@ -412,66 +412,93 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
 
     eventSource.addEventListener('result', (e) => {
       lastProgressCheck = Date.now()
-      const result = JSON.parse(e.data)
-      setResults(prev => {
-        const updated = [...prev]
-        const index = result.row_index
-        if (index >= 0 && index < updated.length) {
-          updated[index] = {
-            id: result.id,
-            input: typeof result.input_data === 'string' 
-              ? JSON.parse(result.input_data) 
-              : result.input_data,
-            output: result.output_data || '',
-            status: result.status === 'success' 
-              ? 'completed' 
-              : result.status === 'error' 
-              ? 'failed' 
-              : result.status,
-            error: result.error_message,
+      try {
+        const result = JSON.parse(e.data)
+        setResults(prev => {
+          const updated = [...prev]
+          const index = result.row_index
+          if (index >= 0 && index < updated.length) {
+            let inputData = result.input_data
+            if (typeof inputData === 'string') {
+              try {
+                inputData = JSON.parse(inputData)
+              } catch (parseError) {
+                console.error('Failed to parse input_data in result event:', parseError)
+                inputData = {}
+              }
+            }
+            updated[index] = {
+              id: result.id,
+              input: inputData,
+              output: result.output_data || '',
+              status: result.status === 'success'
+                ? 'completed'
+                : result.status === 'error'
+                ? 'failed'
+                : result.status,
+              error: result.error_message,
+            }
           }
-        }
-        
-        // Update progress based on actual results (real-time progress)
-        const completed = updated.filter(r => r.status === 'completed' || r.status === 'failed').length
-        const total = updated.length
-        if (total > 0) {
-          setProgress({
-            completed,
-            total,
-            percentage: Math.round((completed / total) * 100),
-          })
-        }
-        
-        return updated
-      })
+
+          // Update progress based on actual results (real-time progress)
+          const completed = updated.filter(r => r.status === 'completed' || r.status === 'failed').length
+          const total = updated.length
+          if (total > 0) {
+            setProgress({
+              completed,
+              total,
+              percentage: Math.round((completed / total) * 100),
+            })
+          }
+
+          return updated
+        })
+      } catch (parseError) {
+        console.error('Failed to parse result event data:', parseError)
+      }
     })
 
     eventSource.addEventListener('progress', (e) => {
       lastProgressCheck = Date.now()
-      const { completed, total } = JSON.parse(e.data)
-      setProgress({
-        completed,
-        total,
-        percentage: Math.round((completed / total) * 100),
-      })
+      try {
+        const { completed, total } = JSON.parse(e.data)
+        setProgress({
+          completed,
+          total,
+          percentage: Math.round((completed / total) * 100),
+        })
+      } catch (parseError) {
+        console.error('Failed to parse progress event data:', parseError)
+      }
     })
 
     eventSource.addEventListener('complete', (e) => {
-      const { status } = JSON.parse(e.data)
-      setIsProcessing(false)
-      eventSource.close()
-      eventSourceRef.current = null
-      if (pollInterval) {
-        clearInterval(pollInterval)
-        pollInterval = null
-      }
-      
-      if (status === 'completed' || status === 'completed_with_errors') {
-        trackEvent(ANALYTICS_EVENTS.BATCH_COMPLETED, {
-          batchId,
-          status,
-        })
+      try {
+        const { status } = JSON.parse(e.data)
+        setIsProcessing(false)
+        eventSource.close()
+        eventSourceRef.current = null
+        if (pollInterval) {
+          clearInterval(pollInterval)
+          pollInterval = null
+        }
+
+        if (status === 'completed' || status === 'completed_with_errors') {
+          trackEvent(ANALYTICS_EVENTS.BATCH_COMPLETED, {
+            batchId,
+            status,
+          })
+        }
+      } catch (parseError) {
+        console.error('Failed to parse complete event data:', parseError)
+        // Still close the connection on parse error
+        setIsProcessing(false)
+        eventSource.close()
+        eventSourceRef.current = null
+        if (pollInterval) {
+          clearInterval(pollInterval)
+          pollInterval = null
+        }
       }
     })
 

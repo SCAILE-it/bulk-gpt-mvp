@@ -447,7 +447,13 @@ export class GTMAPIClient {
 
     const intersection = bigrams1.filter((bigram) => bigrams2.includes(bigram))
 
-    return (2 * intersection.length) / (bigrams1.length + bigrams2.length)
+    // Avoid division by zero if both strings are empty or very short
+    const totalBigrams = bigrams1.length + bigrams2.length
+    if (totalBigrams === 0) {
+      return str1 === str2 ? 1 : 0
+    }
+
+    return (2 * intersection.length) / totalBigrams
   }
 
   /**

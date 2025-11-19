@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { logError } from '@/lib/utils/logger'
+import { authenticateRequest } from '@/lib/auth-middleware'
 
 export const maxDuration = 60
 
 /**
  * GET /api/batch/[id]/status
  * Get batch status and progress
- * 
+ *
  * Returns:
  * {
  *   batchId: string,
@@ -28,10 +29,19 @@ export const maxDuration = 60
  * }
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { batchId: string } }
 ): Promise<Response> {
   try {
+    // SECURITY: Authenticate request
+    const userId = await authenticateRequest(request)
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - please sign in or provide valid Bearer token/API key' },
+        { status: 401 }
+      )
+    }
+
     const batchId = params.batchId
 
     if (!batchId) {
@@ -53,6 +63,15 @@ export async function GET(
       return NextResponse.json(
         { error: 'Batch not found' },
         { status: 404 }
+      )
+    }
+
+    // SECURITY: Verify user owns this batch
+    if (batchData.user_id !== userId) {
+      logError('Unauthorized batch access attempt', null, { batchId, userId, ownerUserId: batchData.user_id })
+      return NextResponse.json(
+        { error: 'Unauthorized - you do not have access to this batch' },
+        { status: 403 }
       )
     }
 
@@ -93,16 +112,28 @@ export async function GET(
     }
 
     // Map results to response format (include tokens for analytics)
-    const mappedResults = (results || []).map((r) => ({
-      id: r.id,
-      input: r.input ? JSON.parse(r.input) : {},
-      output: r.output || '',
-      status: r.status,
-      error: r.error,
-      input_tokens: r.input_tokens || 0,
-      output_tokens: r.output_tokens || 0,
-      model: r.model || '',
-    }))
+    const mappedResults = (results || []).map((r) => {
+      let parsedInput = {}
+      if (r.input) {
+        try {
+          parsedInput = JSON.parse(r.input)
+        } catch (parseError) {
+          logError('Failed to parse input JSON for result', parseError, { resultId: r.id })
+          // Fallback to empty object to prevent endpoint crash
+          parsedInput = {}
+        }
+      }
+      return {
+        id: r.id,
+        input: parsedInput,
+        output: r.output || '',
+        status: r.status,
+        error: r.error,
+        input_tokens: r.input_tokens || 0,
+        output_tokens: r.output_tokens || 0,
+        model: r.model || '',
+      }
+    })
 
     return NextResponse.json(
       {

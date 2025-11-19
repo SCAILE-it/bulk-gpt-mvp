@@ -85,12 +85,19 @@ export async function verifyApiKey(key: string): Promise<string | null> {
 
   if (error || !data) return null
 
-  // Update last used timestamp asynchronously (fire and forget)
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  supabaseAdmin
-    .from('user_api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('key_hash', hash)
+  // Update last used timestamp asynchronously with error handling
+  // Non-blocking update - errors are logged but don't interrupt the request
+  void (async () => {
+    try {
+      await supabaseAdmin
+        .from('user_api_keys')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('key_hash', hash)
+    } catch (updateError) {
+      console.error('Failed to update API key last_used_at timestamp:', updateError)
+      // Don't re-throw or interrupt request - this is non-critical metadata update
+    }
+  })()
 
   return data.user_id
 }
