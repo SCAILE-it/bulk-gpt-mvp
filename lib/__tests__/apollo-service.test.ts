@@ -35,12 +35,24 @@ describe('ApolloService', () => {
     });
 
     it('throws if Gemini API key missing', () => {
-      expect(() => {
-        new ApolloService({
-          apolloApiKey: 'test-apollo',
-          // No Gemini key
-        });
-      }).toThrow('Gemini API key required');
+      // Save and clear env vars to ensure test isolation
+      const originalGeminiKey = process.env.GEMINI_API_KEY;
+      const originalPublicGeminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+      try {
+        expect(() => {
+          new ApolloService({
+            apolloApiKey: 'test-apollo',
+            // No Gemini key
+          });
+        }).toThrow('Gemini API key required for AI-powered lead finding');
+      } finally {
+        // Restore env vars
+        if (originalGeminiKey) process.env.GEMINI_API_KEY = originalGeminiKey;
+        if (originalPublicGeminiKey) process.env.NEXT_PUBLIC_GEMINI_API_KEY = originalPublicGeminiKey;
+      }
     });
 
     it('creates service via factory function', () => {
