@@ -812,7 +812,7 @@ export function ContextForm() {
       >
         <div className="space-y-4 pt-4">
           {/* Target Keywords */}
-        <div className={`space-y-2 ${businessContext.targetKeywords && businessContext.targetKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+          <div className={`space-y-2 ${businessContext.targetKeywords && businessContext.targetKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs">Target Keywords</Label>
             {businessContext.targetKeywords && businessContext.targetKeywords.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
