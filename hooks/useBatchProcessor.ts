@@ -252,7 +252,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
           if (!response.ok) return
 
           const data = await response.json()
-          const { results: dbResults, status, processedRows, totalRows } = data
+          const { results: dbResults, processedRows, totalRows } = data
 
           // Load results if available
           if (dbResults && Array.isArray(dbResults) && dbResults.length > 0) {

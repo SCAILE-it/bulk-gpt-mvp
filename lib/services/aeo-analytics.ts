@@ -229,11 +229,23 @@ export async function analyzeAEOKeywords(
       if (serpResult?.success && serpResult.data) {
         toolsUsed.push('serp-features')
         const serpData = serpResult.data as Record<string, unknown>
+        const featuredSnippet = typeof serpData.featured_snippet === 'boolean'
+          ? serpData.featured_snippet
+          : (typeof serpData.has_featured_snippet === 'boolean' ? serpData.has_featured_snippet : false)
+        const peopleAlsoAsk = typeof serpData.people_also_ask === 'boolean'
+          ? serpData.people_also_ask
+          : (typeof serpData.has_paa === 'boolean' ? serpData.has_paa : false)
+        const relatedSearches = typeof serpData.related_searches === 'boolean'
+          ? serpData.related_searches
+          : (typeof serpData.has_related === 'boolean' ? serpData.has_related : false)
+        const answerBox = typeof serpData.answer_box === 'boolean'
+          ? serpData.answer_box
+          : (typeof serpData.has_answer_box === 'boolean' ? serpData.has_answer_box : false)
         metrics.serp_features = {
-          featured_snippet: serpData.featured_snippet || serpData.has_featured_snippet || false,
-          people_also_ask: serpData.people_also_ask || serpData.has_paa || false,
-          related_searches: serpData.related_searches || serpData.has_related || false,
-          answer_box: serpData.answer_box || serpData.has_answer_box || false,
+          featured_snippet: featuredSnippet,
+          people_also_ask: peopleAlsoAsk,
+          related_searches: relatedSearches,
+          answer_box: answerBox,
         }
       }
       

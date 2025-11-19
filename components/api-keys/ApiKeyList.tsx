@@ -48,7 +48,7 @@ export function ApiKeyList() {
   if (error) {
     return (
       <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
-        {error}
+        {error instanceof Error ? error.message : String(error)}
       </div>
     )
   }

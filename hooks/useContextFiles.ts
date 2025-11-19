@@ -57,7 +57,6 @@ export function useContextFiles(): UseContextFilesReturn {
     dedupingInterval: 5000, // Dedupe requests within 5s
     revalidateIfStale: false, // Don't revalidate stale data automatically (use cache)
     keepPreviousData: true, // Show previous data while revalidating
-    staleTime: 60000, // Consider data fresh for 60 seconds (no revalidation)
     revalidateOnMount: false, // Don't revalidate on mount if we have cached data
     fallbackData: [], // Instant initial render with empty array
   })

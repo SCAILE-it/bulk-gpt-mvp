@@ -46,7 +46,7 @@ export function formatOutputType(outputType: string | null): string {
 }
 
 export function validateAgentConfig(
-  agent: AgentDefinition,
+  _agent: AgentDefinition,
   config: Record<string, unknown>
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = []

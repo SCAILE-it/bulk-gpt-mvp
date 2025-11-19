@@ -69,7 +69,6 @@ export function useProfile() {
       dedupingInterval: 5000,
       revalidateIfStale: false, // Don't revalidate stale data automatically (use cache)
       keepPreviousData: true,
-      staleTime: 300000, // Consider data fresh for 5 minutes (profile changes rarely)
       revalidateOnMount: false, // Don't revalidate on mount if we have cached data
     }
   )

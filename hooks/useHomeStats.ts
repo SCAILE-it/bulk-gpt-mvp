@@ -73,7 +73,6 @@ export function useHomeStats() {
       revalidateOnMount: false,
       dedupingInterval: 10000, // 10 seconds
       keepPreviousData: true,
-      staleTime: 30000, // Consider data fresh for 30 seconds
       onError: () => {
         router.push('/auth')
       },

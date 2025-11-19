@@ -90,7 +90,6 @@ export function ErrorState({
           ? {
               label: 'Try Again',
               onClick: onRetry,
-              icon: RefreshCw,
             }
           : undefined
       }

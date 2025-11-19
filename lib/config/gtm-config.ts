@@ -167,7 +167,7 @@ export function getKPIsForGTMProfile(
   }
   
   // Remove duplicates and return
-  return [...new Set(kpis)];
+  return Array.from(new Set(kpis));
 }
 
 /**
@@ -258,7 +258,7 @@ export function getDataSourcesForGTMProfile(
   }
   
   // Remove duplicates and return
-  return [...new Set(sources)];
+  return Array.from(new Set(sources));
 }
 
 /**
@@ -297,7 +297,7 @@ export function getRecommendedIntegrations(
     }
   }
   
-  return [...new Set(integrations)];
+  return Array.from(new Set(integrations));
 }
 
 /**

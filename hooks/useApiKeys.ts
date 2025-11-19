@@ -22,7 +22,7 @@ const fetcher = async (): Promise<ApiKey[]> => {
 }
 
 export function useApiKeys() {
-  const { data: keys = [], isLoading, error, mutate } = useSWR<ApiKey[]>(
+  const { data: keys = [], isLoading, error, mutate } = useSWR<ApiKey[], Error>(
     'api-keys',
     fetcher,
     {
@@ -32,7 +32,6 @@ export function useApiKeys() {
       revalidateOnMount: false,
       dedupingInterval: 5000,
       keepPreviousData: true,
-      staleTime: 60000, // Consider data fresh for 60 seconds
       fallbackData: [],
     }
   )

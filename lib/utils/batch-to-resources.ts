@@ -4,9 +4,19 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase'
-import type { ResourceCreate } from '@/lib/types/resources'
 import { logError } from '@/lib/utils/logger'
 import { filterDuplicateResources } from '@/lib/utils/resource-deduplication'
+
+// Minimal type definition for resource creation (resources feature was removed)
+type ResourceCreate = {
+  type: 'lead' | 'keyword' | 'content' | 'campaign'
+  data: Record<string, unknown>
+  source_type: string
+  source_name: string
+  batch_id: string
+  agent_id: string
+  tags: string[]
+}
 
 /**
  * Map agent_id to resource type

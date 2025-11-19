@@ -165,7 +165,6 @@ Return ONLY valid JSON in this exact format:
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.3,
-        responseMimeType: 'application/json',
         maxOutputTokens: 500,
       },
     });

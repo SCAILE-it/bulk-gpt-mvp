@@ -67,6 +67,7 @@ export function SuccessState({
       }, autoDismiss)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [autoDismiss, onDismiss])
 
   const iconSizes = {

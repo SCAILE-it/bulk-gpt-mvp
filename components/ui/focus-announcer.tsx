@@ -25,7 +25,7 @@ export function FocusAnnouncer({
   const announcerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!message || !announcerRef.current) return
+    if (!message || !announcerRef.current) return undefined
 
     announcerRef.current.textContent = message
 
@@ -37,6 +37,7 @@ export function FocusAnnouncer({
       }, clearAfter)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [message, clearAfter])
 
   return (

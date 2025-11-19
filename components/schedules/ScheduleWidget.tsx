@@ -315,7 +315,6 @@ export function ScheduleWidget({
               Cancel
             </Button>
             <DisabledButtonTooltip
-              disabled={isCreating || scheduleDateTime < new Date() || !prompt.trim() || !csvData}
               reason={
                 !prompt.trim() 
                   ? 'Please add a prompt before scheduling'

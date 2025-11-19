@@ -143,7 +143,7 @@ export function ScheduleList({ onEdit }: ScheduleListProps) {
               <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-3 w-3" />
-                  <span>{formatCronExpression(schedule.cron_expression, schedule.timezone)}</span>
+                  <span>{formatCronExpression(schedule.cron_expression)}</span>
                 </div>
                 <div>
                   Action: <span className="font-medium text-foreground">{schedule.action}</span>

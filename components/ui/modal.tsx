@@ -68,7 +68,7 @@ export function Modal({
       tabIndex={-1}
     >
       <div
-        ref={modalRef}
+        ref={modalRef as React.RefObject<HTMLDivElement>}
         className={cn(
           'bg-secondary border border-border rounded-lg shadow-lg w-full overflow-hidden transition-all',
           sizeClasses[size],
