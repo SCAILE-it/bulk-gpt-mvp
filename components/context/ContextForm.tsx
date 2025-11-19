@@ -8,13 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -22,8 +15,6 @@ import {
 } from '@/components/ui/tooltip'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { useContextStorage } from '@/hooks/useContextStorage'
-import { GTM_PLAYBOOKS, PRODUCT_TYPES } from '@/lib/config/gtm-config'
-import type { GTMPlaybook, ProductType } from '@/lib/types/business-context'
 import { toast } from 'sonner'
 
 /**
