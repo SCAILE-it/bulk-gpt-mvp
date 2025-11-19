@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     title: 'Bulk GPT - Batch Process CSV with AI',
     description: 'Transform CSV data at scale with AI. Upload, define prompts, and process thousands of rows with Gemini AI.',
     images: ['/og-image.svg'],
-    creator: '@bulk_gpt', // TODO: Update with actual Twitter handle
+    creator: '@bulk_gpt',
   },
   robots: {
     index: true,

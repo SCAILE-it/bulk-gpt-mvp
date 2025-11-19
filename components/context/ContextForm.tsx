@@ -193,7 +193,7 @@ export function ContextForm() {
     } finally {
       setIsAnalyzing(false)
     }
-  }, [websiteUrl, context, updateContext, updateBusinessContext])
+  }, [websiteUrl, updateContext, updateBusinessContext])
 
   const handleClearAll = useCallback(() => {
     clearContext()

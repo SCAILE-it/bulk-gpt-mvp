@@ -621,7 +621,7 @@ export function AnalyticsDashboard() {
     }
 
     fetchAnalytics()
-  }, [dateRange, retryCount])
+  }, [analytics, dateRange, retryCount, notifiedThresholds, router])
 
   // Reset retry count when date range changes
   useEffect(() => {
@@ -652,46 +652,46 @@ export function AnalyticsDashboard() {
   }
 
   // Memoize expensive calculations - MUST be before early returns (Rules of Hooks)
-  const totalCost = useMemo(() => 
+  const totalCost = useMemo(() =>
     analytics ? calculateTotalCost(analytics.tokenStats.modelBreakdown) : 0,
-    [analytics?.tokenStats.modelBreakdown]
+    [analytics]
   )
-  
+
   // Calculate previous period cost if available
-  const previousTotalCost = useMemo(() => 
+  const previousTotalCost = useMemo(() =>
     analytics?.previousPeriod
       ? calculateTotalCost(analytics.previousPeriod.tokenStats.modelBreakdown)
       : 0,
-    [analytics?.previousPeriod]
+    [analytics]
   )
-  
+
   // Calculate comparison metrics
-  const tokenComparison = useMemo(() => 
+  const tokenComparison = useMemo(() =>
     analytics?.previousPeriod
       ? calculatePercentageChange(analytics.tokenStats.totalTokens, analytics.previousPeriod.tokenStats.totalTokens)
       : null,
-    [analytics?.previousPeriod, analytics?.tokenStats.totalTokens]
+    [analytics]
   )
-  
-  const costComparison = useMemo(() => 
+
+  const costComparison = useMemo(() =>
     analytics?.previousPeriod && previousTotalCost > 0
       ? calculatePercentageChange(totalCost, previousTotalCost)
       : null,
-    [analytics?.previousPeriod, previousTotalCost, totalCost]
+    [analytics, previousTotalCost, totalCost]
   )
-  
-  const batchesComparison = useMemo(() => 
+
+  const batchesComparison = useMemo(() =>
     analytics?.previousPeriod && analytics.previousPeriod.totalBatches > 0
       ? calculatePercentageChange(
           Object.values(analytics.batchesByStatus).reduce((sum, count) => sum + count, 0),
           analytics.previousPeriod.totalBatches
         )
       : null,
-    [analytics?.previousPeriod, analytics?.batchesByStatus]
+    [analytics]
   )
 
   // Memoize chart data preparation
-  const statusChartData = useMemo(() => 
+  const statusChartData = useMemo(() =>
     analytics ? Object.entries(analytics.batchesByStatus)
       .filter(([status]) => !selectedStatus || selectedStatus === status)
       .map(([status, count]) => ({
@@ -700,10 +700,10 @@ export function AnalyticsDashboard() {
         fill: STATUS_COLORS[status] || CHART_COLORS.primary,
       }))
       .filter(item => item.value > 0) : [],
-    [analytics?.batchesByStatus, selectedStatus]
+    [analytics, selectedStatus]
   )
 
-  const modelChartData = useMemo(() => 
+  const modelChartData = useMemo(() =>
     analytics ? Object.entries(analytics.tokenStats.modelBreakdown)
       .filter(([model]) => !selectedModel || selectedModel === model)
       .filter(([, stats]) => (stats.input + stats.output) > 0)
@@ -714,10 +714,10 @@ export function AnalyticsDashboard() {
         output: stats.output,
         total: stats.input + stats.output,
       })) : [],
-    [analytics?.tokenStats.modelBreakdown, selectedModel]
+    [analytics, selectedModel]
   )
 
-  const activityChartData = useMemo(() => 
+  const activityChartData = useMemo(() =>
     analytics ? analytics.recentActivity.map((activity) => {
       const date = new Date(activity.date)
       return {
@@ -728,10 +728,10 @@ export function AnalyticsDashboard() {
         outputTokens: activity.outputTokens,
       }
     }) : [],
-    [analytics?.recentActivity]
+    [analytics]
   )
 
-  const tokenActivityChartData = useMemo(() => 
+  const tokenActivityChartData = useMemo(() =>
     analytics ? analytics.recentActivity.map((activity) => {
       const date = new Date(activity.date)
       return {
@@ -740,7 +740,7 @@ export function AnalyticsDashboard() {
         output: activity.outputTokens,
       }
     }) : [],
-    [analytics?.recentActivity]
+    [analytics]
   )
 
   // Calculate trend for Token Usage Over Time
