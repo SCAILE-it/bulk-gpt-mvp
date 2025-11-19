@@ -355,7 +355,7 @@ export default function BulkProcessor() {
   const [testStartTime, setTestStartTime] = useState<number | undefined>(undefined)
   const [processingStartTime, setProcessingStartTime] = useState<number | undefined>(undefined)
   const [isUploading, setIsUploading] = useState(false)
-  const [exportStartTime, setExportStartTime] = useState<number | undefined>(undefined)
+  // const [exportStartTime, setExportStartTime] = useState<number | undefined>(undefined) // Reserved for future export timing
 
   /**
    * Error Display Strategy (P1 UX Issue #5 - Error Redundancy):
@@ -800,6 +800,12 @@ export default function BulkProcessor() {
       e.preventDefault()
       setShowKeyboardHelp(true)
     }
+  }, { enableOnFormTags: true, enableOnContentEditable: true })
+
+  // Keyboard shortcut for prompt templates: Cmd+B
+  useHotkeys('mod+b', (e) => {
+    e.preventDefault()
+    setShowTemplateModal(true)
   }, { enableOnFormTags: true, enableOnContentEditable: true })
 
   // === OUTPUT FIELDS ===
@@ -2559,6 +2565,24 @@ export default function BulkProcessor() {
                     <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">⌘</kbd>
                     <span className="text-muted-foreground">+</span>
                     <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">O</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Prompt & Templates */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Prompt & Templates</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-md">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">Browse prompt templates</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">⌘</kbd>
+                    <span className="text-muted-foreground">+</span>
+                    <kbd className="px-2 py-1 bg-secondary border border-border rounded text-xs text-muted-foreground font-mono">B</kbd>
                   </div>
                 </div>
               </div>

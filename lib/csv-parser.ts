@@ -116,7 +116,7 @@ export async function parseCSV(file: File): Promise<ParsedCSV> {
             columnCounts.set(col, count + 1)
           })
           const duplicates = Array.from(columnCounts.entries())
-            .filter(([_, count]) => count > 1)
+            .filter(([, count]) => count > 1)
             .map(([col]) => col)
 
           if (duplicates.length > 0) {

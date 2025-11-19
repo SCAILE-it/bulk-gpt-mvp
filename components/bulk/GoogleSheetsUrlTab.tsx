@@ -822,6 +822,8 @@ export function GoogleSheetsUrlTab({
             }
           }}
           placeholder="Paste Google Sheets URL..."
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? 'google-sheets-error' : undefined}
           disabled={isLoading || isUploading}
           className="w-full"
           aria-label="Google Sheets URL"
@@ -998,8 +1000,8 @@ export function GoogleSheetsUrlTab({
 
       {/* Error message */}
       {error && (
-        <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-2.5 py-2">
-          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+        <div id="google-sheets-error" role="alert" aria-live="polite" className="flex items-start gap-2 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-2.5 py-2">
+          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="flex-1">
             <span>{error}</span>
             {(error.includes('private') || error.includes('PERMISSION_DENIED') || error.includes('permission')) && (

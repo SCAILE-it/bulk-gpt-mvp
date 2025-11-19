@@ -379,7 +379,12 @@ export const PromptSection = memo(function PromptSection({
               <button
                 type="button"
                 onClick={onOpenTemplates}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent/50"
+                className={cn(
+                  "text-xs transition-colors flex items-center gap-1.5 px-2.5 py-1.5 rounded font-medium",
+                  !prompt.trim()
+                    ? "bg-primary/10 hover:bg-primary/15 text-primary border border-primary/20 hover:border-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
                 aria-label="Browse pre-made prompt templates"
               >
                 <FileText className="h-3.5 w-3.5" aria-hidden="true" />
