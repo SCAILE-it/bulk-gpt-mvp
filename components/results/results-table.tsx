@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Search } from 'lucide-react'
+import { Search, ChevronDown } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 
 interface ResultRow {
@@ -27,6 +27,17 @@ export function ResultsTable({
 }: ResultsTableProps): React.ReactElement {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+
+  const toggleExpandedRow = (rowId: string) => {
+    const newExpanded = new Set(expandedRows)
+    if (newExpanded.has(rowId)) {
+      newExpanded.delete(rowId)
+    } else {
+      newExpanded.add(rowId)
+    }
+    setExpandedRows(newExpanded)
+  }
 
   // Filter results based on search term
   const filteredResults = useMemo(() => {
@@ -134,31 +145,55 @@ export function ResultsTable({
               </thead>
               <tbody>
                 {paginatedResults.map((result, index) => (
-                  <tr
-                    key={result.id}
-                    className="border-b border-border last:border-b-0 hover:bg-muted/50"
-                  >
-                    <td className="px-4 py-2 text-muted-foreground">
-                      {startIndex + index + 1}
-                    </td>
-                    <td className="max-w-xs truncate px-4 py-2 text-foreground">
-                      {typeof result.input === 'string' ? result.input : JSON.stringify(result.input)}
-                    </td>
-                    <td className="max-w-sm truncate px-4 py-2 text-foreground">
-                      {result.output}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      <span
-                        className={`inline-block rounded px-2 py-1 text-xs font-medium ${
-                          result.status === 'success'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {result.status === 'success' ? '✓ Success' : '✗ Error'}
-                      </span>
-                    </td>
-                  </tr>
+                  <React.Fragment key={result.id}>
+                    <tr className="border-b border-border hover:bg-muted/50">
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {startIndex + index + 1}
+                      </td>
+                      <td className="max-w-xs truncate px-4 py-2 text-foreground">
+                        {typeof result.input === 'string' ? result.input : JSON.stringify(result.input)}
+                      </td>
+                      <td className="max-w-sm truncate px-4 py-2 text-foreground">
+                        {result.output}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => result.status === 'error' && toggleExpandedRow(result.id)}
+                          className={`inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium min-h-[36px] ${
+                            result.status === 'success'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800 hover:bg-red-200 cursor-pointer'
+                          }`}
+                          disabled={result.status !== 'error'}
+                        >
+                          {result.status === 'success' ? '✓ Success' : '✗ Error'}
+                          {result.status === 'error' && (
+                            <ChevronDown
+                              className={`h-3.5 w-3.5 transition-transform ${
+                                expandedRows.has(result.id) ? 'rotate-180' : ''
+                              }`}
+                            />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Error Details Row */}
+                    {result.status === 'error' && expandedRows.has(result.id) && result.error && (
+                      <tr className="border-b border-border bg-red-50 dark:bg-red-950/20">
+                        <td colSpan={4} className="px-4 py-3">
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-semibold text-red-700 dark:text-red-400 flex-shrink-0 pt-0.5">Error Details:</span>
+                              <div className="text-xs text-red-600 dark:text-red-300 bg-white dark:bg-red-950/40 rounded p-2 flex-1 font-mono break-words">
+                                {result.error}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
