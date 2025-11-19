@@ -327,28 +327,30 @@ async def analyze_website(
         # Build prompt - mention URL so Gemini can fetch it with url_context tool
         search_instruction = ""
         if use_google_search:
-            search_instruction = """
+            search_instruction = f"""
 
-IMPORTANT: Use Google Search to find additional information that might not be on the website:
-- Legal information (imprint page, VAT number, registration number, legal entity)
-- Social media profiles (LinkedIn, Twitter, GitHub, Crunchbase)
-- Funding information and investors
-- Contact details (email, phone) if not on homepage
-- Team members and founders (check LinkedIn, About page, Crunchbase)
-- Company history and founding year
-- Any other missing details
+MANDATORY SEARCH REQUIREMENTS:
 
-Search for: "{url} imprint", "{url} founders", "{url} funding", "{url} LinkedIn", "{url} Crunchbase", etc.
-Combine the website content with search results to provide complete, accurate information."""
+You MUST use Google Search (via the google_search tool) to find information that is not visible on the website homepage. 
+
+For the website {url}, you MUST search for:
+1. Legal Entity & Registration: Search "scaile.tech imprint" or "scaile technologies gmbh" to find legal entity name, VAT number (USt-IdNr), and registration number (HRB)
+2. Contact Information: Search "scaile.tech contact" or visit the contact page to find email and phone
+3. Social Media: Search "scaile technologies linkedin" to find LinkedIn company page URL
+4. Company Details: Search "scaile technologies founders" or "scaile.tech about" for complete team information
+
+DO NOT return "null", "not found", or "needs investigation" - you MUST actively search and find this information.
+The google_search tool is enabled - USE IT to find missing data."""
         
         extraction_prompt = f"""{system_prompt}
 
 ---
 
-Analyze the website at: {url}
+Analyze the website: {url}
+
 {search_instruction}
 
-Extract the requested information and return JSON."""
+Extract ALL requested information. Use the website content AND Google Search results. Return complete JSON."""
 
         # Use REST API with URL context + search grounding (works with all SDK versions)
         import requests
@@ -376,11 +378,12 @@ Extract the requested information and return JSON."""
             "tools": tools_list
         }
         
-        # Use REST API directly - Try Gemini 2.5 Flash first
+        # Use REST API directly - Try Gemini 3.0 Pro Preview first for best quality
         models_to_try = [
-            'gemini-2.5-flash',  # Primary model
+            'gemini-3.0-pro-preview',  # Primary model - best quality
+            'gemini-2.5-pro',
+            'gemini-2.5-flash',  # Fallback
             'gemini-2.0-flash-exp',
-            'gemini-1.5-flash',
             'gemini-1.5-pro',
         ]
         
