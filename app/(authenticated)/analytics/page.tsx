@@ -5,6 +5,7 @@
 
 'use client'
 
+import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { BarChart3, Activity } from 'lucide-react'
 import { PageWithTabs } from '@/components/layout/PageWithTabs'
@@ -55,12 +56,16 @@ const ExecutionsList = dynamic(
 )
 
 export default function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState('analytics')
+
   return (
     <DataErrorBoundary
       errorMessage="Failed to load analytics data. Please check your connection and try again."
     >
       <PageWithTabs
         defaultValue="analytics"
+        value={activeTab}
+        onValueChange={setActiveTab}
         maxWidth="max-w-full"
         tabs={[
           {

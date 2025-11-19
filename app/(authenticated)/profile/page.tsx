@@ -53,6 +53,7 @@ function ProfilePageContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState('account')
 
   // Form state - sync with profile when it loads
   const [fullName, setFullName] = useState('')
@@ -265,6 +266,8 @@ function ProfilePageContent() {
 
       <PageWithTabs
         defaultValue="account"
+        value={activeTab}
+        onValueChange={setActiveTab}
         maxWidth="max-w-2xl"
         tabs={[
           {
