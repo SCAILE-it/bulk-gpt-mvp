@@ -24,10 +24,10 @@ const buttonVariants = cva(
             "bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 text-foreground active:bg-blue-600/40 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md",
         },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 px-3 text-xs",
-        lg: "h-11 px-6 text-base",
-        icon: "size-9",
+        default: "h-9 px-4 py-2 min-h-[44px] touch-manipulation",
+        sm: "h-8 px-3 text-xs min-h-[40px] touch-manipulation",
+        lg: "h-11 px-6 text-base min-h-[48px] touch-manipulation",
+        icon: "size-10 min-w-[44px] min-h-[44px] touch-manipulation",
       },
     },
     defaultVariants: {
