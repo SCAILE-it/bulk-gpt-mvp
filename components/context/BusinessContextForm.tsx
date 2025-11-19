@@ -63,7 +63,7 @@ interface BusinessContextFormData {
 }
 
 export function BusinessContextForm() {
-  const { context: contextVars, updateContext } = useContextStorage()
+  const { updateContext } = useContextStorage()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   
