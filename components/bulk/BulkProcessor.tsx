@@ -355,6 +355,17 @@ export default function BulkProcessor() {
   const [testStartTime, setTestStartTime] = useState<number | undefined>(undefined)
   const [processingStartTime, setProcessingStartTime] = useState<number | undefined>(undefined)
   const [isUploading, setIsUploading] = useState(false)
+
+  /**
+   * Error Display Strategy (P1 UX Issue #5 - Error Redundancy):
+   * - Critical/blocking errors (user cannot proceed): Use setError() for persistent banner
+   * - Transient/non-blocking errors (can retry): Use toast.error() for temporary notification
+   * - Never show the same error in both banner AND toast
+   *
+   * Critical errors: File upload failures, CSV parsing errors, Google Sheets loading errors,
+   *                  variable validation errors, test/process failures
+   * Transient errors: Export failures, retry failures, save context failures
+   */
   const [error, setError] = useState<string | null>(null)
 
   // Memoize CSV columns to prevent infinite render loop (array created on every render)
@@ -729,11 +740,12 @@ export default function BulkProcessor() {
       } else if (baseMessage.includes('network') || baseMessage.includes('fetch')) {
         actionableMessage = `${baseMessage} Check your internet connection and try again.`
       }
+      // Critical blocking error - show in banner only (persistent)
       setError(actionableMessage)
       logError(err instanceof Error ? err : new Error(String(err)), {
         context: 'googleSheetsDataLoaded',
       })
-      toast.error(actionableMessage)
+      // Note: Not showing toast for critical errors - banner provides persistent feedback
     } finally {
       setIsUploading(false)
     }
