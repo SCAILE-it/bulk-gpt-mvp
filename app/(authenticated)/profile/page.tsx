@@ -7,18 +7,35 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, User, BarChart3, CreditCard } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
-import { UsageDisplay } from '@/components/usage/UsageDisplay'
-import { InvoiceList } from '@/components/billing/InvoiceList'
 import { AutoSkeleton } from '@/components/ui/auto-skeleton'
 import { PageWithTabs } from '@/components/layout/PageWithTabs'
 import { DataErrorBoundary } from '@/components/ErrorBoundary'
 import { SuccessState } from '@/components/ui/success-state'
+import { Skeleton } from '@/components/ui/skeleton'
+
+// Lazy load non-default tabs - only load when user clicks on them
+const UsageDisplay = dynamic(
+  () => import('@/components/usage/UsageDisplay').then(mod => ({ default: mod.UsageDisplay })),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false,
+  }
+)
+
+const InvoiceList = dynamic(
+  () => import('@/components/billing/InvoiceList').then(mod => ({ default: mod.InvoiceList })),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false,
+  }
+)
 
 export default function ProfilePage() {
   return (
