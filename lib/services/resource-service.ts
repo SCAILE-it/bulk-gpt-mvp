@@ -5,7 +5,6 @@
  */
 
 import { createClient } from '@/lib/supabase/client'
-import type { Database } from '@/lib/supabase/types'
 
 export type ResourceType = 'lead' | 'keyword' | 'content' | 'campaign' | 'analytics'
 export type SourceType = 'customer' | 'tool' | 'generated'
@@ -45,6 +44,10 @@ export async function createResourceWithDedup(
   input: ResourceInput
 ): Promise<{ resource: ResourceOutput; isDuplicate: boolean }> {
   const supabase = createClient()
+
+  if (!supabase) {
+    throw new Error('Supabase client could not be initialized')
+  }
 
   try {
     // Check for duplicates based on source and type
@@ -162,6 +165,10 @@ export async function bulkCreateResources(
 export async function findDuplicateResources(userId: string) {
   const supabase = createClient()
 
+  if (!supabase) {
+    throw new Error('Supabase client could not be initialized')
+  }
+
   try {
     const { data, error } = await supabase.rpc('find_duplicate_resources', {
       p_user_id: userId,
@@ -181,6 +188,10 @@ export async function findDuplicateResources(userId: string) {
 export async function findBatchDuplicates(userId: string) {
   const supabase = createClient()
 
+  if (!supabase) {
+    throw new Error('Supabase client could not be initialized')
+  }
+
   try {
     const { data, error } = await supabase.rpc('find_batch_duplicates', {
       p_user_id: userId,
@@ -199,6 +210,10 @@ export async function findBatchDuplicates(userId: string) {
  */
 export async function cleanupDuplicateResources(userId: string) {
   const supabase = createClient()
+
+  if (!supabase) {
+    throw new Error('Supabase client could not be initialized')
+  }
 
   try {
     const { data, error } = await supabase.rpc('cleanup_duplicate_resources', {
@@ -222,6 +237,10 @@ async function fetchExistingResource(input: ResourceInput): Promise<{
 }> {
   const supabase = createClient()
 
+  if (!supabase) {
+    throw new Error('Supabase client could not be initialized')
+  }
+
   let query = supabase.from('resources').select('*').eq('type', input.type)
 
   if (input.sourceId && input.sourceName) {
@@ -242,10 +261,25 @@ async function fetchExistingResource(input: ResourceInput): Promise<{
   }
 }
 
+interface DatabaseResource {
+  id: string
+  user_id: string
+  type: ResourceType
+  data: Record<string, unknown>
+  source_type: SourceType
+  source_name: string
+  source_id: string | null
+  batch_id: string | null
+  agent_id: string | null
+  tags: string[]
+  created_at: string
+  updated_at: string
+}
+
 /**
  * Helper: Map database resource to output type
  */
-function mapDatabaseToResource(data: any): ResourceOutput {
+function mapDatabaseToResource(data: DatabaseResource): ResourceOutput {
   return {
     id: data.id,
     userId: data.user_id,
@@ -253,9 +287,9 @@ function mapDatabaseToResource(data: any): ResourceOutput {
     data: data.data,
     sourceType: data.source_type,
     sourceName: data.source_name,
-    sourceId: data.source_id,
-    batchId: data.batch_id,
-    agentId: data.agent_id,
+    sourceId: data.source_id ?? undefined,
+    batchId: data.batch_id ?? undefined,
+    agentId: data.agent_id ?? undefined,
     tags: data.tags,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
