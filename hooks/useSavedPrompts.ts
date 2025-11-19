@@ -57,7 +57,6 @@ export function useSavedPrompts(): UseSavedPromptsReturn {
     dedupingInterval: 5000, // Dedupe requests within 5s
     revalidateIfStale: false, // Don't revalidate stale data automatically (use cache)
     keepPreviousData: true, // Show previous data while revalidating
-    staleTime: 60000, // Consider data fresh for 60 seconds (no revalidation)
     revalidateOnMount: false, // Don't revalidate on mount if we have cached data
     fallbackData: [], // Instant initial render with empty array
   })
@@ -161,23 +160,21 @@ export function useSavedPrompts(): UseSavedPromptsReturn {
       if (!res.ok) {
         throw new Error('Failed to record usage')
       }
+      // Update usage count after successful mutation
+      mutate((currentPrompts: SavedPrompt[] = []) =>
+        currentPrompts.map(p =>
+          p.id === arg.id
+            ? {
+                ...p,
+                usage_count: p.usage_count + 1,
+                last_used_at: new Date().toISOString(),
+              }
+            : p
+        ),
+        false
+      )
     },
     {
-      onSuccess: (_, __, { id }: { id: string }) => {
-        // Optimistically update usage count
-        mutate((currentPrompts: SavedPrompt[] = []) =>
-          currentPrompts.map(p =>
-            p.id === id
-              ? {
-                  ...p,
-                  usage_count: p.usage_count + 1,
-                  last_used_at: new Date().toISOString(),
-                }
-              : p
-          ),
-          false
-        )
-      },
       onError: () => {
         // Don't show error toast for usage tracking failures
       },
@@ -204,12 +201,12 @@ export function useSavedPrompts(): UseSavedPromptsReturn {
       }
     }, [updatePromptMutation]),
     deletePrompt: useCallback(async (id: string) => {
-      const prompt = prompts.find(p => p.id === id)
+      const prompt = prompts.find((p: SavedPrompt) => p.id === id)
       if (!prompt) return
 
       // Optimistically remove from UI
       mutate((currentPrompts: SavedPrompt[] = []) => 
-        currentPrompts.filter(p => p.id !== id), 
+        currentPrompts.filter((p: SavedPrompt) => p.id !== id), 
         false
       )
 
