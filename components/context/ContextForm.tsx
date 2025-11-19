@@ -543,77 +543,77 @@ export function ContextForm() {
         <div className="space-y-4 pt-4">
           {/* ICP */}
           <div className={`space-y-2 ${businessContext.icp ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
-          <div className="flex items-center gap-1.5">
-            <Label htmlFor="icp" className="text-xs">
-              Ideal Customer Profile (ICP)
-            </Label>
-            {businessContext.icp && <CheckCircle className="h-3 w-3 text-primary" />}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Learn about ICP"
-                >
-                  <HelpCircle className="h-3 w-3 cursor-help" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-xs">
-                <div className="space-y-1 text-xs">
-                  <p className="font-medium">Ideal Customer Profile</p>
-                  <p className="text-muted-foreground">
-                    Describe your ideal customer: industry, company size, pain points, etc. Used for AI classification and content generation.
-                  </p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="icp" className="text-xs">
+                Ideal Customer Profile (ICP)
+              </Label>
+              {businessContext.icp && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about ICP"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Ideal Customer Profile</p>
+                    <p className="text-muted-foreground">
+                      Describe your ideal customer: industry, company size, pain points, etc. Used for AI classification and content generation.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              id="icp"
+              placeholder="Describe your ideal customer: industry, company size, pain points, etc."
+              value={businessContext.icp || ''}
+              onChange={(e) => handleBusinessContextUpdate({ icp: e.target.value })}
+              rows={4}
+              className={`text-xs resize-none ${businessContext.icp ? 'bg-background' : ''}`}
+            />
           </div>
-          <Textarea
-            id="icp"
-            placeholder="Describe your ideal customer: industry, company size, pain points, etc."
-            value={businessContext.icp || ''}
-            onChange={(e) => handleBusinessContextUpdate({ icp: e.target.value })}
-            rows={4}
-            className={`text-xs resize-none ${businessContext.icp ? 'bg-background' : ''}`}
-          />
-        </div>
 
           {/* Value Proposition */}
           <div className={`space-y-2 ${businessContext.valueProposition ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
-          <div className="flex items-center gap-1.5">
-            <Label htmlFor="value-proposition" className="text-xs">
-              Value Proposition
-            </Label>
-            {businessContext.valueProposition && <CheckCircle className="h-3 w-3 text-primary" />}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Learn about value proposition"
-                >
-                  <HelpCircle className="h-3 w-3 cursor-help" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-xs">
-                <div className="space-y-1 text-xs">
-                  <p className="font-medium">Value Proposition</p>
-                  <p className="text-muted-foreground">
-                    A clear statement that explains how your product solves customers&apos; problems, delivers specific benefits, and why customers should choose you over competitors.
-                  </p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="value-proposition" className="text-xs">
+                Value Proposition
+              </Label>
+              {businessContext.valueProposition && <CheckCircle className="h-3 w-3 text-primary" />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Learn about value proposition"
+                  >
+                    <HelpCircle className="h-3 w-3 cursor-help" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-medium">Value Proposition</p>
+                    <p className="text-muted-foreground">
+                      A clear statement that explains how your product solves customers&apos; problems, delivers specific benefits, and why customers should choose you over competitors.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              id="value-proposition"
+              placeholder="We replace inconsistent, manual outreach with a scalable, data-driven, and automated AI sales engine..."
+              value={businessContext.valueProposition || ''}
+              onChange={(e) => handleBusinessContextUpdate({ valueProposition: e.target.value })}
+              rows={3}
+              className={`text-xs resize-none ${businessContext.valueProposition ? 'bg-background' : ''}`}
+            />
           </div>
-          <Textarea
-            id="value-proposition"
-            placeholder="We replace inconsistent, manual outreach with a scalable, data-driven, and automated AI sales engine..."
-            value={businessContext.valueProposition || ''}
-            onChange={(e) => handleBusinessContextUpdate({ valueProposition: e.target.value })}
-            rows={3}
-            className={`text-xs resize-none ${businessContext.valueProposition ? 'bg-background' : ''}`}
-          />
-        </div>
 
         {/* Marketing Goals */}
         <div className={`space-y-2 ${businessContext.marketingGoals && businessContext.marketingGoals.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
