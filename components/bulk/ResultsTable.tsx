@@ -507,6 +507,11 @@ export const ResultsTable = memo(function ResultsTable({
               >
                 <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="whitespace-nowrap">Google Sheets</span>
+                {results.length > 0 && (
+                  <span className="text-xs text-muted-foreground font-normal">
+                    ({results.filter(r => r.status === 'completed' || r.status === 'failed').length}/{results.length})
+                  </span>
+                )}
               </button>
             )}
             <button
@@ -517,6 +522,11 @@ export const ResultsTable = memo(function ResultsTable({
             >
               <Download className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="whitespace-nowrap">CSV</span>
+              {results.length > 0 && (
+                <span className="text-xs text-muted-foreground font-normal">
+                  ({results.filter(r => r.status === 'completed' || r.status === 'failed').length}/{results.length})
+                </span>
+              )}
             </button>
           </div>
         </div>

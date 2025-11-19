@@ -33,12 +33,13 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
   // Merge local ref with forwarded ref
   useImperativeHandle(forwardedRef, () => localRef.current as HTMLInputElement)
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop: (acceptedFiles) => {
       if (acceptedFiles[0]) onFileUpload(acceptedFiles[0])
     },
     multiple: false,
     accept: { 'text/csv': ['.csv'] },
+    maxSize: 10 * 1024 * 1024, // 10MB
     noClick: false,
     noKeyboard: false,
   })
@@ -156,7 +157,9 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
         <div
           {...getRootProps()}
           className={`border border-dashed rounded-md p-4 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-            isDragActive
+            isDragReject
+              ? 'border-destructive bg-destructive/5'
+              : isDragActive
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/30 bg-transparent'
           }`}
@@ -169,7 +172,19 @@ export const FileUploadSection = forwardRef<HTMLInputElement, FileUploadSectionP
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 w-full">
-              <Upload className={`h-5 w-5 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+              <Upload className={`h-5 w-5 ${isDragReject ? 'text-destructive' : isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+              <div className="text-center">
+                {isDragReject ? (
+                  <p className="text-xs text-destructive font-medium">Invalid file type or size</p>
+                ) : isDragActive ? (
+                  <p className="text-xs text-primary font-medium">Drop CSV file here</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">Drag & drop CSV file or</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Max 10MB • .csv files only</p>
+                  </>
+                )}
+              </div>
               <div className="flex gap-2 w-full">
                 <Button
                   variant="ghost"
