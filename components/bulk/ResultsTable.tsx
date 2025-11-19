@@ -9,7 +9,6 @@ import { useState, useEffect, memo, useMemo, useCallback, useRef } from 'react'
 import { Download, Sparkles, FileSpreadsheet, Save, ChevronDown, RotateCcw } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { BatchStatusCard } from './BatchStatusCard'
-import { SkeletonLoader } from './SkeletonLoader'
 import { formatOutputValue } from '@/lib/utils/format-output'
 import { AccessibleStatusBadge } from '@/components/ui/accessible-status-badge'
 import { TableColumnToggle, type ColumnConfig } from '@/components/ui/table-column-toggle'
@@ -574,7 +573,7 @@ export const ResultsTable = memo(function ResultsTable({
                         <div className="h-3 w-16 bg-accent/50 rounded animate-pulse" />
                       </td>
                     )}
-                    {columns.filter(col => visibleColumns.has(col)).map((col, colIndex) => (
+                    {columns.filter(col => visibleColumns.has(col)).map((_col, colIndex) => (
                       <td key={`skeleton-input-${colIndex}`} className="px-4 py-3">
                         <div
                           className="h-3 bg-accent/50 rounded animate-pulse"
@@ -585,7 +584,7 @@ export const ResultsTable = memo(function ResultsTable({
                     {(outputColumns.length > 0
                       ? outputColumns.filter(col => visibleColumns.has(col))
                       : visibleColumns.has('output') ? ['output'] : []
-                    ).map((col, colIndex) => (
+                    ).map((_col, colIndex) => (
                       <td key={`skeleton-output-${colIndex}`} className="px-4 py-3">
                         <div
                           className="h-3 bg-accent/50 rounded animate-pulse"

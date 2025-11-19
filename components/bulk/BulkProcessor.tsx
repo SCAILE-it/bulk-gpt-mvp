@@ -32,11 +32,11 @@ import { ResultsTable } from './ResultsTable'
 import { DataInputTabs } from './DataInputTabs'
 import { OutputFieldsSection } from './OutputFieldsSection'
 import { ToolSelectionSection } from './ToolSelectionSection'
-import { SkeletonLoader } from './SkeletonLoader'
 import { Modal } from '@/components/ui/modal'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -1662,7 +1662,134 @@ export default function BulkProcessor() {
       {/* Main Content */}
       <div className="h-full flex-1 overflow-hidden min-h-0 p-4 xs:p-5 sm:p-6 md:p-7 lg:p-8 xl:p-10 2xl:p-12">
         <div className="h-full max-w-[1920px] mx-auto border border-border rounded-lg overflow-hidden bg-card shadow-sm">
-          <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 overflow-hidden">
+          {/* Mobile: Tabs layout */}
+          <div className="md:hidden h-full flex flex-col">
+            <Tabs defaultValue="configure" className="h-full flex flex-col">
+              <TabsList className="w-full rounded-none border-b border-border bg-secondary/50">
+                <TabsTrigger value="configure" className="flex-1">
+                  Configure
+                </TabsTrigger>
+                <TabsTrigger value="results" className="flex-1 flex items-center gap-2">
+                  Results
+                  {displayResults.length > 0 && (
+                    <span className="inline-flex items-center justify-center rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
+                      {displayResults.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="configure" className="flex-1 overflow-y-auto mt-0 p-4 space-y-4 bg-secondary">
+                {/* Error Banner */}
+                {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
+                  <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-red-400 font-medium break-words flex-1">
+                        {fileUpload.error || csvParser.error || batchProcessor.error || error}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Simplified mobile message */}
+                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md border border-border">
+                  💡 For full configuration options, use desktop view. Mobile view shows essential controls only.
+                </div>
+
+                {/* CSV Upload */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">Upload CSV</h3>
+                  <DataInputTabs
+                    isParsing={csvParser.isParsing}
+                    csvData={csvParser.csvData}
+                    fileName={fileUpload.file?.name}
+                    isUploading={isUploading}
+                    onFileUpload={handleFileUpload}
+                    onGoogleSheetsDataLoaded={handleGoogleSheetsDataLoaded}
+                    onClearData={handleClearData}
+                    selectedInputColumns={selectedInputColumns}
+                    onInputColumnsChange={setSelectedInputColumns}
+                  />
+                </div>
+
+                {/* Basic Prompt Input */}
+                {csvParser.csvData && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-foreground">Prompt</h3>
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder="Enter your prompt here..."
+                      className="w-full min-h-[100px] px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground resize-y"
+                    />
+                    {!variableValidation.isValid && (
+                      <p className="text-xs text-red-400">Missing columns: {variableValidation.missing.join(', ')}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                {csvParser.csvData && (
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      disabled={!prompt || isTesting || !variableValidation.isValid}
+                      onClick={handleTest}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 min-h-[48px] bg-secondary hover:bg-secondary/80 transition-colors rounded-md text-sm font-medium text-foreground border border-border disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isTesting ? <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <Play className="h-4 w-4" />}
+                      <span>Test</span>
+                    </button>
+                    <button
+                      disabled={!prompt || batchProcessor.isProcessing || !variableValidation.isValid}
+                      onClick={handleProcess}
+                      className="flex-[2] flex items-center justify-center gap-2 px-4 py-3 min-h-[48px] bg-primary hover:bg-primary/90 transition-colors rounded-md text-sm font-medium text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {batchProcessor.isProcessing ? <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <Play className="h-4 w-4" />}
+                      <span>Process All ({csvParser.csvData.totalRows})</span>
+                    </button>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="results" className="flex-1 overflow-hidden mt-0 bg-muted/20">
+                {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
+                  <ResultsTable
+                    results={displayResults}
+                    columns={selectedInputColumns.length > 0 ? selectedInputColumns : (csvParser.csvData?.columns || [])}
+                    outputColumns={outputFields}
+                    progress={batchProcessor.progress ?? undefined}
+                    processingStartTime={processingStartTime}
+                    onExport={handleExport}
+                    onExportToGoogleSheets={handleExportToGoogleSheets}
+                    onSaveToContext={handleSaveOutputToContext}
+                    onRetry={handleRetryRow}
+                    isTesting={isTesting}
+                    testStartTime={testStartTime}
+                    testEstimatedSeconds={isTesting && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
+                    totalInputTokens={tokenTotals.input}
+                    totalOutputTokens={tokenTotals.output}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full p-6">
+                    <EmptyState
+                      icon={csvParser.csvData ? Play : FileText}
+                      title={csvParser.csvData ? 'Ready to process' : 'No results yet'}
+                      description={
+                        csvParser.csvData
+                          ? `Click "Test" to try with the first row, or "Process All" to process all ${csvParser.csvData.totalRows} rows`
+                          : 'Upload a CSV file and configure your prompt to get started. Results will appear here after processing.'
+                      }
+                      size="sm"
+                    />
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Desktop: Side-by-side panels */}
+          <div className="hidden md:grid h-full md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 overflow-hidden">
             {/* LEFT PANEL - Configuration */}
             <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
               <div className="flex-1 overflow-y-auto p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 xl:p-8 space-y-3 xs:space-y-3.5 sm:space-y-4 md:space-y-5 lg:space-y-6 min-h-0">
