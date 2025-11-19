@@ -8,6 +8,7 @@ import { useDropzone } from 'react-dropzone'
 import { Upload, CheckCircle } from 'lucide-react'
 import type { ParsedCSV } from '@/lib/types'
 import { Button } from '@/components/ui/button'
+import { SkeletonLoader } from './SkeletonLoader'
 
 interface CSVUploadTabProps {
   csvData: ParsedCSV | null
@@ -73,7 +74,10 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
         </div>
       )}
 
-      {csvData && csvData.rows.length > 0 && !isUploading ? (
+      {isUploading ? (
+        // Show Skeleton Loader while uploading/parsing
+        <SkeletonLoader rows={5} columns={4} />
+      ) : csvData && csvData.rows.length > 0 ? (
         // Show CSV Preview when file is loaded and has data
         <>
           <div className="border border-border rounded-md overflow-hidden">
@@ -159,7 +163,7 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
           <input {...inputProps} className="hidden" data-testid="file-input" />
         </>
       ) : (
-        // Show Upload Dropzone when no file or uploading
+        // Show Upload Dropzone when no file and not uploading
         <div
           {...getRootProps()}
           className={`border border-dashed rounded-md p-4 flex flex-col items-center justify-center cursor-pointer transition-colors ${
@@ -169,47 +173,32 @@ export const CSVUploadTab = forwardRef<HTMLInputElement, CSVUploadTabProps>(func
           }`}
         >
           <input {...inputProps} className="hidden" data-testid="file-input" />
-          {isUploading ? (
-            <div className="flex flex-col items-center gap-3 w-full">
-              <div className="relative">
-                <div className="h-8 w-8 rounded-full border-2 border-primary/20" />
-                <div className="absolute inset-0 h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              </div>
-              <div className="text-center">
-                <p className="text-xs font-medium text-foreground">Uploading file...</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Please wait</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-col items-center gap-2 w-full">
-                <Upload className={`h-5 w-5 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                <p className="text-xs text-muted-foreground">
-                  {isDragActive ? 'Drop CSV file here' : 'Drop CSV file or click to browse'}
-                </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  Max 10MB • CSV format only
-                </p>
-              </div>
-              {fileRejections.length > 0 && (
-                <div className="mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
-                  {fileRejections.map(({ file, errors }) => (
-                    <div key={file.name}>
-                      <p className="font-medium">{file.name}</p>
-                      {errors.map((e) => (
-                        <p key={e.code} className="text-red-300/80">
-                          {e.code === 'file-too-large' 
-                            ? `File too large (max 10MB)`
-                            : e.code === 'file-invalid-type'
-                            ? 'Only CSV files are accepted'
-                            : e.message}
-                        </p>
-                      ))}
-                    </div>
+          <div className="flex flex-col items-center gap-2 w-full">
+            <Upload className={`h-5 w-5 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+            <p className="text-xs text-muted-foreground">
+              {isDragActive ? 'Drop CSV file here' : 'Drop CSV file or click to browse'}
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Max 10MB • CSV format only
+            </p>
+          </div>
+          {fileRejections.length > 0 && (
+            <div className="mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
+              {fileRejections.map(({ file, errors }) => (
+                <div key={file.name}>
+                  <p className="font-medium">{file.name}</p>
+                  {errors.map((e) => (
+                    <p key={e.code} className="text-red-300/80">
+                      {e.code === 'file-too-large'
+                        ? `File too large (max 10MB)`
+                        : e.code === 'file-invalid-type'
+                        ? 'Only CSV files are accepted'
+                        : e.message}
+                    </p>
                   ))}
                 </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
       )}

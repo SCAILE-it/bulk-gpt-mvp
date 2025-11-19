@@ -9,6 +9,7 @@ import { useState, useEffect, memo, useMemo, useCallback, useRef } from 'react'
 import { Download, Sparkles, FileSpreadsheet, Save, ChevronDown, RotateCcw } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { BatchStatusCard } from './BatchStatusCard'
+import { SkeletonLoader } from './SkeletonLoader'
 import { formatOutputValue } from '@/lib/utils/format-output'
 import { AccessibleStatusBadge } from '@/components/ui/accessible-status-badge'
 import { TableColumnToggle, type ColumnConfig } from '@/components/ui/table-column-toggle'
@@ -563,25 +564,38 @@ export const ResultsTable = memo(function ResultsTable({
             </tr>
           </thead>
           <tbody style={shouldVirtualize ? { position: 'relative' } : undefined}>
-            {/* Show loading state when testing and no results yet */}
+            {/* Show skeleton loading state when testing and no results yet */}
             {isTesting && results.length === 0 && (
-              <tr>
-                <td colSpan={
-                  (visibleColumns.has('status') ? 1 : 0) + 
-                  columns.filter(col => visibleColumns.has(col)).length + 
-                  (outputColumns.length > 0 
-                    ? outputColumns.filter(col => visibleColumns.has(col)).length 
-                    : (visibleColumns.has('output') ? 1 : 0))
-                } className="px-6 py-12 text-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Testing with first row...</p>
-                      <p className="text-xs text-muted-foreground mt-1">Processing AI response</p>
-                    </div>
-                  </div>
-                </td>
-              </tr>
+              <>
+                {Array.from({ length: 3 }).map((_, rowIndex) => (
+                  <tr key={`skeleton-${rowIndex}`} className={rowIndex % 2 === 0 ? 'bg-secondary/40' : 'bg-transparent'}>
+                    {visibleColumns.has('status') && (
+                      <td className="px-4 py-3">
+                        <div className="h-3 w-16 bg-accent/50 rounded animate-pulse" />
+                      </td>
+                    )}
+                    {columns.filter(col => visibleColumns.has(col)).map((col, colIndex) => (
+                      <td key={`skeleton-input-${colIndex}`} className="px-4 py-3">
+                        <div
+                          className="h-3 bg-accent/50 rounded animate-pulse"
+                          style={{ width: `${60 + Math.random() * 40}%` }}
+                        />
+                      </td>
+                    ))}
+                    {(outputColumns.length > 0
+                      ? outputColumns.filter(col => visibleColumns.has(col))
+                      : visibleColumns.has('output') ? ['output'] : []
+                    ).map((col, colIndex) => (
+                      <td key={`skeleton-output-${colIndex}`} className="px-4 py-3">
+                        <div
+                          className="h-3 bg-accent/50 rounded animate-pulse"
+                          style={{ width: `${60 + Math.random() * 40}%` }}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </>
             )}
             {shouldVirtualize ? (
               // Virtualized rendering for large tables

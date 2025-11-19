@@ -32,6 +32,7 @@ import { ResultsTable } from './ResultsTable'
 import { DataInputTabs } from './DataInputTabs'
 import { OutputFieldsSection } from './OutputFieldsSection'
 import { ToolSelectionSection } from './ToolSelectionSection'
+import { SkeletonLoader } from './SkeletonLoader'
 import { Modal } from '@/components/ui/modal'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Switch } from '@/components/ui/switch'
@@ -1594,9 +1595,9 @@ export default function BulkProcessor() {
 
       {/* Beta Banner - Subtle, integrated */}
       {showBetaBanner && (
-        <div className="flex-shrink-0 border-b border-border bg-muted/20 px-3 sm:px-4 md:px-6 py-2 sm:py-1.5">
+        <div className="flex-shrink-0 border-b border-border bg-muted/20 px-3 xs:px-4 sm:px-5 md:px-6 lg:px-7 xl:px-8 py-2 xs:py-2.5 sm:py-1.5 md:py-2">
           <div className="flex items-center justify-between gap-2 text-xs">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+            <div className="flex flex-col xs:flex-row items-start xs:items-center gap-1.5 xs:gap-2 sm:gap-2.5 md:gap-3 flex-1 min-w-0">
               {usage && (
                 <>
                   <span className="text-muted-foreground">
@@ -1647,12 +1648,12 @@ export default function BulkProcessor() {
       </a>
 
       {/* Main Content */}
-      <div className="h-full flex-1 overflow-hidden min-h-0 p-4 sm:p-6 lg:p-8">
+      <div className="h-full flex-1 overflow-hidden min-h-0 p-4 xs:p-5 sm:p-6 md:p-7 lg:p-8 xl:p-10 2xl:p-12">
         <div className="h-full max-w-[1920px] mx-auto border border-border rounded-lg overflow-hidden bg-card shadow-sm">
-          <div className="h-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+          <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 overflow-hidden">
             {/* LEFT PANEL - Configuration */}
             <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 min-h-0">
+              <div className="flex-1 overflow-y-auto p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 xl:p-8 space-y-3 xs:space-y-3.5 sm:space-y-4 md:space-y-5 lg:space-y-6 min-h-0">
                 {/* Error - Use V2 error if available */}
                 {(fileUpload.error || csvParser.error || batchProcessor.error || error) && (
                   <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md space-y-2 animate-slide-in-up">
@@ -2010,8 +2011,8 @@ export default function BulkProcessor() {
           )}
 
           {/* ACTIONS - Fixed Bottom */}
-          <div className="flex-shrink-0 p-3 sm:p-4 md:p-6 pb-safe sm:pb-3 md:pb-4 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between max-w-4xl mx-auto gap-2.5 sm:gap-2.5">
+          <div className="flex-shrink-0 p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 xl:p-8 pb-safe xs:pb-3 sm:pb-3.5 md:pb-4 lg:pb-5 border-t border-border/50 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10">
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between max-w-4xl mx-auto gap-2.5 xs:gap-3 sm:gap-3.5 md:gap-4 lg:gap-5">
               {/* Left side - Reset and Keyboard Help */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <TooltipProvider delayDuration={0}>
@@ -2048,7 +2049,7 @@ export default function BulkProcessor() {
               </div>
               
               {/* Primary action buttons */}
-              <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2 items-stretch flex-1 justify-end">
+              <div className="flex flex-col xs:flex-row gap-2.5 xs:gap-3 sm:gap-3.5 md:gap-4 items-stretch flex-1 justify-end">
                 <TooltipProvider delayDuration={0}>
                   <DisabledButtonTooltip
                     reason={getTestDisabledReason({
@@ -2061,7 +2062,7 @@ export default function BulkProcessor() {
                     <button
                       disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
                       onClick={handleTest}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[40px] bg-secondary/50 border border-border/50 rounded-md text-xs sm:text-sm font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 xs:px-4 sm:px-5 py-2.5 xs:py-2.5 sm:py-2 md:py-2.5 min-h-[44px] xs:min-h-[42px] sm:min-h-[40px] md:min-h-[38px] bg-secondary/50 border border-border/50 rounded-md text-xs xs:text-sm sm:text-sm md:text-base font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                       aria-label="Test prompt with first CSV row"
                     >
                       {isTesting ? <div className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -2079,7 +2080,7 @@ export default function BulkProcessor() {
                     <button
                       disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
                       onClick={handleProcess}
-                      className="flex-[2] flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[40px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-[2] flex items-center justify-center gap-2 px-3 xs:px-4 sm:px-5 md:px-6 py-2.5 xs:py-2.5 sm:py-2 md:py-2.5 min-h-[44px] xs:min-h-[42px] sm:min-h-[40px] md:min-h-[38px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs xs:text-sm sm:text-sm md:text-base text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                       data-testid="run-button"
                       aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
                     >
