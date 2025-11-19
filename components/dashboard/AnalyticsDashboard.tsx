@@ -839,7 +839,7 @@ export function AnalyticsDashboard() {
           </div>
         </div>
         {/* Skeleton loaders for charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:gap-7 xl:gap-8">
           <div className="bg-card border border-border rounded-lg shadow-sm p-5 animate-pulse">
             <div className="h-4 w-24 bg-muted rounded mb-3" />
             <div className="h-20 bg-muted/50 rounded" />
@@ -879,12 +879,12 @@ export function AnalyticsDashboard() {
     return (
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 xs:gap-4 sm:gap-5 md:gap-6">
           <div>
             <h2 className="text-sm font-semibold text-foreground">Analytics Dashboard</h2>
             <p className="text-xs text-muted-foreground mt-0.5">Track your usage and optimize costs</p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full xs:w-auto">
             <Select 
               value={typeof dateRange === 'string' ? dateRange : 'custom'} 
               onValueChange={(value) => {
@@ -893,7 +893,7 @@ export function AnalyticsDashboard() {
               }}
               disabled={isLoading}
             >
-              <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs">
+              <SelectTrigger className="w-full xs:w-[140px] sm:w-[160px] md:w-[180px] h-8 xs:h-9 sm:h-10 text-xs xs:text-sm">
                 <Calendar className="h-3 w-3 mr-1.5" />
                 <SelectValue />
               </SelectTrigger>
@@ -922,7 +922,7 @@ export function AnalyticsDashboard() {
           }}
           size="lg"
         >
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+          <div className="mt-6 grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 xs:gap-4 sm:gap-5 md:gap-6 max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-4xl">
             <div className="text-center p-4 bg-secondary/30 border border-border rounded-md">
               <Zap className="h-6 w-6 text-muted-foreground mx-auto mb-2 opacity-50" />
               <p className="text-xs font-medium text-foreground mb-1">Track Usage</p>
@@ -961,10 +961,10 @@ export function AnalyticsDashboard() {
           {/* Header with Quick Actions */}
           <header className="space-y-4 pb-4 border-b border-border/50">
             {/* Title and Description Row */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex flex-col xs:flex-row xs:items-start xs:justify-between gap-3 xs:gap-4 sm:gap-5 md:gap-6">
               <div className="flex-1 min-w-0">
                 <h1 className="text-lg font-semibold text-foreground mb-1">Analytics Dashboard</h1>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3 sm:gap-4 md:gap-5">
                   <p className="text-sm text-muted-foreground">Track your usage and optimize costs</p>
                   {lastRefreshTime && (
                     <span className="text-xs text-muted-foreground/70" aria-live="polite">
@@ -1077,7 +1077,7 @@ export function AnalyticsDashboard() {
                       setSelectedModel(value === 'all' ? null : value)
                     }}
                   >
-                    <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs">
+                    <SelectTrigger className="w-full xs:w-[160px] sm:w-[180px] md:w-[200px] h-9 xs:h-10 sm:h-11 text-xs xs:text-sm">
                       <Zap className="h-3.5 w-3.5 mr-1.5" />
                       <SelectValue placeholder="All models" />
                     </SelectTrigger>
@@ -1105,7 +1105,7 @@ export function AnalyticsDashboard() {
                       setSelectedStatus(value === 'all' ? null : value)
                     }}
                   >
-                    <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs">
+                    <SelectTrigger className="w-full xs:w-[140px] sm:w-[160px] md:w-[180px] h-9 xs:h-10 sm:h-11 text-xs xs:text-sm">
                       <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
@@ -2432,10 +2432,10 @@ export function AnalyticsDashboard() {
             <BarChart 
               data={statusChartData}
                 onClick={(data: { activePayload?: Array<{ payload: Record<string, unknown> }> }) => {
-                  if (data && data.activePayload && data.activePayload[0]) {
+                if (data && data.activePayload && data.activePayload[0]) {
                     handleChartClick(data.activePayload[0].payload as { name?: string }, 'status')
-                  }
-                }}
+                }
+              }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
               <XAxis 

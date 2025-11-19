@@ -10,11 +10,21 @@
 import { useState, useEffect } from 'react'
 
 export interface ResponsiveState {
+  /** Is extra small device (< 475px) */
+  isXS: boolean
   /** Is mobile device (< 640px) */
   isMobile: boolean
-  /** Is tablet device (640px - 1024px) */
+  /** Is small tablet device (640px - 768px) */
+  isSM: boolean
+  /** Is tablet device (768px - 1024px) */
   isTablet: boolean
-  /** Is desktop device (> 1024px) */
+  /** Is medium desktop (1024px - 1280px) */
+  isMD: boolean
+  /** Is large desktop (1280px - 1536px) */
+  isLG: boolean
+  /** Is extra large desktop (> 1536px) */
+  isXL: boolean
+  /** Is desktop device (> 1024px) - legacy support */
   isDesktop: boolean
   /** Current window width */
   width: number
@@ -24,8 +34,14 @@ export interface ResponsiveState {
   isTouch: boolean
 }
 
-const MOBILE_BREAKPOINT = 640
-const TABLET_BREAKPOINT = 1024
+const BREAKPOINTS = {
+  xs: 475,
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  '2xl': 1536,
+}
 
 /**
  * Hook for responsive design utilities.
@@ -45,8 +61,13 @@ export function useResponsive(): ResponsiveState {
   const [state, setState] = useState<ResponsiveState>(() => {
     if (typeof window === 'undefined') {
       return {
+        isXS: false,
         isMobile: false,
+        isSM: false,
         isTablet: false,
+        isMD: false,
+        isLG: false,
+        isXL: false,
         isDesktop: true,
         width: 0,
         height: 0,
@@ -58,9 +79,14 @@ export function useResponsive(): ResponsiveState {
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
     return {
-      isMobile: width < MOBILE_BREAKPOINT,
-      isTablet: width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT,
-      isDesktop: width >= TABLET_BREAKPOINT,
+      isXS: width < BREAKPOINTS.xs,
+      isMobile: width < BREAKPOINTS.sm,
+      isSM: width >= BREAKPOINTS.sm && width < BREAKPOINTS.md,
+      isTablet: width >= BREAKPOINTS.md && width < BREAKPOINTS.lg,
+      isMD: width >= BREAKPOINTS.lg && width < BREAKPOINTS.xl,
+      isLG: width >= BREAKPOINTS.xl && width < BREAKPOINTS['2xl'],
+      isXL: width >= BREAKPOINTS['2xl'],
+      isDesktop: width >= BREAKPOINTS.lg,
       width,
       height: window.innerHeight,
       isTouch,
@@ -76,9 +102,14 @@ export function useResponsive(): ResponsiveState {
       const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
       setState({
-        isMobile: width < MOBILE_BREAKPOINT,
-        isTablet: width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT,
-        isDesktop: width >= TABLET_BREAKPOINT,
+        isXS: width < BREAKPOINTS.xs,
+        isMobile: width < BREAKPOINTS.sm,
+        isSM: width >= BREAKPOINTS.sm && width < BREAKPOINTS.md,
+        isTablet: width >= BREAKPOINTS.md && width < BREAKPOINTS.lg,
+        isMD: width >= BREAKPOINTS.lg && width < BREAKPOINTS.xl,
+        isLG: width >= BREAKPOINTS.xl && width < BREAKPOINTS['2xl'],
+        isXL: width >= BREAKPOINTS['2xl'],
+        isDesktop: width >= BREAKPOINTS.lg,
         width,
         height,
         isTouch,

@@ -114,12 +114,12 @@ export function Nav() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container mx-auto flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3">
+      <div className="container mx-auto flex items-center justify-between gap-2 xs:gap-3 sm:gap-4 md:gap-5 lg:gap-6 px-3 xs:px-4 sm:px-5 md:px-6 lg:px-7 xl:px-8 py-2.5 xs:py-2.5 sm:py-3 md:py-3.5 lg:py-4">
         {/* Logo */}
         <Logo size="sm" />
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center max-w-2xl" aria-label="Main navigation">
+        <nav className="hidden sm:flex items-center gap-1 xs:gap-1.5 sm:gap-2 md:gap-3 flex-1 justify-center max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" aria-label="Main navigation">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -140,12 +140,12 @@ export function Nav() {
         </nav>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 flex-shrink-0">
           {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] touch-manipulation"
+            className="sm:hidden min-w-[44px] min-h-[44px] xs:min-w-[40px] xs:min-h-[40px] touch-manipulation"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle mobile menu"
             aria-expanded={mobileMenuOpen}
