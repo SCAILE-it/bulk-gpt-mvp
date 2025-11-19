@@ -329,18 +329,31 @@ async def analyze_website(
         if use_google_search:
             search_instruction = f"""
 
-MANDATORY SEARCH REQUIREMENTS:
+CRITICAL ACCURACY REQUIREMENTS - NO HALLUCINATIONS ALLOWED:
 
-You MUST use Google Search (via the google_search tool) to find information that is not visible on the website homepage. 
+1. VERIFICATION RULE: Only return information that you can VERIFY from actual sources:
+   - Website content (via URL context tool)
+   - Google Search results (via google_search tool)
+   - DO NOT invent, guess, or infer URLs, contact details, or any information
+   - If you cannot verify it, return null or "Not found" - NEVER make up data
 
-For the website {url}, you MUST search for:
-1. Legal Entity & Registration: Search "scaile.tech imprint" or "scaile technologies gmbh" to find legal entity name, VAT number (USt-IdNr), and registration number (HRB)
-2. Contact Information: Search "scaile.tech contact" or visit the contact page to find email and phone
-3. Social Media: Search "scaile technologies linkedin" to find LinkedIn company page URL
-4. Company Details: Search "scaile technologies founders" or "scaile.tech about" for complete team information
+2. URL VERIFICATION: For all URLs (LinkedIn, GitHub, Twitter, etc.):
+   - MUST be exact URLs found in search results or website content
+   - MUST be clickable/verifiable URLs
+   - DO NOT construct URLs based on company name patterns
+   - If URL not found, return null - DO NOT guess
 
-DO NOT return "null", "not found", or "needs investigation" - you MUST actively search and find this information.
-The google_search tool is enabled - USE IT to find missing data."""
+3. SEARCH REQUIREMENTS for {url}:
+   - Legal info: Search "{url} imprint" to find exact legal entity, VAT, registration
+   - Contact: Search "{url} contact" to find exact email and phone (must be on website or verified source)
+   - Social media: Search "{url} linkedin" or "{url} social media" - ONLY return URLs found in search results
+   - Team: Search "{url} founders" or "{url} team" - ONLY return verified names and titles
+
+4. OUTPUT RULE: 
+   - If information exists and is verified → return it
+   - If information does not exist or cannot be verified → return null
+   - NEVER return "Not found." or "Needs investigation" - use null instead
+   - NEVER make up URLs, emails, phone numbers, or any data"""
         
         extraction_prompt = f"""{system_prompt}
 
@@ -350,7 +363,8 @@ Analyze the website: {url}
 
 {search_instruction}
 
-Extract ALL requested information. Use the website content AND Google Search results. Return complete JSON."""
+Extract ONLY verified information from website content AND Google Search results. 
+Return JSON with null for unverified fields. NO HALLUCINATIONS."""
 
         # Use REST API with URL context + search grounding (works with all SDK versions)
         import requests
