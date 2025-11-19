@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth-middleware'
-import { analyzeWebsite, type AnalysisMode } from '@/lib/services/website-analyzer'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import path from 'path'
+import { writeFile, unlink } from 'fs/promises'
+import { tmpdir } from 'os'
+
+const execAsync = promisify(exec)
 
 /**
  * POST /api/analyse-website
  * Analyzes a website URL and extracts company context information
  * 
- * This endpoint uses Google Gemini AI directly (no Modal dependency).
+ * This endpoint calls the Python website analyzer service directly (no Modal).
+ * Uses the same Python code that was designed for Modal, but runs it locally.
  * 
  * Request body:
  * {
  *   url: string (required)
  *   mode?: "business_context" | "seo" | "competitor" | "company_intelligence" | "full" | "custom" (default: "business_context")
  *   customFields?: string[] (required if mode="custom")
- *   useGoogleSearch?: boolean (default: false)
+ *   useGoogleSearch?: boolean (default: true)
  *   maxContentLength?: number (default: 50000)
  * }
  * 
@@ -66,7 +73,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       url, 
       mode = 'business_context',
       customFields,
-      useGoogleSearch = false,
+      useGoogleSearch = true,
       maxContentLength = 50000,
     } = body
 
@@ -78,7 +85,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     // Validate mode
-    const validModes: AnalysisMode[] = [
+    const validModes = [
       'business_context',
       'seo',
       'competitor',
@@ -101,16 +108,84 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    // Analyze website using direct Gemini API
+    // Call Python website analyzer script
     try {
-      const result = await analyzeWebsite({
+      const scriptPath = path.join(process.cwd(), 'services', 'website_analyzer.py')
+      const tempScriptPath = path.join(tmpdir(), `analyze_${Date.now()}.py`)
+      
+      // Create a temporary script that calls the analyzer function
+      const scriptContent = `
+import asyncio
+import json
+import sys
+import os
+sys.path.insert(0, '${path.join(process.cwd(), 'services')}')
+from website_analyzer import analyze_website
+
+async def main():
+    args = json.loads(sys.stdin.read())
+    try:
+        result = await analyze_website(
+            url=args['url'],
+            mode=args.get('mode', 'business_context'),
+            custom_fields=args.get('customFields'),
+            use_google_search=args.get('useGoogleSearch', True),
+            max_content_length=args.get('maxContentLength', 50000),
+        )
+        print(json.dumps(result))
+    except Exception as e:
+        print(json.dumps({"error": str(e)}), file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    asyncio.run(main())
+`
+      
+      await writeFile(tempScriptPath, scriptContent)
+      
+      const inputData = JSON.stringify({
         url,
-        mode: mode as AnalysisMode,
+        mode,
         customFields,
         useGoogleSearch,
         maxContentLength,
       })
-
+      
+      const env = {
+        ...process.env,
+        GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY || '',
+      }
+      
+      const { stdout, stderr } = await execAsync(
+        `python3 "${tempScriptPath}"`,
+        {
+          input: inputData,
+          env,
+          timeout: 28000, // 28s timeout
+          maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+        }
+      )
+      
+      // Clean up temp script
+      await unlink(tempScriptPath).catch(() => {})
+      
+      if (stderr) {
+        try {
+          const errorResult = JSON.parse(stderr)
+          if (errorResult.error) {
+            throw new Error(errorResult.error)
+          }
+        } catch {
+          // stderr might not be JSON, ignore
+        }
+      }
+      
+      const result = JSON.parse(stdout)
+      
+      if (result.error) {
+        throw new Error(result.error)
+      }
+      
       return NextResponse.json(result)
     } catch (error) {
       if (error instanceof Error) {
