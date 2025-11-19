@@ -276,17 +276,15 @@ async def analyze_website(
     Returns:
         Dictionary with extracted fields based on mode
     """
-    try:
-        import google.generativeai as genai
-    except ImportError as e:
-        raise ImportError(f"Missing required dependency: {e}. Install with: pip install google-generativeai")
+    # Use REST API directly (works with all API keys, no SDK needed)
+    import requests
     
     # No HTML fetching needed - Gemini handles URL context directly
 
     # Get API key from environment
-    api_key = os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
+    api_key = os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY") or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_GENERATIVE_AI_API_KEY or GOOGLE_AI_API_KEY not found in environment")
+        raise ValueError("GOOGLE_GENERATIVE_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_AI_API_KEY not found in environment")
 
     # Validate URL
     if not url or not isinstance(url, str) or not url.strip():
@@ -322,205 +320,77 @@ async def analyze_website(
     
     logger.info(f"Starting website analysis: url={url}, mode={mode}, use_google_search={use_google_search}")
     
-    # Fetch HTML content - Gemini's URL context doesn't work reliably, so we fetch HTML ourselves
-    # Then pass it to Gemini with search grounding for enhanced analysis
-    logger.debug(f"Fetching HTML content from: {url}")
+    # Use Gemini API with URL context and search grounding
+    logger.debug(f"Using Gemini URL context + search grounding for: {url}")
     
     try:
-        import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30), headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }) as response:
-                if response.status != 200:
-                    raise ValueError(f"Failed to fetch URL: HTTP {response.status}")
-                html_content = await response.text()
-                
-        if not html_content or len(html_content) < 100:
-            raise ValueError("No meaningful content retrieved from URL")
-        
-        # Extract text content (simplified - remove scripts, styles, etc.)
-        import re
-        # Remove script and style tags
-        html_content = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
-        html_content = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
-        # Extract text from HTML (simplified)
-        from html.parser import HTMLParser
-        class TextExtractor(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.text = []
-            def handle_data(self, data):
-                if data.strip():
-                    self.text.append(data.strip())
-        parser = TextExtractor()
-        parser.feed(html_content)
-        text_content = ' '.join(parser.text)[:max_content_length]
-        
-        logger.debug(f"HTML fetched: {url}, text_length={len(text_content)}")
-    except Exception as e:
-        logger.error(f"Exception during HTML fetch: {url}, error: {str(e)}", exc_info=True)
-        raise ValueError(f"Failed to fetch website content: {str(e)}")
+        # Build prompt - mention URL so Gemini can fetch it with url_context tool
+        search_instruction = ""
+        if use_google_search:
+            search_instruction = """
 
-    # Use Gemini API for analysis
-    try:
-        logger.debug(f"Starting Gemini analysis: {url}")
-        genai.configure(api_key=api_key)
+IMPORTANT: Use Google Search to find additional information that might not be on the website:
+- Legal information (imprint page, VAT number, registration number, legal entity)
+- Social media profiles (LinkedIn, Twitter, GitHub, Crunchbase)
+- Funding information and investors
+- Contact details (email, phone) if not on homepage
+- Team members and founders (check LinkedIn, About page, Crunchbase)
+- Company history and founding year
+- Any other missing details
+
+Search for: "{url} imprint", "{url} founders", "{url} funding", "{url} LinkedIn", "{url} Crunchbase", etc.
+Combine the website content with search results to provide complete, accurate information."""
         
-        # Build prompt with actual website content
         extraction_prompt = f"""{system_prompt}
 
 ---
 
-Website URL: {url}
+Analyze the website at: {url}
+{search_instruction}
 
-Website Content (extracted text):
-{text_content}
+Extract the requested information and return JSON."""
 
-{"IMPORTANT: Use Google Search to find additional information about this company, their products, competitors, market position, team members, legal information (imprint), funding, investors, and any other relevant details that might not be visible on the website. Then extract the requested information and return JSON." if use_google_search else "Extract the requested information from the website content above and return JSON."}"""
-
-        # Try new API first (v0.2.0+)
-        try:
-            from google.generativeai import GenerativeModel
-            # Use Gemini 2.5 Flash
+        # Use REST API with URL context + search grounding (works with all SDK versions)
+        import requests
+        import json as json_lib
+        
+        # Build tools list - URL context + Google Search
+        tools_list = [{"url_context": {}}]
+        if use_google_search:
+            tools_list.append({"google_search": {}})
+            logger.debug("Using URL context + Google Search grounding")
+        else:
+            logger.debug("Using URL context only")
+        
+        # Note: Can't use responseMimeType with tools
+        generation_config = {
+            "temperature": 0,
+            "maxOutputTokens": 8192,
+        }
+        
+        payload = {
+            "contents": [{
+                "parts": [{"text": extraction_prompt}]
+            }],
+            "generationConfig": generation_config,
+            "tools": tools_list
+        }
+        
+        # Use REST API directly - Try Gemini 2.5 Flash first
+        models_to_try = [
+            'gemini-2.5-flash',  # Primary model
+            'gemini-2.0-flash-exp',
+            'gemini-1.5-flash',
+            'gemini-1.5-pro',
+        ]
+        
+        response_text = None
+        last_error = None
+        
+        for model_name in models_to_try:
             try:
-                model = GenerativeModel('gemini-2.5-flash')
-            except:
-                # Fallback options
-                try:
-                    model = GenerativeModel('gemini-2.0-flash-exp')
-                except:
-                    try:
-                        model = GenerativeModel('gemini-1.5-flash')
-                    except:
-                        model = GenerativeModel('gemini-1.5-pro')
-            
-            generation_config = {
-                "temperature": 0,
-                "max_output_tokens": 8192,
-                "response_mime_type": "application/json",
-            }
-            
-            # Use search grounding when enabled
-            if use_google_search:
-                try:
-                    # Remove response_mime_type when using tools (not supported)
-                    config_without_mime = generation_config.copy()
-                    config_without_mime.pop("response_mime_type", None)
-                    
-                    # Use google_search tool for grounding
-                    response = model.generate_content(
-                        extraction_prompt,
-                        generation_config=config_without_mime,
-                        tools=[{"google_search": {}}],
-                    )
-                    logger.debug("Used Google Search grounding")
-                except Exception as e:
-                    logger.warning(f"Grounding failed: {e}, trying without grounding")
-                    response = model.generate_content(
-                        extraction_prompt,
-                        generation_config=generation_config,
-                    )
-            else:
-                response = model.generate_content(
-                    extraction_prompt,
-                    generation_config=generation_config,
-                )
-            
-            response_text = response.text.strip()
-        except (ImportError, AttributeError):
-            # Old API (v0.1.0rc1) - use generate_text with direct REST API call
-            logger.debug("Using legacy API - trying REST API directly")
-            try:
-                import requests
-                import json as json_lib
-                
-                # Build payload - Use Gemini's URL context properly
-                # Gemini needs explicit instruction to fetch URL content
-                prompt_with_url = extraction_prompt
-                
-                # Note: Can't use responseMimeType with tools (google_search)
-                generation_config = {
-                    "temperature": 0,
-                    "maxOutputTokens": 8192,
-                }
-                
-                # Only add responseMimeType if not using search grounding
-                if not use_google_search:
-                    generation_config["responseMimeType"] = "application/json"
-                
-                payload = {
-                    "contents": [{
-                        "parts": [{"text": prompt_with_url}]
-                    }],
-                    "generationConfig": generation_config
-                }
-                
-                # Add grounding config if using search
-                if use_google_search:
-                    payload["tools"] = [{"google_search": {}}]
-                
-                # Use REST API directly for newer API keys - Try Gemini 2.5 Flash first
-                models_to_try = [
-                    'gemini-2.5-flash',  # Primary model
-                    'gemini-2.0-flash-exp',
-                    'gemini-1.5-flash',
-                    'gemini-1.5-pro',
-                    'gemini-2.5-pro-preview-03-25',
-                    'gemini-3-pro-preview'
-                ]
-                
-                response_text = None
-                last_error = None
-                
-                for model_name in models_to_try:
-                    try:
-                        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                        response = requests.post(api_url, json=payload, timeout=30)
-                        response.raise_for_status()
-                        
-                        result = response.json()
-                        if 'candidates' in result and len(result['candidates']) > 0:
-                            candidate = result['candidates'][0]
-                            if 'content' in candidate and 'parts' in candidate['content']:
-                                response_text = candidate['content']['parts'][0].get('text', '').strip()
-                                logger.debug(f"Successfully used model: {model_name}")
-                                break
-                    except requests.exceptions.HTTPError as e:
-                        last_error = e
-                        error_detail = ""
-                        try:
-                            error_detail = e.response.text
-                            logger.debug(f"API error for {model_name}: {error_detail}")
-                        except:
-                            pass
-                        if e.response.status_code == 404:
-                            continue  # Try next model
-                        elif e.response.status_code == 400:
-                            # Bad request - might be payload issue, try next model
-                            logger.warning(f"400 error for {model_name}: {error_detail}")
-                            continue
-                        else:
-                            raise  # Re-raise if not 404 or 400
-                    except Exception as e:
-                        last_error = e
-                        continue
-                
-                if not response_text:
-                    raise ValueError(f"Failed to generate content with any Gemini model. Last error: {last_error}")
-                
-                payload = {
-                    "contents": [{
-                        "parts": [{"text": extraction_prompt}]
-                    }],
-                    "generationConfig": {
-                        "temperature": 0,
-                        "maxOutputTokens": 8192,
-                        "responseMimeType": "application/json"
-                    }
-                }
-                
-                response = requests.post(api_url, json=payload, timeout=30)
+                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                response = requests.post(api_url, json=payload, timeout=45)
                 response.raise_for_status()
                 
                 result = response.json()
@@ -528,42 +398,44 @@ Website Content (extracted text):
                     candidate = result['candidates'][0]
                     if 'content' in candidate and 'parts' in candidate['content']:
                         response_text = candidate['content']['parts'][0].get('text', '').strip()
-                    else:
-                        raise ValueError("Unexpected response format from Gemini API")
-                else:
-                    raise ValueError("No candidates in Gemini API response")
-                    
-            except ImportError:
-                # Fallback to old generate_text API - try gemini-2.5-flash first
+                        
+                        # Check URL context metadata
+                        if 'urlContextMetadata' in candidate:
+                            url_meta = candidate['urlContextMetadata']
+                            logger.debug(f"URL context metadata: {url_meta}")
+                        
+                        # Check grounding metadata
+                        if 'groundingMetadata' in candidate:
+                            grounding_meta = candidate['groundingMetadata']
+                            if 'webSearchQueries' in grounding_meta:
+                                queries = grounding_meta['webSearchQueries']
+                                if queries:
+                                    logger.debug(f"Google Search queries executed: {queries}")
+                        
+                        logger.debug(f"Successfully used model: {model_name}")
+                        break
+            except requests.exceptions.HTTPError as e:
+                last_error = e
+                error_detail = ""
                 try:
-                    # Try gemini-2.5-flash
-                    model_name = 'models/gemini-2.5-flash'
-                    response = genai.generate_text(
-                        model=model_name,
-                        prompt=extraction_prompt,
-                        temperature=0,
-                        max_output_tokens=8192,
-                    )
-                    response_text = response.result.strip() if hasattr(response, 'result') else str(response).strip()
+                    error_detail = e.response.text
+                    logger.debug(f"API error for {model_name}: {error_detail[:200]}")
                 except:
-                    # Fallback to gemini-1.5-flash if 2.5 not available
-                    try:
-                        model_name = 'models/gemini-1.5-flash'
-                        response = genai.generate_text(
-                            model=model_name,
-                            prompt=extraction_prompt,
-                            temperature=0,
-                            max_output_tokens=8192,
-                        )
-                        response_text = response.result.strip() if hasattr(response, 'result') else str(response).strip()
-                    except Exception as e:
-                        logger.error(f"Legacy API failed: {e}")
-                        raise ValueError(f"Failed to generate content with Gemini API: {str(e)}")
+                    pass
+                if e.response.status_code == 404:
+                    continue  # Try next model
+                elif e.response.status_code == 400:
+                    # Bad request - might be payload issue, try next model
+                    logger.warning(f"400 error for {model_name}: {error_detail[:200]}")
+                    continue
+                else:
+                    raise  # Re-raise if not 404 or 400
             except Exception as e:
-                logger.error(f"REST API failed: {e}")
-                raise ValueError(f"Failed to generate content with Gemini API: {str(e)}")
-
-        # Parse response
+                last_error = e
+                continue
+        
+        if not response_text:
+            raise ValueError(f"Failed to generate content with any Gemini model. Last error: {last_error}")
         
         # Clean markdown code blocks
         if response_text.startswith("```json"):
