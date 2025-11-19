@@ -382,12 +382,6 @@ async def analyze_website(
         logger.debug(f"Starting Gemini analysis: {url}")
         genai.configure(api_key=api_key)
         
-        # Use gemini-2.0-flash-exp for grounding support if available, otherwise fallback
-        try:
-            model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        except:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-        
         extraction_prompt = f"""{system_prompt}
 
 ---
@@ -399,37 +393,87 @@ Website HTML Content:
 
 {"Analyze this website content and use web search to find additional information about this company, their products, competitors, and market position. Then extract the requested information and return JSON." if use_google_search else "Extract the requested information from the website content and return JSON."}"""
 
-        # Generate content with grounding if use_google_search is True
-        generation_config = {
-            "temperature": 0,
-            "max_output_tokens": 8192,
-            "response_mime_type": "application/json",
-        }
-        
-        # Add grounding config if supported and use_google_search is True
-        if use_google_search:
+        # Try new API first (v0.2.0+)
+        try:
+            from google.generativeai import GenerativeModel
             try:
-                # Try to use grounding (requires gemini-2.0 or compatible model)
-                response = model.generate_content(
-                    extraction_prompt,
-                    generation_config=generation_config,
-                    tools=[{"google_search": {}}] if hasattr(genai, 'types') else None,
-                )
+                model = GenerativeModel('gemini-2.0-flash-exp')
             except:
-                # Fallback: generate without grounding
-                logger.warning("Grounding not available, falling back to standard generation")
-                response = model.generate_content(
-                    extraction_prompt,
-                    generation_config=generation_config,
-                )
-        else:
-            response = model.generate_content(
-                extraction_prompt,
-                generation_config=generation_config,
-            )
+                model = GenerativeModel('gemini-1.5-flash')
+            
+            generation_config = {
+                "temperature": 0,
+                "max_output_tokens": 8192,
+                "response_mime_type": "application/json",
+            }
+            
+            if use_google_search:
+                try:
+                    response = model.generate_content(
+                        extraction_prompt,
+                        generation_config=generation_config,
+                        tools=[{"google_search": {}}] if hasattr(genai, 'types') else None,
+                    )
+                except:
+                    logger.warning("Grounding not available, falling back to standard generation")
+                    response = model.generate_content(extraction_prompt, generation_config=generation_config)
+            else:
+                response = model.generate_content(extraction_prompt, generation_config=generation_config)
+            
+            response_text = response.text.strip()
+        except (ImportError, AttributeError):
+            # Old API (v0.1.0rc1) - use generate_text with direct REST API call
+            logger.debug("Using legacy API - trying REST API directly")
+            try:
+                import requests
+                import json as json_lib
+                
+                # Use REST API directly for newer API keys
+                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                
+                payload = {
+                    "contents": [{
+                        "parts": [{"text": extraction_prompt}]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0,
+                        "maxOutputTokens": 8192,
+                        "responseMimeType": "application/json"
+                    }
+                }
+                
+                response = requests.post(api_url, json=payload, timeout=30)
+                response.raise_for_status()
+                
+                result = response.json()
+                if 'candidates' in result and len(result['candidates']) > 0:
+                    candidate = result['candidates'][0]
+                    if 'content' in candidate and 'parts' in candidate['content']:
+                        response_text = candidate['content']['parts'][0].get('text', '').strip()
+                    else:
+                        raise ValueError("Unexpected response format from Gemini API")
+                else:
+                    raise ValueError("No candidates in Gemini API response")
+                    
+            except ImportError:
+                # Fallback to old generate_text API
+                try:
+                    model_name = 'models/gemini-1.5-flash'
+                    response = genai.generate_text(
+                        model=model_name,
+                        prompt=extraction_prompt,
+                        temperature=0,
+                        max_output_tokens=8192,
+                    )
+                    response_text = response.result.strip() if hasattr(response, 'result') else str(response).strip()
+                except Exception as e:
+                    logger.error(f"Legacy API failed: {e}")
+                    raise ValueError(f"Failed to generate content with Gemini API: {str(e)}")
+            except Exception as e:
+                logger.error(f"REST API failed: {e}")
+                raise ValueError(f"Failed to generate content with Gemini API: {str(e)}")
 
         # Parse response
-        response_text = response.text.strip()
         
         # Clean markdown code blocks
         if response_text.startswith("```json"):
