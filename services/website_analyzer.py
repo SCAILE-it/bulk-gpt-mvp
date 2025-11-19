@@ -21,8 +21,8 @@ ANALYSIS_MODES = {
         "description": "Extract business context variables for GTM and content generation",
         "fields": [
             "tone", "targetCountries", "productDescription", "competitors",
-            "targetIndustries", "complianceFlags", "icp", "countries",
-            "products", "targetKeywords", "competitorKeywords"
+            "targetIndustries", "complianceFlags", "valueProposition", "icp",
+            "marketingGoals", "countries", "products", "targetKeywords", "competitorKeywords"
         ]
     },
     "seo": {
@@ -77,13 +77,15 @@ Given a website's HTML content, extract the following information:
 4. **Competitors**: Any competitors mentioned or implied (comma-separated string, e.g., "Salesforce, HubSpot")
 5. **Target Industries**: Industries or sectors the company targets (comma-separated string, e.g., "SaaS, Technology, Sales")
 6. **Compliance Flags**: Any compliance certifications or standards mentioned (comma-separated string, e.g., "SOC2, GDPR")
+7. **Value Proposition**: The main value proposition statement (what makes the company/product unique and valuable)
 
 **Business Context:**
-7. **ICP (Ideal Customer Profile)**: Describe the ideal customer based on website content - company size, industry, pain points, etc. (2-3 sentences)
-8. **Countries**: Array of specific countries/regions mentioned (e.g., ["United States", "United Kingdom", "Canada"])
-9. **Products**: Array of product names or service offerings mentioned (e.g., ["CRM", "Marketing Automation", "Sales Analytics"])
-10. **Target Keywords**: Array of key terms/phrases the company seems to target (e.g., ["crm software", "sales automation", "lead management"])
-11. **Competitor Keywords**: Array of competitor names or brands mentioned (e.g., ["Salesforce", "HubSpot", "Pipedrive"])
+8. **ICP (Ideal Customer Profile)**: Describe the ideal customer based on website content - company size, industry, pain points, etc. (2-3 sentences)
+9. **Marketing Goals**: Array of marketing objectives/goals mentioned on the website (e.g., ["Generate qualified leads", "Increase brand awareness", "Drive customer acquisition", "Improve conversion rates"])
+10. **Countries**: Array of specific countries/regions mentioned (e.g., ["United States", "United Kingdom", "Canada"])
+11. **Products**: Array of product names or service offerings mentioned (e.g., ["CRM", "Marketing Automation", "Sales Analytics"])
+12. **Target Keywords**: Array of key terms/phrases the company seems to target (e.g., ["crm software", "sales automation", "lead management"])
+13. **Competitor Keywords**: Array of competitor names or brands mentioned (e.g., ["Salesforce", "HubSpot", "Pipedrive"])
 
 Return ONLY a valid JSON object with these fields. If a field cannot be determined, omit it or set arrays to empty arrays []."""
 
@@ -224,33 +226,61 @@ def _get_fields_for_mode(mode: str, custom_fields: Optional[List[str]] = None) -
 
 
 def _clean_response(parsed: Dict[str, Any], expected_fields: List[str]) -> Dict[str, Any]:
-    """Clean and validate response based on expected fields."""
+    """Clean and validate response based on expected fields.
+    
+    Maps extracted fields to UI form field names:
+    - valueProposition -> Value Proposition (in Business Context)
+    - marketingGoals -> Marketing Goals (in Business Context)
+    - GTM Playbook and Product Type are NOT extracted (they're classifications, not website data)
+    """
     result = {}
     
+    # Field name mapping: extracted name -> UI form name
+    field_mapping = {
+        "tone": "Tone",
+        "targetCountries": "Target Countries",
+        "productDescription": "Product Description",
+        "competitors": "Competitors",
+        "targetIndustries": "Target Industries",
+        "complianceFlags": "Compliance Flags",
+        "valueProposition": "Value Proposition",
+        "icp": "ICP",
+        "marketingGoals": "Marketing Goals",
+        "countries": "Countries",
+        "products": "Products",
+        "targetKeywords": "Target Keywords",
+        "competitorKeywords": "Competitor Keywords",
+    }
+    
     if expected_fields == "all":
-        # Full mode - return all fields found
+        # Full mode - return all fields found, map to UI names
         for key, value in parsed.items():
+            # Use mapped name if available, otherwise use original key
+            mapped_key = field_mapping.get(key, key)
+            
             if isinstance(value, str) and value.strip():
-                result[key] = value.strip()
+                result[mapped_key] = value.strip()
             elif isinstance(value, list):
                 cleaned = [item.strip() for item in value if isinstance(item, str) and item.strip()]
                 if cleaned:
-                    result[key] = cleaned
+                    result[mapped_key] = cleaned
             elif value is not None:
-                result[key] = value
+                result[mapped_key] = value
     else:
         # Specific mode - only return requested fields
         for field in expected_fields:
             if field in parsed:
                 value = parsed[field]
+                mapped_key = field_mapping.get(field, field)
+                
                 if isinstance(value, str) and value.strip():
-                    result[field] = value.strip()
+                    result[mapped_key] = value.strip()
                 elif isinstance(value, list):
                     cleaned = [item.strip() for item in value if isinstance(item, str) and item.strip()]
                     if cleaned:
-                        result[field] = cleaned
+                        result[mapped_key] = cleaned
                 elif value is not None:
-                    result[field] = value
+                    result[mapped_key] = value
     
     return result
 
@@ -479,8 +509,10 @@ Return JSON with null for unverified fields. NO HALLUCINATIONS."""
                 logger.error(f"Invalid response type: {url}, response_type={type(extracted_data).__name__}")
                 raise ValueError("Response is not a JSON object")
             logger.debug(f"Gemini analysis success: {url}, fields_extracted={len(extracted_data)}")
+            logger.debug(f"Extracted data keys: {list(extracted_data.keys())}")
         except json.JSONDecodeError as e:
-            logger.error(f"JSON parse error: {url}, error={str(e)}, response_preview={response_text[:200]}")
+            logger.error(f"JSON parse error: {url}, error={str(e)}, response_preview={response_text[:500]}")
+            logger.error(f"Full response text (first 1000 chars): {response_text[:1000]}")
             raise ValueError(f"Failed to parse AI response: {str(e)}")
     except Exception as e:
         logger.error(f"Exception during Gemini analysis: {url}, error={str(e)}", exc_info=True)
