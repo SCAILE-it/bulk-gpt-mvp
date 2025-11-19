@@ -171,10 +171,19 @@ export async function analyzeAEOKeywords(
       if (intelligenceResult?.success && intelligenceResult.data) {
         toolsUsed.push('keyword-intelligence')
         const intelData = intelligenceResult.data as Record<string, unknown>
+        const seoPotential = typeof intelData.seo_potential === 'number' 
+          ? intelData.seo_potential 
+          : (typeof intelData.potential_score === 'number' ? intelData.potential_score : 0)
+        const opportunityScore = typeof intelData.opportunity_score === 'number'
+          ? intelData.opportunity_score
+          : (typeof intelData.opportunity === 'number' ? intelData.opportunity : 0)
+        const competitionLevel = typeof intelData.competition_level === 'string'
+          ? intelData.competition_level
+          : (typeof intelData.competition === 'string' ? intelData.competition : 'unknown')
         metrics.intelligence = {
-          seo_potential: intelData.seo_potential || intelData.potential_score || 0,
-          competition_level: intelData.competition_level || intelData.competition || 'unknown',
-          opportunity_score: intelData.opportunity_score || intelData.opportunity || 0,
+          seo_potential: seoPotential,
+          competition_level: competitionLevel,
+          opportunity_score: opportunityScore,
         }
       }
       
@@ -182,23 +191,37 @@ export async function analyzeAEOKeywords(
       if (volumeResult?.success && volumeResult.data) {
         toolsUsed.push('keyword-volume')
         const volumeData = volumeResult.data as Record<string, unknown>
-        metrics.search_volume = volumeData.search_volume || volumeData.volume || null
+        const searchVolume = typeof volumeData.search_volume === 'number'
+          ? volumeData.search_volume
+          : (typeof volumeData.volume === 'number' ? volumeData.volume : undefined)
+        metrics.search_volume = searchVolume
       }
       
       // Extract difficulty
       if (difficultyResult?.success && difficultyResult.data) {
         toolsUsed.push('keyword-difficulty')
         const diffData = difficultyResult.data as Record<string, unknown>
-        metrics.difficulty = diffData.difficulty || diffData.difficulty_score || null
+        const difficulty = typeof diffData.difficulty === 'number'
+          ? diffData.difficulty
+          : (typeof diffData.difficulty_score === 'number' ? diffData.difficulty_score : undefined)
+        metrics.difficulty = difficulty
       }
       
       // Extract intent
       if (intentResult?.success && intentResult.data) {
         toolsUsed.push('keyword-intent')
         const intentData = intentResult.data as Record<string, unknown>
+        const intentType = intentData.intent_type || intentData.intent || 'informational'
+        const validIntentTypes = ['informational', 'navigational', 'transactional', 'commercial'] as const
+        const type = typeof intentType === 'string' && validIntentTypes.includes(intentType as typeof validIntentTypes[number])
+          ? (intentType as typeof validIntentTypes[number])
+          : 'informational'
+        const confidence = typeof intentData.confidence === 'number'
+          ? intentData.confidence
+          : (typeof intentData.confidence_score === 'number' ? intentData.confidence_score : 0.5)
         metrics.intent = {
-          type: (intentData.intent_type || intentData.intent || 'informational') as string,
-          confidence: (intentData.confidence || intentData.confidence_score || 0.5) as number,
+          type,
+          confidence,
         }
       }
       
@@ -218,10 +241,17 @@ export async function analyzeAEOKeywords(
       if (rankingResult?.success && rankingResult.data) {
         toolsUsed.push('keyword-ranking')
         const rankData = rankingResult.data as Record<string, unknown>
+        const position = typeof rankData.position === 'number'
+          ? rankData.position
+          : (typeof rankData.ranking === 'number' ? rankData.ranking : null)
+        const url = typeof rankData.url === 'string' ? rankData.url : undefined
+        const answerEngineRanking = typeof rankData.answer_engine_ranking === 'number'
+          ? rankData.answer_engine_ranking
+          : null
         metrics.current_ranking = {
-          position: rankData.position || rankData.ranking || null,
-          url: rankData.url || null,
-          answer_engine_ranking: rankData.answer_engine_ranking || null,
+          position,
+          url,
+          answer_engine_ranking: answerEngineRanking,
         }
       }
       
