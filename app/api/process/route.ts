@@ -11,6 +11,62 @@ import { createResourcesFromBatch } from '@/lib/utils/batch-to-resources'
 
 export const maxDuration = 60 // Max 60 seconds to create batch and invoke Modal
 
+// INPUT VALIDATION HELPERS
+/**
+ * Validate batch rows structure
+ */
+function validateBatchRows(rows: unknown[]): void {
+  const MAX_ROWS = 10000
+  if (rows.length > MAX_ROWS) {
+    throw new Error(`Maximum ${MAX_ROWS} rows allowed per batch`)
+  }
+
+  rows.forEach((row, index) => {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) {
+      throw new Error(`Row ${index} must be an object`)
+    }
+
+    const keys = Object.keys(row as object)
+    if (keys.length === 0) {
+      throw new Error(`Row ${index} cannot be empty`)
+    }
+
+    // Check all values are strings or primitives
+    keys.forEach((key) => {
+      const value = (row as Record<string, unknown>)[key]
+      if (value !== null && value !== undefined && typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+        throw new Error(`Row ${index} field "${key}" must be a string, number, or boolean`)
+      }
+    })
+  })
+}
+
+/**
+ * Validate output columns configuration
+ */
+function validateOutputColumns(cols: unknown[]): void {
+  const MAX_COLS = 50
+  if (cols.length > MAX_COLS) {
+    throw new Error(`Maximum ${MAX_COLS} output columns allowed`)
+  }
+
+  cols.forEach((col, index) => {
+    if (typeof col !== 'string') {
+      throw new Error(`Column ${index} name must be a string`)
+    }
+    if (col.length === 0) {
+      throw new Error(`Column ${index} name cannot be empty`)
+    }
+    if (col.length > 255) {
+      throw new Error(`Column ${index} name cannot exceed 255 characters`)
+    }
+    // Check for invalid characters
+    if (!/^[a-zA-Z0-9_\s-]+$/.test(col)) {
+      throw new Error(`Column ${index} name contains invalid characters`)
+    }
+  })
+}
+
 /**
  * POST /api/process
  * Create batch and invoke Modal processor asynchronously
@@ -76,6 +132,28 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     const { csvFilename, rows, prompt, context = '', outputColumns = [], tools = [], testMode = false, selectedInputColumns } = body
+
+    // Validate batch rows structure
+    try {
+      validateBatchRows(rows)
+    } catch (e) {
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : 'Invalid row structure' },
+        { status: 400 }
+      )
+    }
+
+    // Validate output columns if provided
+    if (Array.isArray(outputColumns) && outputColumns.length > 0) {
+      try {
+        validateOutputColumns(outputColumns)
+      } catch (e) {
+        return NextResponse.json(
+          { error: e instanceof Error ? e.message : 'Invalid output columns' },
+          { status: 400 }
+        )
+      }
+    }
 
     // Check usage limits (database-backed)
     // testMode bypasses batch limit but still checks row limit
@@ -191,9 +269,16 @@ export async function POST(request: NextRequest): Promise<Response> {
           }
 
           // Create resources from batch results (for GTM/bulk-agent)
-          // Don't await - let it run in background
-          createResourcesFromBatch(batchId).catch((error) => {
+          // Don't await - let it run in background with timeout protection
+          const BACKGROUND_TIMEOUT_MS = 30000 // 30 seconds max (route has 60s total)
+          Promise.race([
+            createResourcesFromBatch(batchId),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Resource creation timeout')), BACKGROUND_TIMEOUT_MS)
+            ),
+          ]).catch((error) => {
             logError('[PROCESS] Error creating resources (non-fatal)', error)
+            // Don't fail the request - this is background work
           })
 
           // Return success response (batch complete immediately - no Modal polling needed)

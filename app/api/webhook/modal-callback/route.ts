@@ -60,7 +60,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     // Verify batch exists
     const { data: batch, error: batchError } = await supabaseAdmin
       .from('batches')
-      .select('id, user_id, total_rows')
+      .select('id, user_id, total_rows, status')
       .eq('id', batch_id)
       .single()
 
@@ -74,7 +74,19 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     logDebug(`[WEBHOOK] Batch found, user_id: ${batch.user_id}`)
 
-    // Transform and store results
+    // CRITICAL FIX: Check if batch is already completed to prevent race conditions
+    // If already completed, skip processing to prevent duplicate results
+    if (batch.status === 'completed' || batch.status === 'completed_with_errors' || batch.status === 'failed') {
+      logDebug(`[WEBHOOK] Batch already in terminal state: ${batch.status}. Skipping duplicate processing.`)
+      return NextResponse.json({
+        success: true,
+        batch_id,
+        message: 'Batch already processed',
+        status: batch.status
+      })
+    }
+
+    // Transform and store results (this should be idempotent or properly handle retries)
     if (results && Array.isArray(results)) {
       logDebug(`[WEBHOOK] Transforming ${results.length} results...`)
       await transformAndStoreBatchResults(batch_id, results)
@@ -83,12 +95,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       logWarning('[WEBHOOK] No results provided or invalid format')
     }
 
-    // Update batch status
+    // Update batch status (only if results were provided or no results expected)
     const updateData: Record<string, unknown> = {
       status: status === 'completed' ? 'completed' : 'completed_with_errors',
       processed_rows: total_rows || batch.total_rows,  // Note: 'processed_rows', not 'completed_rows'
     }
-    
+
     // Update total_rows if it was 0 and we now have the actual count
     // This ensures usage tracking trigger fires correctly
     if (batch.total_rows === 0 && total_rows && total_rows > 0) {
@@ -97,10 +109,14 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     logDebug('[WEBHOOK] Updating batch status:', updateData.status)
 
+    // Use a conditional update to prevent race conditions - only update if status hasn't changed
     const { error: updateError } = await supabaseAdmin
       .from('batches')
       .update(updateData)
       .eq('id', batch_id)
+      .neq('status', 'completed')  // Don't update if already completed
+      .neq('status', 'completed_with_errors')  // Don't update if already completed with errors
+      .neq('status', 'failed')  // Don't update if already failed
 
     if (updateError) {
       logError('[WEBHOOK] Failed to update batch', updateError, { batch_id })

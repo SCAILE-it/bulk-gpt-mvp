@@ -1,3 +1,7 @@
+// Validate env vars at startup (before creating clients)
+import { validateEnv } from './config-validation'
+validateEnv()
+
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'

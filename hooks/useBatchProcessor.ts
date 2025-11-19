@@ -65,6 +65,25 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
   const [error, setError] = useState<string | null>(null)
   
   const eventSourceRef = useRef<EventSource | null>(null)
+  // CRITICAL FIX: Track all timers to prevent memory leaks from accumulating intervals
+  const cleanupRefsRef = useRef<Array<() => void>>([])
+
+  // Helper to register cleanup functions
+  const registerCleanup = (cleanup: () => void) => {
+    cleanupRefsRef.current.push(cleanup)
+  }
+
+  // Helper to run all cleanups
+  const runAllCleanups = () => {
+    cleanupRefsRef.current.forEach(cleanup => {
+      try {
+        cleanup()
+      } catch (err) {
+        console.error('Error during cleanup:', err)
+      }
+    })
+    cleanupRefsRef.current = []
+  }
 
   // Persist batchId to sessionStorage whenever it changes
   useEffect(() => {
@@ -243,6 +262,9 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
 
   useEffect(() => {
     if (!batchId) return
+
+    // CRITICAL FIX: Run all previous cleanups at the start to prevent interval accumulation
+    runAllCleanups()
 
     // If not processing, just fetch results once (for completed batches)
     if (!isProcessing) {
@@ -520,6 +542,7 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
         pollBatchStatus() // Check immediately
       }
     }, STREAM_TIMEOUT_MS)
+    registerCleanup(() => clearTimeout(streamTimeout))
 
     // Also poll periodically as backup (same frequency as fallback)
     const backupPollInterval = setInterval(() => {
@@ -528,15 +551,24 @@ export function useBatchProcessor(): UseBatchProcessorReturn {
         pollBatchStatus()
       }
     }, POLL_INTERVAL_MS) // Every 2 seconds (same as fallback)
+    registerCleanup(() => clearInterval(backupPollInterval))
 
     return () => {
-      eventSource.close()
+      // Clean up EventSource
+      try {
+        eventSource.close()
+      } catch {
+        // EventSource might already be closed
+      }
       eventSourceRef.current = null
+
+      // Clean up polling interval if it exists
       if (pollInterval) {
         clearInterval(pollInterval)
       }
-      clearTimeout(streamTimeout)
-      clearInterval(backupPollInterval)
+
+      // Clean up all registered timers/intervals
+      runAllCleanups()
     }
   }, [batchId, isProcessing])
 

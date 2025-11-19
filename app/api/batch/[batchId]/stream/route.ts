@@ -34,14 +34,30 @@ export async function GET(
     async start(controller) {
       let lastResultCount = 0
       let isComplete = false
+      let interval: NodeJS.Timeout | null = null
 
       const sendEvent = (event: string, data: unknown) => {
         controller.enqueue(encoder.encode(`event: ${event}\n`))
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
       }
 
+      // CRITICAL FIX: Register abort handler BEFORE starting interval to prevent race condition
+      const cleanup = () => {
+        if (interval !== null) {
+          clearInterval(interval)
+          interval = null
+        }
+        try {
+          controller.close()
+        } catch {
+          // Controller already closed, ignore
+        }
+      }
+
+      request.signal.addEventListener('abort', cleanup)
+
       // Poll for updates every 2 seconds
-      const interval = setInterval(async () => {
+      interval = setInterval(async () => {
         try {
           // Get batch status (verify ownership)
           const { data: batch } = await supabaseAdmin
@@ -53,8 +69,7 @@ export async function GET(
 
           if (!batch) {
             sendEvent('error', { message: 'Batch not found or access denied' })
-            clearInterval(interval)
-            controller.close()
+            cleanup()
             return
           }
 
@@ -104,28 +119,22 @@ export async function GET(
                 processed: batch.processed_rows,
               })
               isComplete = true
-              
+
               // Release rate limit when batch completes
               if (batch.user_id) {
                 releaseBatch(batch.user_id)
               }
             }
-            clearInterval(interval)
-            controller.close()
+            cleanup()
           }
         } catch (error) {
           logError('Stream error', error, { batchId })
           sendEvent('error', { message: 'Stream error' })
-          clearInterval(interval)
-          controller.close()
+          cleanup()
         }
       }, 2000) // Poll every 2 seconds
 
-      // Cleanup on abort
-      request.signal.addEventListener('abort', () => {
-        clearInterval(interval)
-        controller.close()
-      })
+      // Note: Abort handler already registered above before interval starts
     },
   })
 
