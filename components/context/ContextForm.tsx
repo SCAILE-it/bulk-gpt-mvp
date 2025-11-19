@@ -293,11 +293,12 @@ export function ContextForm() {
         </div>
 
         {/* Tone */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${context.tone ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="tone" className="text-xs">
               Tone
             </Label>
+            {context.tone && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -324,16 +325,17 @@ export function ContextForm() {
             placeholder="e.g., Professional, Friendly, Technical"
             value={context.tone || ''}
             onChange={(e) => handleManualUpdate({ tone: e.target.value })}
-            className="text-xs"
+            className={`text-xs ${context.tone ? 'bg-background' : ''}`}
           />
         </div>
 
         {/* ICP */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${businessContext.icp ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="icp" className="text-xs">
               Ideal Customer Profile (ICP)
             </Label>
+            {businessContext.icp && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -360,16 +362,17 @@ export function ContextForm() {
             value={businessContext.icp || ''}
             onChange={(e) => handleBusinessContextUpdate({ icp: e.target.value })}
             rows={4}
-            className="text-xs resize-none"
+            className={`text-xs resize-none ${businessContext.icp ? 'bg-background' : ''}`}
           />
         </div>
 
         {/* Value Proposition */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${businessContext.valueProposition ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="value-proposition" className="text-xs">
               Value Proposition
             </Label>
+            {businessContext.valueProposition && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -396,14 +399,15 @@ export function ContextForm() {
             value={businessContext.valueProposition || ''}
             onChange={(e) => handleBusinessContextUpdate({ valueProposition: e.target.value })}
             rows={3}
-            className="text-xs resize-none"
+            className={`text-xs resize-none ${businessContext.valueProposition ? 'bg-background' : ''}`}
           />
         </div>
 
         {/* Marketing Goals */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${businessContext.marketingGoals && businessContext.marketingGoals.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs">Marketing Goals</Label>
+            {businessContext.marketingGoals && businessContext.marketingGoals.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -463,9 +467,10 @@ export function ContextForm() {
         </div>
 
         {/* Countries */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${businessContext.countries && businessContext.countries.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs">Target Countries</Label>
+            {businessContext.countries && businessContext.countries.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -525,9 +530,10 @@ export function ContextForm() {
         </div>
 
         {/* Products */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${businessContext.products && businessContext.products.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs">Products</Label>
+            {businessContext.products && businessContext.products.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -587,11 +593,12 @@ export function ContextForm() {
         </div>
 
         {/* Product Description */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${context.productDescription ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="productDescription" className="text-xs">
               Product Description
             </Label>
+            {context.productDescription && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -618,16 +625,17 @@ export function ContextForm() {
             value={context.productDescription || ''}
             onChange={(e) => handleManualUpdate({ productDescription: e.target.value })}
             rows={3}
-            className="text-xs resize-none"
+            className={`text-xs resize-none ${context.productDescription ? 'bg-background' : ''}`}
           />
         </div>
 
         {/* Competitors */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${context.competitors ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="competitors" className="text-xs">
               Competitors
             </Label>
+            {context.competitors && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -654,16 +662,17 @@ export function ContextForm() {
             placeholder="e.g., Salesforce, HubSpot"
             value={context.competitors || ''}
             onChange={(e) => handleManualUpdate({ competitors: e.target.value })}
-            className="text-xs"
+            className={`text-xs ${context.competitors ? 'bg-background' : ''}`}
           />
         </div>
 
         {/* Target Industries */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${context.targetIndustries ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="targetIndustries" className="text-xs">
               Target Industries
             </Label>
+            {context.targetIndustries && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -690,16 +699,17 @@ export function ContextForm() {
             placeholder="e.g., SaaS, Technology, Healthcare"
             value={context.targetIndustries || ''}
             onChange={(e) => handleManualUpdate({ targetIndustries: e.target.value })}
-            className="text-xs"
+            className={`text-xs ${context.targetIndustries ? 'bg-background' : ''}`}
           />
         </div>
 
         {/* Compliance Flags */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${context.complianceFlags ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label htmlFor="complianceFlags" className="text-xs">
               Compliance Flags
             </Label>
+            {context.complianceFlags && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -726,14 +736,15 @@ export function ContextForm() {
             placeholder="e.g., SOC2, GDPR, HIPAA"
             value={context.complianceFlags || ''}
             onChange={(e) => handleManualUpdate({ complianceFlags: e.target.value })}
-            className="text-xs"
+            className={`text-xs ${context.complianceFlags ? 'bg-background' : ''}`}
           />
         </div>
 
         {/* Target Keywords */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${businessContext.targetKeywords && businessContext.targetKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs">Target Keywords</Label>
+            {businessContext.targetKeywords && businessContext.targetKeywords.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -793,9 +804,10 @@ export function ContextForm() {
         </div>
 
         {/* Competitor Keywords */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs">Competitor Keywords</Label>
+            {businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
