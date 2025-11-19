@@ -125,7 +125,10 @@ function HomePageContent() {
   }
 
   return (
-    <div className="p-3 sm:p-6 max-w-[1400px] mx-auto">
+    <div className="relative p-3 sm:p-6 max-w-[1400px] mx-auto">
+      {/* Background Gradient for Depth */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-950/5 via-transparent to-amber-950/5 rounded-3xl pointer-events-none" />
+
       {/* Greeting Header with CTA */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -155,7 +158,7 @@ function HomePageContent() {
               >
                 <button
                   onClick={() => router.push('/agents')}
-                  className="inline-flex items-center gap-2 px-4 py-2 h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:shadow-md hover:bg-primary/90 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 h-11 rounded-lg bg-primary text-primary-foreground text-sm font-semibold shadow-md hover:shadow-lg hover:bg-primary/95 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] hover:scale-[1.02]"
                 >
                   <span>Run a Batch</span>
                   <svg 
@@ -185,9 +188,14 @@ function HomePageContent() {
         transition={{ duration: 0.38, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
       >
-        <div className="bg-secondary/10 border border-border/50 rounded-lg p-4 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+          <div className="absolute top-4 right-4 flex gap-1">
+            <div className="h-2 w-2 rounded-full bg-green-500/70" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+          </div>
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Total Batches</div>
-          <div className="text-xl sm:text-2xl font-semibold text-foreground mb-1 tabular-nums">{safeStats.totalBatches}</div>
+          <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">{safeStats.totalBatches}</div>
           {safeStats.completedBatches > 0 && (
             <div className="text-xs text-muted-foreground">
               {safeStats.completedBatches} completed
@@ -195,9 +203,14 @@ function HomePageContent() {
           )}
         </div>
 
-        <div className="bg-secondary/10 border border-border/50 rounded-lg p-4 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+          <div className="absolute top-4 right-4 flex gap-1">
+            <div className="h-2 w-2 rounded-full bg-green-500/70" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+          </div>
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Rows Processed</div>
-          <div className="text-xl sm:text-2xl font-semibold text-foreground mb-1 tabular-nums">
+          <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
             {safeStats.totalRowsProcessed.toLocaleString()}
           </div>
           {safeStats.rowsPerSecond > 0 && (
@@ -207,10 +220,15 @@ function HomePageContent() {
           )}
         </div>
 
-        <div className="bg-secondary/10 border border-border/50 rounded-lg p-4 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+          <div className="absolute top-4 right-4 flex gap-1">
+            <div className="h-2 w-2 rounded-full bg-blue-500/70" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+          </div>
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Success Rate</div>
-          <div className="text-xl sm:text-2xl font-semibold text-foreground mb-1 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+          <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-blue-500/70 flex-shrink-0" />
             <span className="tabular-nums">{safeStats.successRate}%</span>
           </div>
           {safeStats.totalBatches > 0 && (
@@ -220,9 +238,14 @@ function HomePageContent() {
           )}
         </div>
 
-        <div className="bg-secondary/10 border border-border/50 rounded-lg p-4 sm:p-5 hover:bg-secondary/28 hover:border-border/70 transition-all duration-200 cursor-default">
+        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+          <div className="absolute top-4 right-4 flex gap-1">
+            <div className="h-2 w-2 rounded-full bg-green-500/70" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+          </div>
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
-          <div className="text-xl sm:text-2xl font-semibold text-foreground mb-1 tabular-nums">
+          <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
             {safeStats.totalTokens.toLocaleString()}
           </div>
           {safeStats.averageProcessingTime > 0 && (
@@ -233,36 +256,39 @@ function HomePageContent() {
         </div>
       </motion.div>
 
-      {/* Cursor-style overlayed widgets - CSV Demo over processing.log */}
-      <div className="mb-6 sm:mb-8 relative z-0">
-        {/* Background: processing.log - Terminal Style (visible but slightly dimmed) */}
+      {/* Section Divider */}
+      <div className="relative py-6 sm:py-8 mb-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border/30"></div>
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-background px-4 text-xs text-muted-foreground uppercase tracking-widest font-medium">Live Demo</span>
+        </div>
+      </div>
+
+      {/* Cursor-style layered cards - Two separate cards with depth */}
+      <div className="mb-6 sm:mb-8 relative min-h-[500px] sm:min-h-[700px]">
+        {/* BACK CARD: processing.log - Positioned left and down - LARGER width */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.34, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="relative"
-          style={{
-            opacity: hasBatches ? 0.7 : 1,
-            filter: hasBatches ? 'blur(2px)' : 'blur(0px)'
-          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute left-0 top-[60px] w-full sm:w-[40%] z-10"
         >
-          <div className="border border-border/40 rounded-lg sm:rounded-xl overflow-hidden bg-secondary/8 backdrop-blur-sm"
-            style={{
-              boxShadow: '0 2px 8px 0 rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02) inset'
-            }}
+          <div className="border border-amber-500/30 rounded-xl sm:rounded-2xl overflow-hidden bg-amber-950/20"
           >
             {/* Compact Header */}
-            <div className="border-b border-border/40 px-3 sm:px-5 py-2.5 sm:py-3.5 bg-secondary/18 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-              <div className="flex items-center gap-2 sm:gap-3.5">
-                <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
-                  <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-red-500/55" />
-                  <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-yellow-500/55" />
-                  <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500/55" />
+            <div className="border-b border-amber-500/20 px-4 sm:px-6 py-3.5 sm:py-4 bg-amber-900/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57] border border-black/10" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E] border border-black/10" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#28C840] border border-black/10" />
                 </div>
-                <span className="text-[10px] sm:text-xs text-muted-foreground font-medium font-mono leading-[1.25]">processing.log</span>
+                <span className="text-xs sm:text-sm text-foreground font-medium font-mono leading-[1.25] opacity-80">processing.log</span>
               </div>
               {safeStats.totalRowsProcessed > 0 && (
-                <div className="text-[10px] sm:text-xs text-muted-foreground">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   <span className="text-primary font-mono tabular-nums">{safeStats.totalRowsProcessed}</span> rows processed
                 </div>
               )}
@@ -421,23 +447,21 @@ function HomePageContent() {
           </div>
         </motion.div>
 
-        {/* Foreground: CSV Demo - Overlayed with Cursor-style popup */}
+        {/* FRONT CARD: CSV Demo - Positioned right and up - SMALLER width */}
         {hasBatches && (
-          <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-4xl pointer-events-auto"
-            >
-              <CSVDemo
-                hasBatches={hasBatches}
-                recentBatches={safeStats.recentBatches || []}
-                onCurrentProcessingChange={handleCurrentProcessingChange}
-                onThroughputChange={handleThroughputChange}
-              />
-            </motion.div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 top-0 w-full sm:w-[60%] z-20"
+          >
+            <CSVDemo
+              hasBatches={hasBatches}
+              recentBatches={safeStats.recentBatches || []}
+              onCurrentProcessingChange={handleCurrentProcessingChange}
+              onThroughputChange={handleThroughputChange}
+            />
+          </motion.div>
         )}
       </div>
     </div>

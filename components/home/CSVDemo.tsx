@@ -606,25 +606,22 @@ export function CSVDemo({ hasBatches, recentBatches, onCurrentProcessingChange, 
         initial={{ opacity: 0, scale: 0.998 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="border border-border/80 rounded-xl sm:rounded-2xl overflow-hidden bg-background backdrop-blur-xl"
-        style={{
-          boxShadow: '0 40px 100px 0 rgba(0, 0, 0, 0.35), 0 8px 32px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
-        }}
+        className="border border-blue-500/30 rounded-xl sm:rounded-2xl overflow-hidden bg-blue-950/10 shadow-2xl"
       >
         {/* Demo Header - Cursor Style */}
-        <div className="border-b border-border/50 px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-b from-secondary/12 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+        <div className="border-b border-blue-500/20 px-4 sm:px-6 py-3.5 sm:py-4 bg-blue-900/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             {/* Cursor-style traffic light dots */}
-            <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
-              <div className="h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500/70 shadow-sm" />
-              <div className="h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full bg-yellow-500/70 shadow-sm" />
-              <div className="h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full bg-green-500/70 shadow-sm" />
+            <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+              <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57] border border-black/10" />
+              <div className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E] border border-black/10" />
+              <div className="h-2.5 w-2.5 rounded-full bg-[#28C840] border border-black/10" />
             </div>
             <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
               {showReplay && replayBatchAgentIcon && (
                 <span className="text-xs sm:text-sm leading-none flex-shrink-0 inline-flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5">{replayBatchAgentIcon}</span>
               )}
-              <span className="text-xs sm:text-sm font-medium text-foreground font-mono leading-[1.25] truncate">
+              <span className="text-xs sm:text-sm font-medium text-foreground font-mono leading-[1.25] truncate opacity-80">
                 {showReplay ? replayBatchName : 'csv-transformation.csv'}
               </span>
               {showReplay && (
