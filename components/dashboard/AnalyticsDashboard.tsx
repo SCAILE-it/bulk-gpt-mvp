@@ -6,6 +6,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Activity, Zap, BarChart3, Clock, TrendingUp, TrendingDown, ExternalLinkIcon, Download, Calendar, Lightbulb, Image as ImageIcon, FileText, Maximize2, RefreshCw, Pause, Play, GitCompare, Filter, Bookmark, X, Plus } from 'lucide-react'
@@ -14,7 +15,13 @@ import { toast } from 'sonner'
 import { exportSVGAsPNG, exportElementAsPNG, exportDashboardAsPDF, findChartSVG } from '@/lib/utils/chart-export'
 import { exportAnalyticsSummaryCSV, exportAnalyticsJSON, exportTokenActivityCSV } from '@/lib/utils/data-export'
 import { UsageDisplay } from '@/components/usage/UsageDisplay'
-import { ChartModal } from '@/components/charts/ChartModal'
+
+// Lazy load modal - only loads when user clicks to expand a chart
+const ChartModal = dynamic(
+  () => import('@/components/charts/ChartModal').then(mod => ({ default: mod.ChartModal })),
+  { ssr: false }
+)
+
 // Lazy load recharts components to reduce initial bundle size
 import {
   LazyLineChart as LineChart,

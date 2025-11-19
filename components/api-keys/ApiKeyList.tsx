@@ -6,11 +6,17 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Key, Trash2, Plus } from 'lucide-react'
 import { useApiKeys } from '@/hooks/useApiKeys'
-import { CreateApiKeyModal } from './CreateApiKeyModal'
 import { AutoSkeleton } from '@/components/ui/auto-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+
+// Lazy load modal - only loads when user clicks "Create API Key"
+const CreateApiKeyModal = dynamic(
+  () => import('./CreateApiKeyModal').then(mod => ({ default: mod.CreateApiKeyModal })),
+  { ssr: false }
+)
 
 export function ApiKeyList() {
   const { keys, isLoading, error, revokeApiKey } = useApiKeys()

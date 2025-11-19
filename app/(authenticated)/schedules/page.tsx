@@ -5,9 +5,26 @@
 
 'use client'
 
-import { ScheduleList } from '@/components/schedules/ScheduleList'
+import dynamic from 'next/dynamic'
 import { PageWithTabs } from '@/components/layout/PageWithTabs'
 import { Clock } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+
+// Lazy load ScheduleList for better initial page load performance
+const ScheduleList = dynamic(
+  () => import('@/components/schedules/ScheduleList').then(mod => ({ default: mod.ScheduleList })),
+  {
+    loading: () => (
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    ),
+    ssr: false, // Schedule manager doesn't need SSR
+  }
+)
 
 export default function SchedulesPage() {
   return (
