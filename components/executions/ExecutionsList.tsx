@@ -578,7 +578,7 @@ export function ExecutionsList() {
                     <tr
                       key={batch.id}
                       className="hover:bg-white/5 cursor-pointer transition-colors group"
-                      onClick={() => router.push(`/output?batch=${batch.id}`)}
+                      onClick={() => router.push(`/executions?batch=${batch.id}`)}
                     >
                       {visibleColumns.includes('filename') && (
                         <td className="px-4 py-3 text-xs text-foreground max-w-xs">
