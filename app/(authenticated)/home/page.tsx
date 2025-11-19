@@ -37,6 +37,18 @@ export default function HomePage() {
   )
 }
 
+// Reusable traffic light indicator component
+function TrafficLightIndicator({ color = 'green' }: { color: 'green' | 'blue' }) {
+  const primaryColor = color === 'blue' ? 'bg-blue-500/70' : 'bg-green-500/70'
+  return (
+    <div className="absolute top-4 right-4 flex gap-1">
+      <div className={`h-2 w-2 rounded-full ${primaryColor}`} />
+      <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+      <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+    </div>
+  )
+}
+
 function HomePageContent() {
   const router = useRouter()
   const { stats, isLoading, error } = useHomeStats()
@@ -189,11 +201,7 @@ function HomePageContent() {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
       >
         <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <div className="absolute top-4 right-4 flex gap-1">
-            <div className="h-2 w-2 rounded-full bg-green-500/70" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-          </div>
+          <TrafficLightIndicator color="green" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Total Batches</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">{safeStats.totalBatches}</div>
           {safeStats.completedBatches > 0 && (
@@ -204,11 +212,7 @@ function HomePageContent() {
         </div>
 
         <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <div className="absolute top-4 right-4 flex gap-1">
-            <div className="h-2 w-2 rounded-full bg-green-500/70" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-          </div>
+          <TrafficLightIndicator color="green" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Rows Processed</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
             {safeStats.totalRowsProcessed.toLocaleString()}
@@ -221,11 +225,7 @@ function HomePageContent() {
         </div>
 
         <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <div className="absolute top-4 right-4 flex gap-1">
-            <div className="h-2 w-2 rounded-full bg-blue-500/70" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-          </div>
+          <TrafficLightIndicator color="blue" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Success Rate</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-blue-500/70 flex-shrink-0" />
@@ -239,11 +239,7 @@ function HomePageContent() {
         </div>
 
         <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <div className="absolute top-4 right-4 flex gap-1">
-            <div className="h-2 w-2 rounded-full bg-green-500/70" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-          </div>
+          <TrafficLightIndicator color="green" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
             {safeStats.totalTokens.toLocaleString()}
