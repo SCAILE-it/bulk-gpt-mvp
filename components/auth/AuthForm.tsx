@@ -197,6 +197,20 @@ export function AuthForm({ mode, onSuccess, returnUrl = '/agents' }: AuthFormPro
               className="h-9 text-xs"
             />
           </FormField>
+
+          {/* Forgot Password Link - P2 Issue #21 */}
+          {mode === 'signin' && onModeChange && (
+            <div className="text-right -mt-1 mb-3">
+              <button
+                type="button"
+                onClick={() => onModeChange('reset')}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+
           <Button
             type="submit"
             disabled={isLoadingEmail || (emailValidation.touched && !emailValidation.isValid) || (passwordValidation.touched && !passwordValidation.isValid)}
