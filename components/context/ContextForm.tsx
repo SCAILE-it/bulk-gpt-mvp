@@ -1071,7 +1071,6 @@ export function ContextForm() {
           </div>
         </div>
       </CollapsibleSection>
-      </div>
 
       {/* Cluster 4: GTM Classification */}
       <CollapsibleSection
