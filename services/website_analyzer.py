@@ -396,15 +396,18 @@ Website HTML Content:
         # Try new API first (v0.2.0+)
         try:
             from google.generativeai import GenerativeModel
-            # Use Gemini 3.0 Pro
+            # Use Gemini 2.5 Flash
             try:
-                model = GenerativeModel('gemini-3.0-pro')
+                model = GenerativeModel('gemini-2.5-flash')
             except:
-                # Fallback to gemini-2.0 if 3.0 not available
+                # Fallback options
                 try:
                     model = GenerativeModel('gemini-2.0-flash-exp')
                 except:
-                    model = GenerativeModel('gemini-1.5-flash')
+                    try:
+                        model = GenerativeModel('gemini-1.5-flash')
+                    except:
+                        model = GenerativeModel('gemini-1.5-pro')
             
             generation_config = {
                 "temperature": 0,
@@ -433,8 +436,56 @@ Website HTML Content:
                 import requests
                 import json as json_lib
                 
-                # Use REST API directly for newer API keys - Gemini 3.0 Pro
-                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:generateContent?key={api_key}"
+                # Build payload first
+                payload = {
+                    "contents": [{
+                        "parts": [{"text": extraction_prompt}]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0,
+                        "maxOutputTokens": 8192,
+                        "responseMimeType": "application/json"
+                    }
+                }
+                
+                # Use REST API directly for newer API keys - Try Gemini 2.5 Flash first
+                models_to_try = [
+                    'gemini-2.5-flash',  # Primary model
+                    'gemini-2.0-flash-exp',
+                    'gemini-1.5-flash',
+                    'gemini-1.5-pro',
+                    'gemini-2.5-pro-preview-03-25',
+                    'gemini-3-pro-preview'
+                ]
+                
+                response_text = None
+                last_error = None
+                
+                for model_name in models_to_try:
+                    try:
+                        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                        response = requests.post(api_url, json=payload, timeout=30)
+                        response.raise_for_status()
+                        
+                        result = response.json()
+                        if 'candidates' in result and len(result['candidates']) > 0:
+                            candidate = result['candidates'][0]
+                            if 'content' in candidate and 'parts' in candidate['content']:
+                                response_text = candidate['content']['parts'][0].get('text', '').strip()
+                                logger.debug(f"Successfully used model: {model_name}")
+                                break
+                    except requests.exceptions.HTTPError as e:
+                        last_error = e
+                        if e.response.status_code == 404:
+                            continue  # Try next model
+                        else:
+                            raise  # Re-raise if not 404
+                    except Exception as e:
+                        last_error = e
+                        continue
+                
+                if not response_text:
+                    raise ValueError(f"Failed to generate content with any Gemini model. Last error: {last_error}")
                 
                 payload = {
                     "contents": [{
@@ -461,10 +512,10 @@ Website HTML Content:
                     raise ValueError("No candidates in Gemini API response")
                     
             except ImportError:
-                # Fallback to old generate_text API - try gemini-3.0-pro first
+                # Fallback to old generate_text API - try gemini-2.5-flash first
                 try:
-                    # Try gemini-3.0-pro
-                    model_name = 'models/gemini-3.0-pro'
+                    # Try gemini-2.5-flash
+                    model_name = 'models/gemini-2.5-flash'
                     response = genai.generate_text(
                         model=model_name,
                         prompt=extraction_prompt,
@@ -473,7 +524,7 @@ Website HTML Content:
                     )
                     response_text = response.result.strip() if hasattr(response, 'result') else str(response).strip()
                 except:
-                    # Fallback to gemini-1.5-flash if 3.0 not available
+                    # Fallback to gemini-1.5-flash if 2.5 not available
                     try:
                         model_name = 'models/gemini-1.5-flash'
                         response = genai.generate_text(

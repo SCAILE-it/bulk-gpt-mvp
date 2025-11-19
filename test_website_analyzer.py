@@ -27,14 +27,14 @@ async def test_analyze_website():
     print("=" * 60)
     print(f"\n🧪 Testing website analyzer...")
     print(f"📋 URL: scaile.tech")
-    print(f"📋 Mode: business_context")
+    print(f"📋 Mode: full")
     print(f"🔍 Use Google Search: True")
     print()
     
     try:
         result = await analyze_website(
             url="scaile.tech",
-            mode="business_context",
+            mode="full",
             use_google_search=True,
             max_content_length=50000,
         )
