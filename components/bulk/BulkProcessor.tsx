@@ -1751,8 +1751,8 @@ export default function BulkProcessor() {
       </a>
 
       {/* Main Content */}
-      <div className="h-full flex-1 overflow-hidden min-h-0 p-4 xs:p-5 sm:p-6 md:p-7 lg:p-8 xl:p-10 2xl:p-12">
-        <div className="h-full max-w-[1920px] mx-auto border border-border rounded-lg overflow-hidden bg-card shadow-sm">
+      <div className="h-full flex-1 overflow-hidden min-h-0">
+        <div className="h-full border border-border overflow-hidden bg-card">
           {/* Mobile: Tabs layout */}
           <div className="md:hidden h-full flex flex-col">
             <Tabs defaultValue="configure" className="h-full flex flex-col">
