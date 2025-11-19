@@ -3,9 +3,21 @@
  * Formatting, icons, and display helpers for resources
  */
 
-import { Resource, ResourceType, SourceType } from '@/lib/types/resources'
 import { Database, Search, FileText, Megaphone } from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
+
+// Minimal type definitions (resources feature was removed)
+type ResourceType = 'lead' | 'keyword' | 'content' | 'campaign'
+type SourceType = 'customer' | 'tool' | 'generated'
+type Resource = {
+  id: string
+  type: ResourceType
+  data: Record<string, unknown>
+  source_type: SourceType
+  source_name: string
+  created_at: string
+  updated_at: string
+}
 
 export function getResourceIcon(type: ResourceType): LucideIcon {
   switch (type) {
@@ -62,23 +74,23 @@ export function formatResourceData(resource: Resource): {
   switch (resource.type) {
     case 'lead':
       return {
-        primary: data.name || data.email || 'Unknown Lead',
-        secondary: data.company || data.title || '',
-        email: data.email as string | undefined,
+        primary: (typeof data.name === 'string' ? data.name : (typeof data.email === 'string' ? data.email : 'Unknown Lead')),
+        secondary: (typeof data.company === 'string' ? data.company : (typeof data.title === 'string' ? data.title : '')),
+        email: typeof data.email === 'string' ? data.email : undefined,
       }
     case 'keyword':
       return {
-        primary: data.keyword as string || 'Unknown Keyword',
+        primary: (typeof data.keyword === 'string' ? data.keyword : 'Unknown Keyword'),
         secondary: `Volume: ${data.search_volume || 'N/A'} | Difficulty: ${data.difficulty || 'N/A'}`,
       }
     case 'content':
       return {
-        primary: data.title as string || 'Untitled Content',
+        primary: (typeof data.title === 'string' ? data.title : 'Untitled Content'),
         secondary: `${data.format || 'content'} • ${data.word_count || 0} words`,
       }
     case 'campaign':
       return {
-        primary: data.name as string || 'Unnamed Campaign',
+        primary: (typeof data.name === 'string' ? data.name : 'Unnamed Campaign'),
         secondary: `Status: ${data.status || 'unknown'} • Type: ${data.type || 'unknown'}`,
       }
   }

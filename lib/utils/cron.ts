@@ -2,7 +2,7 @@
  * Cron expression utilities using cron-parser
  */
 
-import { parseExpression } from 'cron-parser'
+import { CronExpressionParser } from 'cron-parser'
 import { formatInTimeZone } from 'date-fns-tz'
 
 /**
@@ -10,7 +10,7 @@ import { formatInTimeZone } from 'date-fns-tz'
  */
 export function validateCronExpression(cronExpr: string): { valid: boolean; error?: string } {
   try {
-    parseExpression(cronExpr)
+    CronExpressionParser.parse(cronExpr)
     return { valid: true }
   } catch (error) {
     return {
@@ -36,7 +36,7 @@ export function calculateNextRun(
     const startDate = fromDate || new Date()
     
     // Parse cron expression
-    const interval = parseExpression(cronExpr, {
+    const interval = CronExpressionParser.parse(cronExpr, {
       tz: timezone,
       currentDate: startDate,
     })
@@ -62,7 +62,7 @@ export function calculateNextRuns(
 ): string[] {
   try {
     const runs: string[] = []
-    const interval = parseExpression(cronExpr, {
+    const interval = CronExpressionParser.parse(cronExpr, {
       tz: timezone,
       currentDate: new Date(),
     })

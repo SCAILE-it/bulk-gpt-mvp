@@ -1,5 +1,5 @@
 import useSWR from 'swr'
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -63,6 +63,9 @@ const fetcher = async (): Promise<HomeStats> => {
 
 export function useHomeStats() {
   const router = useRouter()
+  const [errorCount, setErrorCount] = useState(0)
+  const pollingIntervalRef = useRef(10000) // Start at 10s
+
   const { data: stats, isLoading, error, mutate } = useSWR<HomeStats>(
     'home-stats',
     fetcher,
@@ -70,16 +73,24 @@ export function useHomeStats() {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       revalidateIfStale: false,
-      revalidateOnMount: false,
-      dedupingInterval: 10000, // 10 seconds
+      dedupingInterval: 30000, // 30 seconds (increased from 10s)
       keepPreviousData: true,
-      onError: () => {
-        router.push('/auth')
+      errorRetryCount: 3, // Retry 3 times before giving up
+      errorRetryInterval: 2000, // 2s between retries
+      onError: (_err) => {
+        setErrorCount(prev => prev + 1)
+        // Only redirect after 3 failed attempts
+        if (errorCount >= 2) {
+          router.push('/auth')
+        }
+      },
+      onSuccess: () => {
+        setErrorCount(0) // Reset error count on success
       },
     }
   )
 
-  // Poll every 3 seconds when batches are processing
+  // Poll with exponential backoff when batches are processing
   useEffect(() => {
     if (!stats) return
 
@@ -87,11 +98,18 @@ export function useHomeStats() {
       (batch) => batch.status === 'processing' || batch.status === 'pending'
     )
 
-    if (!hasProcessingBatches) return
+    if (!hasProcessingBatches) {
+      pollingIntervalRef.current = 10000 // Reset to 10s when no processing
+      return
+    }
 
-    const interval = setInterval(() => {
+    const poll = () => {
       mutate()
-    }, 3000) // Poll every 3 seconds
+      // Exponential backoff: 10s → 20s → 30s (max)
+      pollingIntervalRef.current = Math.min(pollingIntervalRef.current * 1.5, 30000)
+    }
+
+    const interval = setInterval(poll, pollingIntervalRef.current)
 
     return () => clearInterval(interval)
   }, [stats, mutate])

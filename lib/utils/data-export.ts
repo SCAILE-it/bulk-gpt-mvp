@@ -4,7 +4,30 @@
  */
 
 import { format } from 'date-fns'
-import { AnalyticsData } from '@/components/dashboard/AnalyticsDashboard'
+
+interface TokenStats {
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalTokens: number
+  modelBreakdown: Record<string, { input: number; output: number; batches: number }>
+}
+
+interface AnalyticsData {
+  tokenStats: TokenStats
+  batchesByStatus: Record<string, number>
+  recentActivity: Array<{
+    date: string
+    batches: number
+    rows: number
+    input?: number
+    output?: number
+  }>
+  previousPeriod?: {
+    tokenStats: TokenStats
+    batchesByStatus: Record<string, number>
+    totalBatches: number
+  }
+}
 
 export interface ExportOptions {
   includeFilters?: boolean

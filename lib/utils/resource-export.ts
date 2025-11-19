@@ -3,7 +3,16 @@
  * Export resources to CSV or JSON format
  */
 
-import type { Resource } from '@/lib/types/resources'
+// Minimal type definition (resources feature was removed)
+type Resource = {
+  id: string
+  type: 'lead' | 'keyword' | 'content' | 'campaign'
+  data: Record<string, unknown>
+  source_type: string
+  source_name: string
+  created_at: string
+  updated_at: string
+}
 
 /**
  * Convert resources to CSV format

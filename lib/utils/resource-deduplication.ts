@@ -4,8 +4,19 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase'
-import type { ResourceType, ResourceCreate } from '@/lib/types/resources'
 import { logError } from '@/lib/utils/logger'
+
+// Minimal type definitions (resources feature was removed)
+type ResourceType = 'lead' | 'keyword' | 'content' | 'campaign'
+type ResourceCreate = {
+  type: ResourceType
+  data: Record<string, unknown>
+  source_type: string
+  source_name: string
+  batch_id: string
+  agent_id: string
+  tags: string[]
+}
 
 /**
  * Extract unique identifier from resource data based on type
@@ -139,7 +150,7 @@ async function checkResourceExists(
         // If type is specified, filter by type in memory
         if (type) {
           const match = candidates.find((c: { data?: { type?: unknown } }) => {
-            const candidateType = (c.data?.type || '').toLowerCase().trim()
+            const candidateType = typeof c.data?.type === 'string' ? c.data.type.toLowerCase().trim() : ''
             return candidateType === type
           })
           return { exists: !!match, existingId: match?.id }
