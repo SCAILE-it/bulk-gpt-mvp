@@ -1,0 +1,79 @@
+{
+  "Tone": "Professional, Technical",
+  "Target Countries": "Germany, Global",
+  "Product Description": "SCAILE provides an AI-powered Go-To-Market machine that helps companies achieve visibility in AI search engines like Google AI Overviews and ChatGPT. They optimize entity, category, and trust signals and create AI-optimized content to ensure brands appear as answers to relevant customer queries.",
+  "Target Industries": "B2B, SaaS, Technology, Sales, Marketing",
+  "Value Proposition": "The Visibility Engine That Puts You into ChatGPT. Your customers now search in AI. We make sure you are the answer. We turn your company into an AI-visible brand \u2014 fast, automated, KPI-first.",
+  "Marketing Goals": [
+    "Generate qualified leads",
+    "Increase brand awareness",
+    "Drive customer acquisition",
+    "Improve conversion rates",
+    "Show Up in AI Search",
+    "Get your brand into Google AI Overviews & ChatGPT results",
+    "Gain additional unique visitors",
+    "Increase impressions",
+    "Increase recurring revenue"
+  ],
+  "Countries": [
+    "Germany",
+    "Global"
+  ],
+  "Products": [
+    "AI Visibility Signals",
+    "AI Overview + ChatGPT ranking tracking",
+    "Entity & Category Strengthening",
+    "Strategic Recommendations",
+    "AEO-optimized content",
+    "Multilingual content clusters",
+    "Growth-GPT Beta",
+    "LLM-focused SEO",
+    "Social Media Content",
+    "Programmatic Advertising",
+    "High Value Backlinking",
+    "Lead Magnets",
+    "Proprietary Lead Crawling",
+    "Cold Outreach",
+    "A/B-tested Landing Pages",
+    "Dynamic Lead Forms",
+    "Conversational Chatbots",
+    "Multi-Channel-Nurturing",
+    "Omnichannel-CRM & Scoring",
+    "E-Mail & WhatsApp Auto-Flows"
+  ],
+  "Target Keywords": [
+    "AI-Powered Go-To-Market",
+    "AI Visibility",
+    "Google AI Overviews",
+    "ChatGPT results",
+    "AI search",
+    "Best X for Y",
+    "Sales Automation",
+    "Digital Go-to-Market Processes",
+    "LLM-optimized content",
+    "AI Sales Engine"
+  ],
+  "GTM Playbook": {
+    "value": "sales_led",
+    "confidence": 0.85,
+    "reasoning": "The website emphasizes booking a demo for all pricing tiers and mentions a 'dedicated content strategist' for the highest tier, indicating a high-touch sales process. While they refer to a 'productized engine,' the primary call to action is sales-driven."
+  },
+  "Product Type": {
+    "value": "sales_marketing",
+    "confidence": 0.95,
+    "reasoning": "The core offering is about improving brand visibility in AI search, generating qualified leads, and automating sales and marketing processes, which directly falls under sales and marketing software."
+  },
+  "Company Name": "SCAILE",
+  "Company Website": "https://scaile.tech",
+  "Legal Entity": "SCAILE Technologies GmbH",
+  "Company Address": "Jungfrauenthal 8, 20149 Hamburg, Germany",
+  "Imprint URL": "https://scaile.tech/imprint",
+  "VAT Number": "DE454366220",
+  "Registration Number": "HRB 191310, Commercial Register at the Hamburg District Court",
+  "Contact Email": "info@scaile.tech",
+  "Contact Phone": "+49 40 23834416",
+  "_metadata": {
+    "mode": "business_context",
+    "url": "https://scaile.tech"
+  }
+}

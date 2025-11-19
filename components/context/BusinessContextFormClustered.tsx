@@ -62,7 +62,7 @@ interface BusinessContextFormData {
   githubUrl?: string
 }
 
-export function BusinessContextForm() {
+export function BusinessContextFormClustered() {
   const { context: contextVars, updateContext } = useContextStorage()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)

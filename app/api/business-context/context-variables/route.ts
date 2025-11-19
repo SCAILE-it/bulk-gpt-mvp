@@ -25,7 +25,7 @@ export async function GET() {
 
     const { data: context, error } = await supabase
       .from('business_contexts')
-      .select('tone, target_countries, product_description, competitors, target_industries, compliance_flags, icp, countries, products, target_keywords, competitor_keywords, gtm_playbook, product_type, gtm_playbook_ai_suggested, product_type_ai_suggested, gtm_playbook_confidence, product_type_confidence, gtm_playbook_manually_overridden, product_type_manually_overridden, gtm_playbook_ai_suggestion, product_type_ai_suggestion')
+      .select('tone, target_countries, product_description, competitors, target_industries, compliance_flags, value_proposition, marketing_goals, icp, countries, products, target_keywords, competitor_keywords, company_name, company_website, contact_email, contact_phone, linkedin_url, twitter_url, github_url, gtm_playbook, product_type, gtm_playbook_ai_suggested, product_type_ai_suggested, gtm_playbook_confidence, product_type_confidence, gtm_playbook_manually_overridden, product_type_manually_overridden, gtm_playbook_ai_suggestion, product_type_ai_suggestion')
       .eq('user_id', user.id)
       .single();
 
@@ -45,11 +45,20 @@ export async function GET() {
     // Transform database fields to frontend format
     const contextVariables = {
       tone: context?.tone || undefined,
+      valueProposition: context?.value_proposition || undefined,
       targetCountries: context?.target_countries || undefined,
       productDescription: context?.product_description || undefined,
       competitors: context?.competitors || undefined,
       targetIndustries: context?.target_industries || undefined,
       complianceFlags: context?.compliance_flags || undefined,
+      marketingGoals: context?.marketing_goals || undefined,
+      companyName: context?.company_name || undefined,
+      companyWebsite: context?.company_website || undefined,
+      contactEmail: context?.contact_email || undefined,
+      contactPhone: context?.contact_phone || undefined,
+      linkedInUrl: context?.linkedin_url || undefined,
+      twitterUrl: context?.twitter_url || undefined,
+      githubUrl: context?.github_url || undefined,
     };
 
     const businessContext = {
@@ -97,11 +106,21 @@ export async function PUT(request: NextRequest) {
     const {
       // Context Variables
       tone,
+      valueProposition,
       targetCountries,
       productDescription,
       competitors,
       targetIndustries,
       complianceFlags,
+      marketingGoals,
+      // Company & Contact
+      companyName,
+      companyWebsite,
+      contactEmail,
+      contactPhone,
+      linkedInUrl,
+      twitterUrl,
+      githubUrl,
       // Business Context
       icp,
       countries,
@@ -123,7 +142,7 @@ export async function PUT(request: NextRequest) {
     // Get current context to detect overrides and check if we need auto-classification
     const { data: currentContext } = await supabase
       .from('business_contexts')
-      .select('icp, products, countries, gtm_playbook, product_type, gtm_playbook_ai_suggestion, product_type_ai_suggestion, gtm_playbook_manually_overridden, product_type_manually_overridden, product_description')
+      .select('icp, products, countries, gtm_playbook, product_type, gtm_playbook_ai_suggestion, product_type_ai_suggestion, gtm_playbook_manually_overridden, product_type_manually_overridden, product_description, value_proposition, marketing_goals')
       .eq('user_id', user.id)
       .single();
 
@@ -132,11 +151,22 @@ export async function PUT(request: NextRequest) {
     
     // Context Variables
     if (tone !== undefined) updateData.tone = tone || null;
+    if (valueProposition !== undefined) updateData.value_proposition = valueProposition || null;
     if (targetCountries !== undefined) updateData.target_countries = targetCountries || null;
     if (productDescription !== undefined) updateData.product_description = productDescription || null;
     if (competitors !== undefined) updateData.competitors = competitors || null;
     if (targetIndustries !== undefined) updateData.target_industries = targetIndustries || null;
     if (complianceFlags !== undefined) updateData.compliance_flags = complianceFlags || null;
+    if (marketingGoals !== undefined) updateData.marketing_goals = marketingGoals || null;
+    
+    // Company & Contact
+    if (companyName !== undefined) updateData.company_name = companyName || null;
+    if (companyWebsite !== undefined) updateData.company_website = companyWebsite || null;
+    if (contactEmail !== undefined) updateData.contact_email = contactEmail || null;
+    if (contactPhone !== undefined) updateData.contact_phone = contactPhone || null;
+    if (linkedInUrl !== undefined) updateData.linkedin_url = linkedInUrl || null;
+    if (twitterUrl !== undefined) updateData.twitter_url = twitterUrl || null;
+    if (githubUrl !== undefined) updateData.github_url = githubUrl || null;
     
     // Business Context
     if (icp !== undefined) updateData.icp = icp || null;
@@ -176,9 +206,13 @@ export async function PUT(request: NextRequest) {
     // 3. User hasn't manually overridden
     // 4. We have enough context (ICP, products, countries, or productDescription)
     // 5. Context variables are being updated (tone, productDescription, etc.) OR GTM is being cleared
-    const isUpdatingContextVariables = tone !== undefined || productDescription !== undefined || 
-                                       targetCountries !== undefined || competitors !== undefined ||
-                                       targetIndustries !== undefined || complianceFlags !== undefined;
+    const isUpdatingContextVariables = tone !== undefined || valueProposition !== undefined || 
+                                       productDescription !== undefined || targetCountries !== undefined || 
+                                       competitors !== undefined || targetIndustries !== undefined || 
+                                       complianceFlags !== undefined || marketingGoals !== undefined ||
+                                       companyName !== undefined || companyWebsite !== undefined ||
+                                       contactEmail !== undefined || contactPhone !== undefined ||
+                                       linkedInUrl !== undefined || twitterUrl !== undefined || githubUrl !== undefined;
     const isUpdatingBusinessContext = icp !== undefined || countries !== undefined || products !== undefined;
     const isClearingGTM = (gtmPlaybook === null || gtmPlaybook === '') || 
                           (productType === null || productType === '');
@@ -261,7 +295,7 @@ export async function PUT(request: NextRequest) {
         },
         { onConflict: 'user_id' }
       )
-      .select('tone, target_countries, product_description, competitors, target_industries, compliance_flags, icp, countries, products, target_keywords, competitor_keywords, gtm_playbook, product_type, gtm_playbook_ai_suggested, product_type_ai_suggested, gtm_playbook_confidence, product_type_confidence, gtm_playbook_manually_overridden, product_type_manually_overridden, gtm_playbook_ai_suggestion, product_type_ai_suggestion')
+      .select('tone, target_countries, product_description, competitors, target_industries, compliance_flags, value_proposition, marketing_goals, icp, countries, products, target_keywords, competitor_keywords, company_name, company_website, contact_email, contact_phone, linkedin_url, twitter_url, github_url, gtm_playbook, product_type, gtm_playbook_ai_suggested, product_type_ai_suggested, gtm_playbook_confidence, product_type_confidence, gtm_playbook_manually_overridden, product_type_manually_overridden, gtm_playbook_ai_suggestion, product_type_ai_suggestion')
       .single();
 
     if (error) {
@@ -272,11 +306,20 @@ export async function PUT(request: NextRequest) {
     // Transform back to frontend format
     const contextVariables = {
       tone: context.tone || undefined,
+      valueProposition: context.value_proposition || undefined,
       targetCountries: context.target_countries || undefined,
       productDescription: context.product_description || undefined,
       competitors: context.competitors || undefined,
       targetIndustries: context.target_industries || undefined,
       complianceFlags: context.compliance_flags || undefined,
+      marketingGoals: context.marketing_goals || undefined,
+      companyName: context.company_name || undefined,
+      companyWebsite: context.company_website || undefined,
+      contactEmail: context.contact_email || undefined,
+      contactPhone: context.contact_phone || undefined,
+      linkedInUrl: context.linkedin_url || undefined,
+      twitterUrl: context.twitter_url || undefined,
+      githubUrl: context.github_url || undefined,
     };
 
     const businessContext = {
