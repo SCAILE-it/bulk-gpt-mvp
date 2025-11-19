@@ -10,12 +10,32 @@ const STORAGE_KEY = 'bulk-gpt-business-context';
 const MIGRATION_FLAG_KEY = 'bulk-gpt-business-context-migrated';
 
 export interface ContextVariables {
+  // Core Business Context
   tone?: string;
-  targetCountries?: string;
+  valueProposition?: string;
+  icp?: string;
   productDescription?: string;
-  competitors?: string;
+  products?: string | string[];
+  targetCountries?: string;
   targetIndustries?: string;
+  competitors?: string;
   complianceFlags?: string;
+  marketingGoals?: string[];
+  
+  // Company Information
+  companyName?: string;
+  companyWebsite?: string;
+  
+  // Contact & Social Media
+  contactEmail?: string;
+  contactPhone?: string;
+  linkedInUrl?: string;
+  twitterUrl?: string;
+  githubUrl?: string;
+  
+  // GTM Classification
+  gtmPlaybook?: string;
+  productType?: string;
 }
 
 export interface BusinessContext {

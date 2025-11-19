@@ -23,7 +23,10 @@ ANALYSIS_MODES = {
             "tone", "targetCountries", "productDescription", "competitors",
             "targetIndustries", "complianceFlags", "valueProposition", "icp",
             "marketingGoals", "countries", "products", "targetKeywords", "competitorKeywords",
-            "gtmPlaybook", "productType", "legalEntity", "imprintUrl", "vatNumber", "registrationNumber"
+            "gtmPlaybook", "productType", 
+            "companyName", "companyWebsite", "legalEntity", "companyAddress",
+            "imprintUrl", "vatNumber", "registrationNumber",
+            "contactEmail", "contactPhone", "linkedInUrl", "twitterUrl", "githubUrl"
         ]
     },
     "seo": {
@@ -107,11 +110,35 @@ Given a website's HTML content, extract the following information:
    - other: Other product categories
    Return as object: {"value": "devtools", "confidence": 0.90, "reasoning": "explanation"}
 
-**Legal/Company Info (Extract if available - useful context):**
-16. **Legal Entity**: Legal company name (e.g., "Company Name GmbH", "Company Name Inc.")
-17. **Imprint URL**: URL to imprint/legal page (e.g., "https://example.com/imprint")
-18. **VAT Number**: VAT/TAX ID if mentioned (e.g., "DE123456789")
-19. **Registration Number**: Company registration number if mentioned (e.g., "HRB 12345")
+**Company Information (Extract if available - useful context):**
+16. **Company Name**: The main company/brand name (e.g., "SCAILE", "Acme Corp")
+17. **Company Website**: Full website URL (e.g., "https://scaile.tech")
+18. **Legal Entity**: Legal company name (e.g., "SCAILE Technologies GmbH", "Acme Corp Inc.")
+19. **Company Address**: Physical address if mentioned (e.g., "123 Main St, City, Country")
+20. **Imprint URL**: URL to imprint/legal page (e.g., "https://example.com/imprint")
+21. **VAT Number**: VAT/TAX ID if mentioned (e.g., "DE123456789")
+22. **Registration Number**: Company registration number if mentioned (e.g., "HRB 12345")
+
+**Contact & Social Media (Extract if available - CRITICAL: Only return verified URLs, use null if not found):**
+23. **Contact Email**: Primary contact email address (e.g., "info@example.com")
+24. **Contact Phone**: Primary contact phone number (e.g., "+49 40 12345678")
+25. **LinkedIn URL**: LinkedIn company page URL (MUST be exact URL found, not constructed - e.g., "https://linkedin.com/company/scaile" or null)
+26. **Twitter URL**: Twitter/X company profile URL (MUST be exact URL found, not constructed - e.g., "https://twitter.com/scaile" or null)
+27. **GitHub URL**: GitHub organization/profile URL (MUST be exact URL found, not constructed - e.g., "https://github.com/scaile" or null)
+
+CRITICAL ACCURACY REQUIREMENTS - NO HALLUCINATIONS ALLOWED:
+1. VERIFICATION RULE: Only return information that you can VERIFY from actual sources:
+   - Website content (via URL context)
+   - Google Search results (via google_search tool)
+   - If you cannot verify it, return null - NEVER make up data
+
+2. URL VERIFICATION: For all URLs (LinkedIn, GitHub, Twitter, etc.):
+   - Must be exact URLs found in search results or website content
+   - Must be clickable/verifiable URLs
+   - Do not construct URLs based on company name patterns
+   - If URL not found, return null - DO NOT guess
+
+3. OUTPUT: Return JSON with null for unverified fields. NO HALLUCINATIONS.
 
 Return ONLY a valid JSON object with these fields. For GTM Playbook and Product Type, include confidence (0.0-1.0) and reasoning. If a field cannot be determined, omit it or set arrays to empty arrays []. Use null for missing values."""
 
@@ -255,11 +282,95 @@ def _clean_response(parsed: Dict[str, Any], expected_fields: List[str]) -> Dict[
     """Clean and validate response based on expected fields.
     
     Maps extracted fields to UI form field names and handles nested structures.
+    Handles both camelCase (from code) and Title Case (from Gemini) field names.
     """
     result = {}
     
-    # Field name mapping: extracted name -> UI form name
-    field_mapping = {
+    # Reverse mapping: UI form name -> extracted name (for lookup)
+    # Also handle variations Gemini might return
+    field_lookup = {
+        # Core fields - handle both camelCase and Title Case
+        "tone": "Tone",
+        "Tone": "Tone",
+        "targetCountries": "Target Countries",
+        "Target Countries": "Target Countries",
+        "productDescription": "Product Description",
+        "Product Description": "Product Description",
+        "competitors": "Competitors",
+        "Competitors": "Competitors",
+        "targetIndustries": "Target Industries",
+        "Target Industries": "Target Industries",
+        "complianceFlags": "Compliance Flags",
+        "Compliance Flags": "Compliance Flags",
+        "valueProposition": "Value Proposition",
+        "Value Proposition": "Value Proposition",
+        "icp": "ICP",
+        "ICP": "ICP",
+        "ICP (Ideal Customer Profile)": "ICP",  # Handle Gemini's full name
+        "marketingGoals": "Marketing Goals",
+        "Marketing Goals": "Marketing Goals",
+        "countries": "Countries",
+        "Countries": "Countries",
+        "products": "Products",
+        "Products": "Products",
+        "targetKeywords": "Target Keywords",
+        "Target Keywords": "Target Keywords",
+        "competitorKeywords": "Competitor Keywords",
+        "Competitor Keywords": "Competitor Keywords",
+        "gtmPlaybook": "GTM Playbook",
+        "GTM Playbook": "GTM Playbook",
+        "productType": "Product Type",
+        "Product Type": "Product Type",
+        "companyName": "Company Name",
+        "Company Name": "Company Name",
+        "companyWebsite": "Company Website",
+        "Company Website": "Company Website",
+        "legalEntity": "Legal Entity",
+        "Legal Entity": "Legal Entity",
+        "companyAddress": "Company Address",
+        "Company Address": "Company Address",
+        "imprintUrl": "Imprint URL",
+        "Imprint URL": "Imprint URL",
+        "vatNumber": "VAT Number",
+        "VAT Number": "VAT Number",
+        "registrationNumber": "Registration Number",
+        "Registration Number": "Registration Number",
+        "contactEmail": "Contact Email",
+        "Contact Email": "Contact Email",
+        "contactPhone": "Contact Phone",
+        "Contact Phone": "Contact Phone",
+        "linkedInUrl": "LinkedIn URL",
+        "LinkedIn URL": "LinkedIn URL",
+        "twitterUrl": "Twitter URL",
+        "Twitter URL": "Twitter URL",
+        "githubUrl": "GitHub URL",
+        "GitHub URL": "GitHub URL",
+    }
+    
+    def clean_value(value: Any) -> Any:
+        """Clean a single value."""
+        if isinstance(value, str) and value.strip():
+            cleaned = value.strip()
+            # Handle "None" or "null" strings
+            if cleaned.lower() in ("none", "null", "n/a", "not found"):
+                return None
+            return cleaned
+        elif isinstance(value, list):
+            cleaned = [item.strip() if isinstance(item, str) else item for item in value if item]
+            return cleaned if cleaned else None
+        elif isinstance(value, dict):
+            # Handle nested structures (e.g., gtmPlaybook, productType)
+            cleaned = {}
+            for k, v in value.items():
+                if v is not None:
+                    cleaned[k] = clean_value(v)
+            return cleaned if cleaned else None
+        elif value is not None:
+            return value
+        return None
+    
+    # Create reverse lookup: camelCase -> Title Case
+    camel_to_title = {
         "tone": "Tone",
         "targetCountries": "Target Countries",
         "productDescription": "Product Description",
@@ -275,46 +386,60 @@ def _clean_response(parsed: Dict[str, Any], expected_fields: List[str]) -> Dict[
         "competitorKeywords": "Competitor Keywords",
         "gtmPlaybook": "GTM Playbook",
         "productType": "Product Type",
+        "companyName": "Company Name",
+        "companyWebsite": "Company Website",
         "legalEntity": "Legal Entity",
+        "companyAddress": "Company Address",
         "imprintUrl": "Imprint URL",
         "vatNumber": "VAT Number",
         "registrationNumber": "Registration Number",
+        "contactEmail": "Contact Email",
+        "contactPhone": "Contact Phone",
+        "linkedInUrl": "LinkedIn URL",
+        "twitterUrl": "Twitter URL",
+        "githubUrl": "GitHub URL",
     }
     
-    def clean_value(value: Any) -> Any:
-        """Clean a single value."""
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-        elif isinstance(value, list):
-            cleaned = [item.strip() if isinstance(item, str) else item for item in value if item]
-            return cleaned if cleaned else None
-        elif isinstance(value, dict):
-            # Handle nested structures (e.g., gtmPlaybook, productType)
-            cleaned = {}
-            for k, v in value.items():
-                if v is not None:
-                    cleaned[k] = clean_value(v)
-            return cleaned if cleaned else None
-        elif value is not None:
-            return value
-        return None
-    
     if expected_fields == "all":
-        # Full mode - return all fields found, map to UI names
+        # Full mode - return all fields found, normalize names
         for key, value in parsed.items():
-            mapped_key = field_mapping.get(key, key)
+            # Normalize key name (handle both Title Case from Gemini and camelCase from code)
+            normalized_key = field_lookup.get(key, key)
             cleaned_val = clean_value(value)
             if cleaned_val is not None:
-                result[mapped_key] = cleaned_val
+                result[normalized_key] = cleaned_val
     else:
-        # Specific mode - only return requested fields
+        # Specific mode - return requested fields, but handle Title Case from Gemini
+        # Build a set of all possible field name variations to look for
+        fields_to_find = set()
         for field in expected_fields:
-            if field in parsed:
-                value = parsed[field]
-                mapped_key = field_mapping.get(field, field)
+            fields_to_find.add(field)  # camelCase
+            if field in camel_to_title:
+                fields_to_find.add(camel_to_title[field])  # Title Case
+            # Also try variations
+            fields_to_find.add(field.title())
+        
+        # Now look for any of these variations in the parsed response
+        for key, value in parsed.items():
+            # Check if this key matches any expected field (case-insensitive matching)
+            key_normalized = key.lower().replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
+            matched_field = None
+            for field in expected_fields:
+                field_normalized = field.lower().replace(' ', '')
+                title_field_normalized = camel_to_title.get(field, '').lower().replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
+                # Direct match
+                if key == field or key == camel_to_title.get(field, ''):
+                    matched_field = camel_to_title.get(field, field)
+                    break
+                # Normalized match
+                if key_normalized == field_normalized or key_normalized == title_field_normalized:
+                    matched_field = camel_to_title.get(field, field)
+                    break
+            
+            if matched_field:
                 cleaned_val = clean_value(value)
                 if cleaned_val is not None:
-                    result[mapped_key] = cleaned_val
+                    result[matched_field] = cleaned_val
     
     return result
 
@@ -542,8 +667,9 @@ Return JSON with null for unverified fields. NO HALLUCINATIONS."""
             if not isinstance(extracted_data, dict):
                 logger.error(f"Invalid response type: {url}, response_type={type(extracted_data).__name__}")
                 raise ValueError("Response is not a JSON object")
-            logger.debug(f"Gemini analysis success: {url}, fields_extracted={len(extracted_data)}")
-            logger.debug(f"Extracted data keys: {list(extracted_data.keys())}")
+            logger.info(f"Gemini analysis success: {url}, fields_extracted={len(extracted_data)}")
+            logger.info(f"Extracted data keys: {list(extracted_data.keys())}")
+            logger.info(f"Sample extracted data: {json.dumps({k: str(v)[:100] for k, v in list(extracted_data.items())[:5]}, indent=2)}")
         except json.JSONDecodeError as e:
             logger.error(f"JSON parse error: {url}, error={str(e)}, response_preview={response_text[:500]}")
             logger.error(f"Full response text (first 1000 chars): {response_text[:1000]}")

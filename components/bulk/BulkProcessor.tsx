@@ -492,12 +492,36 @@ export default function BulkProcessor() {
   const formatContextString = useCallback((): string => {
     const parts: string[] = []
     
+    // Core Business Context
     if (contextVariables.tone) parts.push(`Tone: ${contextVariables.tone}`)
+    if (contextVariables.valueProposition) parts.push(`Value Proposition: ${contextVariables.valueProposition}`)
+    if (contextVariables.icp) parts.push(`ICP: ${contextVariables.icp}`)
+    if (contextVariables.productDescription) parts.push(`Product Description: ${contextVariables.productDescription}`)
+    if (contextVariables.products && contextVariables.products.length > 0) {
+      parts.push(`Products: ${Array.isArray(contextVariables.products) ? contextVariables.products.join(', ') : contextVariables.products}`)
+    }
     if (contextVariables.targetCountries) parts.push(`Target Countries: ${contextVariables.targetCountries}`)
-    if (contextVariables.productDescription) parts.push(`Product: ${contextVariables.productDescription}`)
-    if (contextVariables.competitors) parts.push(`Competitors: ${contextVariables.competitors}`)
     if (contextVariables.targetIndustries) parts.push(`Target Industries: ${contextVariables.targetIndustries}`)
+    if (contextVariables.competitors) parts.push(`Competitors: ${contextVariables.competitors}`)
     if (contextVariables.complianceFlags) parts.push(`Compliance: ${contextVariables.complianceFlags}`)
+    if (contextVariables.marketingGoals && Array.isArray(contextVariables.marketingGoals) && contextVariables.marketingGoals.length > 0) {
+      parts.push(`Marketing Goals: ${contextVariables.marketingGoals.join(', ')}`)
+    }
+    
+    // Company Information
+    if (contextVariables.companyName) parts.push(`Company Name: ${contextVariables.companyName}`)
+    if (contextVariables.companyWebsite) parts.push(`Company Website: ${contextVariables.companyWebsite}`)
+    
+    // Contact & Social
+    if (contextVariables.contactEmail) parts.push(`Contact Email: ${contextVariables.contactEmail}`)
+    if (contextVariables.contactPhone) parts.push(`Contact Phone: ${contextVariables.contactPhone}`)
+    if (contextVariables.linkedInUrl) parts.push(`LinkedIn: ${contextVariables.linkedInUrl}`)
+    if (contextVariables.twitterUrl) parts.push(`Twitter: ${contextVariables.twitterUrl}`)
+    if (contextVariables.githubUrl) parts.push(`GitHub: ${contextVariables.githubUrl}`)
+    
+    // GTM Classification
+    if (contextVariables.gtmPlaybook) parts.push(`GTM Playbook: ${contextVariables.gtmPlaybook}`)
+    if (contextVariables.productType) parts.push(`Product Type: ${contextVariables.productType}`)
     
     return parts.join('\n')
   }, [contextVariables])
@@ -507,23 +531,72 @@ export default function BulkProcessor() {
     let replacedPrompt = promptText
     
     // Replace {{context.variableName}} with actual values
+    // Core Business Context
     if (contextVariables.tone) {
       replacedPrompt = replacedPrompt.replace(/\{\{context\.tone\}\}/g, contextVariables.tone)
     }
-    if (contextVariables.targetCountries) {
-      replacedPrompt = replacedPrompt.replace(/\{\{context\.targetCountries\}\}/g, contextVariables.targetCountries)
+    if (contextVariables.valueProposition) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.valueProposition\}\}/g, contextVariables.valueProposition)
+    }
+    if (contextVariables.icp) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.icp\}\}/g, contextVariables.icp)
     }
     if (contextVariables.productDescription) {
       replacedPrompt = replacedPrompt.replace(/\{\{context\.productDescription\}\}/g, contextVariables.productDescription)
     }
-    if (contextVariables.competitors) {
-      replacedPrompt = replacedPrompt.replace(/\{\{context\.competitors\}\}/g, contextVariables.competitors)
+    if (contextVariables.products) {
+      const productsStr = Array.isArray(contextVariables.products) 
+        ? contextVariables.products.join(', ') 
+        : contextVariables.products
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.products\}\}/g, productsStr)
+    }
+    if (contextVariables.targetCountries) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.targetCountries\}\}/g, contextVariables.targetCountries)
     }
     if (contextVariables.targetIndustries) {
       replacedPrompt = replacedPrompt.replace(/\{\{context\.targetIndustries\}\}/g, contextVariables.targetIndustries)
     }
+    if (contextVariables.competitors) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.competitors\}\}/g, contextVariables.competitors)
+    }
     if (contextVariables.complianceFlags) {
       replacedPrompt = replacedPrompt.replace(/\{\{context\.complianceFlags\}\}/g, contextVariables.complianceFlags)
+    }
+    if (contextVariables.marketingGoals && Array.isArray(contextVariables.marketingGoals)) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.marketingGoals\}\}/g, contextVariables.marketingGoals.join(', '))
+    }
+    
+    // Company Information
+    if (contextVariables.companyName) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.companyName\}\}/g, contextVariables.companyName)
+    }
+    if (contextVariables.companyWebsite) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.companyWebsite\}\}/g, contextVariables.companyWebsite)
+    }
+    
+    // Contact & Social
+    if (contextVariables.contactEmail) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.contactEmail\}\}/g, contextVariables.contactEmail)
+    }
+    if (contextVariables.contactPhone) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.contactPhone\}\}/g, contextVariables.contactPhone)
+    }
+    if (contextVariables.linkedInUrl) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.linkedInUrl\}\}/g, contextVariables.linkedInUrl)
+    }
+    if (contextVariables.twitterUrl) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.twitterUrl\}\}/g, contextVariables.twitterUrl)
+    }
+    if (contextVariables.githubUrl) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.githubUrl\}\}/g, contextVariables.githubUrl)
+    }
+    
+    // GTM Classification
+    if (contextVariables.gtmPlaybook) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.gtmPlaybook\}\}/g, contextVariables.gtmPlaybook)
+    }
+    if (contextVariables.productType) {
+      replacedPrompt = replacedPrompt.replace(/\{\{context\.productType\}\}/g, contextVariables.productType)
     }
     
     return replacedPrompt
