@@ -1,19 +1,17 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Calendar } from '@/components/ui/calendar'
-import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Clock } from 'lucide-react'
+import { Clock, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react'
 import { format, addHours, startOfTomorrow, addWeeks, addMonths } from 'date-fns'
 import { toast } from 'sonner'
-import { DisabledButtonTooltip } from '@/components/ui/disabled-button-tooltip'
 import type { CreateScheduleInput, ScheduleConfig, CSVDataSource } from '@/lib/types/schedules'
-import { scheduleToCron, formatSchedule, type ScheduleType, type RecurrenceUnit } from '@/lib/utils/schedule-to-cron'
+import { scheduleToCron, formatSchedule } from '@/lib/utils/schedule-to-cron'
 
 interface ScheduleWidgetProps {
   onScheduleCreated: () => void
@@ -43,13 +41,15 @@ export function ScheduleWidget({
   csvFilename,
   disabled = false,
 }: ScheduleWidgetProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [showCustom, setShowCustom] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [time, setTime] = useState('09:00')
-  const [isRecurring, setIsRecurring] = useState(false)
-  const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>('day')
-  const [recurrenceValue, setRecurrenceValue] = useState(1)
   const [isCreating, setIsCreating] = useState(false)
+
+  // Get user timezone
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
   const quickOptions: QuickOption[] = [
     {
@@ -69,7 +69,7 @@ export function ScheduleWidget({
       },
     },
     {
-      label: 'Tomorrow',
+      label: 'Tomorrow 9am',
       getDate: () => startOfTomorrow(),
       getTime: () => '09:00',
     },
@@ -85,44 +85,35 @@ export function ScheduleWidget({
     },
   ]
 
-  const handleQuickOption = (option: QuickOption) => {
-    setSelectedDate(option.getDate())
-    setTime(option.getTime())
-    setIsRecurring(false)
-  }
-
-  const handleCreate = useCallback(async () => {
-    // Validate required fields only when creating
+  const createSchedule = useCallback(async (scheduleDate: Date, scheduleTime: string) => {
+    // Validate required fields
     if (!prompt.trim()) {
       toast.error('Please add a prompt before scheduling')
-      return
+      return false
     }
     
     if (!csvData || !csvFilename) {
       toast.error('Please upload a CSV file before scheduling')
-      return
+      return false
     }
 
     // Validate date is in the future
-    const scheduleDateTime = new Date(selectedDate)
-    const [hours, minutes] = time.split(':').map(Number)
+    const scheduleDateTime = new Date(scheduleDate)
+    const [hours, minutes] = scheduleTime.split(':').map(Number)
     scheduleDateTime.setHours(hours, minutes, 0, 0)
     
     if (scheduleDateTime < new Date()) {
       toast.error('Schedule time must be in the future')
-      return
+      return false
     }
 
     setIsCreating(true)
 
     try {
-      const scheduleType: ScheduleType = isRecurring ? 'recurring' : 'once'
       const cronExpression = scheduleToCron({
-        type: scheduleType,
-        date: selectedDate,
-        time,
-        recurrenceUnit: isRecurring ? recurrenceUnit : undefined,
-        recurrenceValue: isRecurring ? recurrenceValue : undefined,
+        type: 'once',
+        date: scheduleDate,
+        time: scheduleTime,
       })
 
       const config: ScheduleConfig = {
@@ -135,7 +126,7 @@ export function ScheduleWidget({
       const scheduleData: CreateScheduleInput = {
         name: `Scheduled run - ${format(scheduleDateTime, 'MMM d, yyyy HH:mm')}`,
         cron_expression: cronExpression,
-        timezone: 'UTC',
+        timezone: userTimezone,
         action: 'run',
         config,
         csv_data: csvData,
@@ -154,26 +145,30 @@ export function ScheduleWidget({
         throw new Error(error.error || 'Failed to create schedule')
       }
 
-      toast.success('Schedule created successfully')
+      toast.success('Schedule created successfully!', {
+        description: `Will process ${csvData?.rows?.length || 0} rows at ${format(scheduleDateTime, 'MMM d, yyyy h:mm a')}`,
+        action: {
+          label: 'View Schedules',
+          onClick: () => router.push('/log?tab=scheduled')
+        }
+      })
+      
       onScheduleCreated()
       setOpen(false)
       
       // Reset form
       setSelectedDate(new Date())
       setTime('09:00')
-      setIsRecurring(false)
-      setRecurrenceValue(1)
+      setShowCustom(false)
+      
+      return true
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create schedule')
+      return false
     } finally {
       setIsCreating(false)
     }
   }, [
-    selectedDate,
-    time,
-    isRecurring,
-    recurrenceUnit,
-    recurrenceValue,
     prompt,
     outputFields,
     selectedTools,
@@ -181,169 +176,183 @@ export function ScheduleWidget({
     csvData,
     csvFilename,
     onScheduleCreated,
+    router,
+    userTimezone,
   ])
 
-  const schedulePreview = formatSchedule({
-    type: isRecurring ? 'recurring' : 'once',
-    date: selectedDate,
-    time,
-    recurrenceUnit: isRecurring ? recurrenceUnit : undefined,
-    recurrenceValue: isRecurring ? recurrenceValue : undefined,
-  })
+  const handleQuickSchedule = async (option: QuickOption) => {
+    const scheduleDate = option.getDate()
+    const scheduleTime = option.getTime()
+    await createSchedule(scheduleDate, scheduleTime)
+  }
+
+  const handleCustomSchedule = async () => {
+    await createSchedule(selectedDate, time)
+  }
 
   const scheduleDateTime = new Date(selectedDate)
   const [hours, minutes] = time.split(':').map(Number)
   scheduleDateTime.setHours(hours, minutes, 0, 0)
+
+  const schedulePreview = formatSchedule({
+    type: 'once',
+    date: selectedDate,
+    time,
+  })
+
+  const hasValidConfig = prompt.trim() && csvData && csvFilename
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           disabled={disabled}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 min-h-[44px] sm:min-h-[40px] bg-secondary/50 border border-border/50 rounded-md text-xs sm:text-sm font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+          className="flex items-center justify-center gap-2 px-2 md:px-3 py-2 md:py-2.5 min-h-[38px] md:min-h-[40px] bg-secondary/50 border border-border/50 rounded-md text-xs md:text-sm font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
           aria-label="Schedule batch processing"
         >
           <Clock className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="end" sideOffset={8}>
-        <div className="p-3 space-y-2.5">
-          {/* Quick Options */}
-          <div className="flex flex-wrap gap-1">
-            {quickOptions.map((option) => (
-              <button
-                key={option.label}
-                type="button"
-                onClick={() => handleQuickOption(option)}
-                className="px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Calendar */}
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-              className="rounded-md"
-            />
-          </div>
-
-          {/* Time and Recurring Row */}
-          <div className="flex items-end gap-2 pt-2 border-t border-border">
-            <div className="flex-1">
-              <Label htmlFor="schedule-time" className="text-[11px] font-medium text-foreground mb-1 block">
-                Time
-              </Label>
-              <Input
-                id="schedule-time"
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Switch
-                id="recurring"
-                checked={isRecurring}
-                onCheckedChange={setIsRecurring}
-              />
-              <Label htmlFor="recurring" className="text-[11px] font-medium cursor-pointer whitespace-nowrap">
-                Recurring
-              </Label>
-            </div>
-          </div>
-
-          {/* Recurrence Options */}
-          {isRecurring && (
-            <div className="flex gap-2 pt-2 border-t border-border">
+      <PopoverContent className="w-80 p-0" align="end" sideOffset={8}>
+        <div className="p-4 space-y-4">
+          {/* Validation Warnings */}
+          {!prompt.trim() && (
+            <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <Label htmlFor="recurrence-value" className="text-[11px] font-medium text-foreground mb-1 block">
-                  Every
-                </Label>
-                <Input
-                  id="recurrence-value"
-                  type="number"
-                  min="1"
-                  value={recurrenceValue}
-                  onChange={(e) => setRecurrenceValue(parseInt(e.target.value) || 1)}
-                  className="h-8 text-xs"
-                  placeholder="1"
-                />
-              </div>
-              <div className="flex-1">
-                <Label htmlFor="recurrence-unit" className="text-[11px] font-medium text-foreground mb-1 block">
-                  Unit
-                </Label>
-                <Select
-                  value={recurrenceUnit}
-                  onValueChange={(value) => setRecurrenceUnit(value as RecurrenceUnit)}
-                >
-                  <SelectTrigger id="recurrence-unit" className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="day">Day(s)</SelectItem>
-                    <SelectItem value="week">Week(s)</SelectItem>
-                    <SelectItem value="month">Month(s)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="text-sm font-medium text-yellow-900 dark:text-yellow-200">Prompt required</div>
+                <div className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">Add a prompt in the Task section to enable scheduling</div>
               </div>
             </div>
           )}
 
-          {/* Preview */}
-          <div className="bg-secondary/50 border border-border rounded-md p-2">
-            <div className="text-[11px] font-medium text-muted-foreground mb-0.5">Preview</div>
-            <div className="text-xs font-semibold text-foreground">{schedulePreview}</div>
-          </div>
+          {!csvData && (
+            <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-yellow-900 dark:text-yellow-200">CSV file required</div>
+                <div className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">Upload a CSV file to enable scheduling</div>
+              </div>
+            </div>
+          )}
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-2 border-t border-border">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setOpen(false)}
-              disabled={isCreating}
-              className="flex-1 h-8 text-xs"
-            >
-              Cancel
-            </Button>
-            <DisabledButtonTooltip
-              reason={
-                !prompt.trim() 
-                  ? 'Please add a prompt before scheduling'
-                  : !csvData
-                  ? 'Please upload a CSV file before scheduling'
-                  : scheduleDateTime < new Date()
-                  ? 'Schedule time must be in the future'
-                  : undefined
-              }
-            >
+          {/* Quick Actions */}
+          {hasValidConfig && (
+            <>
+              <div>
+                <div className="text-sm font-semibold text-foreground mb-2">Quick Schedule</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {quickOptions.map((option) => (
+                    <Button
+                      key={option.label}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickSchedule(option)}
+                      disabled={isCreating}
+                      className="justify-start h-auto py-2"
+                    >
+                      <Clock className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                      <span className="text-xs">{option.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Date/Time Toggle */}
               <Button
-                onClick={handleCreate}
-                disabled={isCreating || scheduleDateTime < new Date() || !prompt.trim() || !csvData}
-                className="flex-1 h-8 text-xs"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCustom(!showCustom)}
+                className="w-full justify-between"
               >
-                {isCreating ? (
-                  <>
-                    <div className="h-3 w-3 mr-1 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Schedule'
-                )}
+                <span className="text-sm">Custom date & time</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showCustom ? 'rotate-180' : ''}`} />
               </Button>
-            </DisabledButtonTooltip>
-          </div>
+
+              {/* Custom Date/Time Picker */}
+              {showCustom && (
+                <div className="space-y-3 pt-2 border-t border-border">
+                  {/* Calendar */}
+                  <div className="flex justify-center">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      className="rounded-md"
+                    />
+                  </div>
+
+                  {/* Time Picker */}
+                  <div>
+                    <Label htmlFor="schedule-time" className="text-sm font-medium text-foreground mb-2 block">
+                      Time ({userTimezone})
+                    </Label>
+                    <Input
+                      id="schedule-time"
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      className="h-10 text-sm"
+                    />
+                  </div>
+
+                  {/* Preview */}
+                  <div className="bg-primary/10 border-2 border-primary/20 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-foreground">Ready to schedule</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Will process {csvData?.rows?.length || 0} rows from {csvFilename}
+                        </div>
+                        <div className="text-sm font-medium text-foreground mt-2">
+                          {schedulePreview}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Schedule Button */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCustom(false)}
+                      disabled={isCreating}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCustomSchedule}
+                      disabled={isCreating || scheduleDateTime < new Date()}
+                      size="sm"
+                      className="flex-1"
+                    >
+                      {isCreating ? (
+                        <>
+                          <div className="h-3.5 w-3.5 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                          Scheduling...
+                        </>
+                      ) : (
+                        'Schedule Processing'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Info Footer */}
+          {hasValidConfig && !showCustom && (
+            <div className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+              Schedules will be visible in the LOG page
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>
   )
 }
-
