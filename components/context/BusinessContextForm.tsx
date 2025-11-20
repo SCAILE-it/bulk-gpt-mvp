@@ -269,7 +269,7 @@ export function BusinessContextForm() {
       >
         <div className="space-y-4 pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+      <div className="space-y-2">
               <Label htmlFor="companyName" className="text-xs">Company Name</Label>
               <Input
                 id="companyName"
@@ -277,19 +277,19 @@ export function BusinessContextForm() {
                 value={formData.companyName || ''}
                 onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                 className="text-xs"
-              />
-            </div>
-            <div className="space-y-2">
+        />
+      </div>
+      <div className="space-y-2">
               <Label htmlFor="companyWebsite" className="text-xs">Company Website</Label>
-              <Input
+          <Input
                 id="companyWebsite"
                 placeholder="https://example.com"
                 value={formData.companyWebsite || ''}
                 onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
-                className="text-xs"
-              />
+            className="text-xs"
+          />
             </div>
-          </div>
+        </div>
 
           <div className="space-y-2">
             <Label htmlFor="tone" className="text-xs">Tone</Label>
@@ -300,7 +300,7 @@ export function BusinessContextForm() {
               onChange={(e) => setFormData({ ...formData, tone: e.target.value })}
               className="text-xs"
             />
-          </div>
+              </div>
 
           <div className="space-y-2">
             <Label htmlFor="valueProposition" className="text-xs">Value Proposition</Label>
@@ -322,41 +322,41 @@ export function BusinessContextForm() {
               onChange={(e) => setFormData({ ...formData, productDescription: e.target.value })}
               className="min-h-[80px] text-xs"
             />
-          </div>
+      </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs">Products</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add product name"
-                value={newProduct}
-                onChange={(e) => setNewProduct(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
+      <div className="space-y-2">
+        <Label className="text-xs">Products</Label>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Add product name"
+            value={newProduct}
+            onChange={(e) => setNewProduct(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
                     addItem('products', newProduct)
                     setNewProduct('')
-                  }
-                }}
-                className="text-xs"
-              />
+              }
+            }}
+            className="text-xs"
+          />
               <Button type="button" size="sm" onClick={() => { addItem('products', newProduct); setNewProduct('') }}>
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            {formData.products && formData.products.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        {formData.products && formData.products.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
                 {formData.products.map((item, index) => (
                   <div key={index} className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs">
                     {item}
                     <button type="button" onClick={() => removeItem('products', index)} className="ml-1 hover:text-destructive">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                  <X className="h-3 w-3" />
+                </button>
               </div>
-            )}
+            ))}
           </div>
+        )}
+      </div>
         </div>
       </CollapsibleSection>
 
@@ -453,73 +453,73 @@ export function BusinessContextForm() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs">Target Keywords</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add target keyword"
-                value={newTargetKeyword}
-                onChange={(e) => setNewTargetKeyword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
+      <div className="space-y-2">
+        <Label className="text-xs">Target Keywords</Label>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Add target keyword"
+            value={newTargetKeyword}
+            onChange={(e) => setNewTargetKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
                     addItem('targetKeywords', newTargetKeyword)
                     setNewTargetKeyword('')
-                  }
-                }}
-                className="text-xs"
-              />
+              }
+            }}
+            className="text-xs"
+          />
               <Button type="button" size="sm" onClick={() => { addItem('targetKeywords', newTargetKeyword); setNewTargetKeyword('') }}>
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
             {formData.targetKeywords && formData.targetKeywords.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 mt-2">
                 {formData.targetKeywords.map((item, index) => (
                   <div key={index} className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs">
                     {item}
                     <button type="button" onClick={() => removeItem('targetKeywords', index)} className="ml-1 hover:text-destructive">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                  <X className="h-3 w-3" />
+                </button>
               </div>
-            )}
+            ))}
           </div>
+        )}
+      </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs">Competitor Keywords</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add competitor keyword to track"
-                value={newCompetitorKeyword}
-                onChange={(e) => setNewCompetitorKeyword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
+      <div className="space-y-2">
+        <Label className="text-xs">Competitor Keywords</Label>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Add competitor keyword to track"
+            value={newCompetitorKeyword}
+            onChange={(e) => setNewCompetitorKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
                     addItem('competitorKeywords', newCompetitorKeyword)
                     setNewCompetitorKeyword('')
-                  }
-                }}
-                className="text-xs"
-              />
+              }
+            }}
+            className="text-xs"
+          />
               <Button type="button" size="sm" onClick={() => { addItem('competitorKeywords', newCompetitorKeyword); setNewCompetitorKeyword('') }}>
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
             {formData.competitorKeywords && formData.competitorKeywords.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 mt-2">
                 {formData.competitorKeywords.map((item, index) => (
                   <div key={index} className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs">
                     {item}
                     <button type="button" onClick={() => removeItem('competitorKeywords', index)} className="ml-1 hover:text-destructive">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                  <X className="h-3 w-3" />
+                </button>
               </div>
-            )}
+            ))}
           </div>
+        )}
+      </div>
         </div>
       </CollapsibleSection>
 
@@ -696,18 +696,18 @@ export function BusinessContextForm() {
                 value={formData.githubUrl || ''}
                 onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
                 className="text-xs"
-              />
-            </div>
+        />
+      </div>
           </div>
         </div>
       </CollapsibleSection>
 
       {/* Save Button */}
       <div className="flex justify-end pt-4 border-t">
-        <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
-          <Save className="h-3.5 w-3.5 mr-2" />
-          {isSaving ? 'Saving...' : 'Save Business Context'}
-        </Button>
+      <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
+        <Save className="h-3.5 w-3.5 mr-2" />
+        {isSaving ? 'Saving...' : 'Save Business Context'}
+      </Button>
       </div>
     </div>
   )

@@ -46,6 +46,21 @@ export interface BusinessContext {
   marketingGoals?: string[];
   targetKeywords?: string[];
   competitorKeywords?: string[];
+  
+  // Company Information
+  companyName?: string;
+  companyWebsite?: string;
+  legalEntity?: string;
+  vatNumber?: string;
+  registrationNumber?: string;
+  imprintUrl?: string;
+  
+  // Contact & Social Media
+  contactEmail?: string;
+  contactPhone?: string;
+  linkedInUrl?: string;
+  twitterUrl?: string;
+  githubUrl?: string;
 }
 
 export interface GTMProfile {

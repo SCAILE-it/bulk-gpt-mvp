@@ -829,138 +829,43 @@ export function ContextForm() {
             </div>
           )}
         </div>
-      </CollapsibleSection>
 
-      {/* Cluster 3: Competitive Intelligence */}
-      <CollapsibleSection
-        title="Competitive Intelligence"
-        defaultOpen={false}
-      >
-        <div className="space-y-4 pt-4">
-          {/* Target Keywords */}
-          <div className={`space-y-2 ${businessContext.targetKeywords && businessContext.targetKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
-            <div className="flex items-center gap-1.5">
-            <Label className="text-xs">Target Keywords</Label>
-            {businessContext.targetKeywords && businessContext.targetKeywords.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Learn about target keywords"
-                >
-                  <HelpCircle className="h-3 w-3 cursor-help" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-xs">
-                <div className="space-y-1 text-xs">
-                  <p className="font-medium">Target Keywords</p>
-                  <p className="text-muted-foreground">
-                    Keywords to target in your content and campaigns.
-                  </p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Add target keyword"
-              value={newTargetKeyword}
-              onChange={(e) => setNewTargetKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addTargetKeyword()
-                }
-              }}
-              className="text-xs"
-            />
-            <Button type="button" size="sm" onClick={addTargetKeyword}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          {businessContext.targetKeywords && businessContext.targetKeywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {businessContext.targetKeywords.map((keyword, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
-                >
-                  {keyword}
-                  <button
-                    type="button"
-                    onClick={() => removeTargetKeyword(index)}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Competitor Keywords */}
-        <div className={`space-y-2 ${businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+        {/* GTM Playbook */}
+        <div className={`space-y-2 ${context.gtmPlaybook ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
           <div className="flex items-center gap-1.5">
-            <Label className="text-xs">Competitor Keywords</Label>
-            {businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 && <CheckCircle className="h-3 w-3 text-primary" />}
+            <Label htmlFor="gtmPlaybook" className="text-xs">
+              GTM Playbook
+            </Label>
+            {context.gtmPlaybook && <CheckCircle className="h-3 w-3 text-primary" />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Learn about competitor keywords"
+                  aria-label="Learn about GTM playbook"
                 >
                   <HelpCircle className="h-3 w-3 cursor-help" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-xs">
                 <div className="space-y-1 text-xs">
-                  <p className="font-medium">Competitor Keywords</p>
+                  <p className="font-medium">GTM Playbook</p>
                   <p className="text-muted-foreground">
-                    Keywords to track for competitor monitoring.
+                    Your go-to-market strategy (e.g., sales_led, plg, hybrid, channel_led). Used for GTM classification and content generation.
                   </p>
                 </div>
               </TooltipContent>
             </Tooltip>
           </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Add competitor keyword to track"
-              value={newCompetitorKeyword}
-              onChange={(e) => setNewCompetitorKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addCompetitorKeyword()
-                }
-              }}
-              className="text-xs"
-            />
-            <Button type="button" size="sm" onClick={addCompetitorKeyword}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          {businessContext.competitorKeywords && businessContext.competitorKeywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {businessContext.competitorKeywords.map((keyword, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-1 px-2 py-1 bg-secondary/40 border border-border rounded text-xs"
-                >
-                  {keyword}
-                  <button
-                    type="button"
-                    onClick={() => removeCompetitorKeyword(index)}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <Input
+            id="gtmPlaybook"
+            type="text"
+            placeholder="e.g., sales_led, plg, hybrid, channel_led"
+            value={context.gtmPlaybook || ''}
+            onChange={(e) => handleManualUpdate({ gtmPlaybook: e.target.value })}
+            className={`text-xs ${context.gtmPlaybook ? 'bg-background' : ''}`}
+          />
+        </div>
         </div>
       </CollapsibleSection>
 
@@ -1094,6 +999,220 @@ export function ContextForm() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Cluster 4: Company Information */}
+      <CollapsibleSection
+        title="Company Information"
+        defaultOpen={false}
+      >
+        <div className="space-y-4 pt-4">
+          {/* Company Name */}
+          <div className={`space-y-2 ${businessContext.companyName ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="company-name" className="text-xs">
+                Company Name
+              </Label>
+              {businessContext.companyName && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="company-name"
+              type="text"
+              placeholder="e.g., Acme Corporation"
+              value={businessContext.companyName || ''}
+              onChange={(e) => handleBusinessContextUpdate({ companyName: e.target.value })}
+              className={`text-xs ${businessContext.companyName ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Company Website */}
+          <div className={`space-y-2 ${businessContext.companyWebsite ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="company-website" className="text-xs">
+                Company Website
+              </Label>
+              {businessContext.companyWebsite && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="company-website"
+              type="url"
+              placeholder="e.g., https://acme.com"
+              value={businessContext.companyWebsite || ''}
+              onChange={(e) => handleBusinessContextUpdate({ companyWebsite: e.target.value })}
+              className={`text-xs ${businessContext.companyWebsite ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Legal Entity */}
+          <div className={`space-y-2 ${businessContext.legalEntity ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="legal-entity" className="text-xs">
+                Legal Entity
+              </Label>
+              {businessContext.legalEntity && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="legal-entity"
+              type="text"
+              placeholder="e.g., Acme Inc., LLC, GmbH"
+              value={businessContext.legalEntity || ''}
+              onChange={(e) => handleBusinessContextUpdate({ legalEntity: e.target.value })}
+              className={`text-xs ${businessContext.legalEntity ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* VAT Number */}
+          <div className={`space-y-2 ${businessContext.vatNumber ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="vat-number" className="text-xs">
+                VAT Number
+              </Label>
+              {businessContext.vatNumber && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="vat-number"
+              type="text"
+              placeholder="e.g., DE123456789"
+              value={businessContext.vatNumber || ''}
+              onChange={(e) => handleBusinessContextUpdate({ vatNumber: e.target.value })}
+              className={`text-xs ${businessContext.vatNumber ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Registration Number */}
+          <div className={`space-y-2 ${businessContext.registrationNumber ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="registration-number" className="text-xs">
+                Registration Number
+              </Label>
+              {businessContext.registrationNumber && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="registration-number"
+              type="text"
+              placeholder="e.g., HRB 12345"
+              value={businessContext.registrationNumber || ''}
+              onChange={(e) => handleBusinessContextUpdate({ registrationNumber: e.target.value })}
+              className={`text-xs ${businessContext.registrationNumber ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Imprint URL */}
+          <div className={`space-y-2 ${businessContext.imprintUrl ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="imprint-url" className="text-xs">
+                Imprint URL
+              </Label>
+              {businessContext.imprintUrl && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="imprint-url"
+              type="url"
+              placeholder="e.g., https://acme.com/imprint"
+              value={businessContext.imprintUrl || ''}
+              onChange={(e) => handleBusinessContextUpdate({ imprintUrl: e.target.value })}
+              className={`text-xs ${businessContext.imprintUrl ? 'bg-background' : ''}`}
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Cluster 5: Social & Contact */}
+      <CollapsibleSection
+        title="Social & Contact"
+        defaultOpen={false}
+      >
+        <div className="space-y-4 pt-4">
+          {/* Contact Email */}
+          <div className={`space-y-2 ${businessContext.contactEmail ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="contact-email" className="text-xs">
+                Contact Email
+              </Label>
+              {businessContext.contactEmail && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="contact-email"
+              type="email"
+              placeholder="e.g., hello@acme.com"
+              value={businessContext.contactEmail || ''}
+              onChange={(e) => handleBusinessContextUpdate({ contactEmail: e.target.value })}
+              className={`text-xs ${businessContext.contactEmail ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Contact Phone */}
+          <div className={`space-y-2 ${businessContext.contactPhone ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="contact-phone" className="text-xs">
+                Contact Phone
+              </Label>
+              {businessContext.contactPhone && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="contact-phone"
+              type="tel"
+              placeholder="e.g., +1 234 567 8900"
+              value={businessContext.contactPhone || ''}
+              onChange={(e) => handleBusinessContextUpdate({ contactPhone: e.target.value })}
+              className={`text-xs ${businessContext.contactPhone ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* LinkedIn URL */}
+          <div className={`space-y-2 ${businessContext.linkedInUrl ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="linkedin-url" className="text-xs">
+                LinkedIn URL
+              </Label>
+              {businessContext.linkedInUrl && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="linkedin-url"
+              type="url"
+              placeholder="e.g., https://linkedin.com/company/acme"
+              value={businessContext.linkedInUrl || ''}
+              onChange={(e) => handleBusinessContextUpdate({ linkedInUrl: e.target.value })}
+              className={`text-xs ${businessContext.linkedInUrl ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* Twitter URL */}
+          <div className={`space-y-2 ${businessContext.twitterUrl ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="twitter-url" className="text-xs">
+                Twitter URL
+              </Label>
+              {businessContext.twitterUrl && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="twitter-url"
+              type="url"
+              placeholder="e.g., https://twitter.com/acme"
+              value={businessContext.twitterUrl || ''}
+              onChange={(e) => handleBusinessContextUpdate({ twitterUrl: e.target.value })}
+              className={`text-xs ${businessContext.twitterUrl ? 'bg-background' : ''}`}
+            />
+          </div>
+
+          {/* GitHub URL */}
+          <div className={`space-y-2 ${businessContext.githubUrl ? 'bg-primary/5 border-l-2 border-l-primary pl-3 -ml-3 pr-3 rounded-r-md' : ''}`}>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="github-url" className="text-xs">
+                GitHub URL
+              </Label>
+              {businessContext.githubUrl && <CheckCircle className="h-3 w-3 text-primary" />}
+            </div>
+            <Input
+              id="github-url"
+              type="url"
+              placeholder="e.g., https://github.com/acme"
+              value={businessContext.githubUrl || ''}
+              onChange={(e) => handleBusinessContextUpdate({ githubUrl: e.target.value })}
+              className={`text-xs ${businessContext.githubUrl ? 'bg-background' : ''}`}
+            />
           </div>
         </div>
       </CollapsibleSection>
