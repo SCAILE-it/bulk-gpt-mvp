@@ -203,7 +203,7 @@ function HomePageContent() {
                 className="flex flex-col xs:flex-row gap-3"
               >
                 <button
-                  onClick={() => router.push('/agents')}
+                  onClick={() => router.push('/run')}
                   className="inline-flex items-center gap-2 px-6 py-2.5 h-11 rounded-lg bg-primary text-primary-foreground text-sm font-semibold shadow-md hover:shadow-lg hover:bg-primary/95 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] hover:scale-[1.02]"
                 >
                   <span>Run a Batch</span>
@@ -223,7 +223,7 @@ function HomePageContent() {
                 </button>
                 
                 <button
-                  onClick={() => router.push('/executions')}
+                  onClick={() => router.push('/log')}
                   className="inline-flex items-center gap-2 px-6 py-2.5 h-11 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <span>View Examples</span>
@@ -376,7 +376,7 @@ function HomePageContent() {
                                 transition={{ duration: 0.2, delay: index * 0.05 }}
                                 whileHover={{ x: 4, transition: { duration: 0.2 } }}
                                 className="flex items-center gap-1.5 sm:gap-2 py-1 px-1.5 sm:px-2 rounded hover:bg-background/50 cursor-pointer group overflow-hidden"
-                                onClick={() => router.push(`/executions?batch=${batch.id}`)}
+                                onClick={() => router.push(`/log?batch=${batch.id}`)}
                               >
                                 <span className="text-muted-foreground w-12 sm:w-16 flex-shrink-0 font-mono text-[10px] sm:text-xs">
                                   [{new Date(batch.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}]
@@ -445,7 +445,7 @@ function HomePageContent() {
                                 transition={{ duration: 0.2, delay: index * 0.05 }}
                                 whileHover={{ x: 2, transition: { duration: 0.15 } }}
                                 className="flex items-center gap-1.5 sm:gap-2 py-1 px-1.5 sm:px-2 rounded-md hover:bg-background/40 cursor-pointer group transition-colors overflow-hidden"
-                                onClick={() => router.push(`/executions?batch=${batch.id}`)}
+                                onClick={() => router.push(`/log?batch=${batch.id}`)}
                               >
                                 <span className="text-muted-foreground w-12 sm:w-14 flex-shrink-0 font-mono text-[10px] sm:text-xs">
                                   [{new Date(batch.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}]
@@ -469,7 +469,7 @@ function HomePageContent() {
                       className="mt-2 pt-2 border-t border-border/30"
                     >
                       <button
-                        onClick={() => router.push('/executions')}
+                        onClick={() => router.push('/log')}
                         className="text-[10px] sm:text-xs text-primary hover:text-primary/80 font-medium transition-colors w-full text-left px-1.5 sm:px-2 py-1 hover:bg-background/40 rounded-md"
                       >
                         View all {completedBatches.length} batches →
@@ -486,7 +486,7 @@ function HomePageContent() {
                   description="Get started by uploading a CSV file and processing it with an AI agent"
                   action={{
                     label: "Create First Batch",
-                    onClick: () => router.push('/agents/bulk'),
+                    onClick: () => router.push('/run'),
                     variant: 'default'
                   }}
                   size="md"

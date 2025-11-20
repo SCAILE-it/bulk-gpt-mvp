@@ -76,8 +76,8 @@ export function Nav() {
   // Reordered navigation: RUN (primary action) → CONTEXT → EXECUTIONS (history)
   const navLinks = [
     { href: '/context', label: 'CONTEXT' },
-    { href: '/agents', label: 'RUN' },
-    { href: '/executions', label: 'LOG' },
+    { href: '/run', label: 'RUN' },
+    { href: '/log', label: 'LOG' },
   ]
 
   return (

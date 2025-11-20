@@ -22,7 +22,7 @@ interface AuthFormProps {
  * Authentication form component - Email/Password for testing, LinkedIn OAuth for production
  * Follows SOLID principles: Single Responsibility, Open/Closed
  */
-export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/agents' }: AuthFormProps) {
+export function AuthForm({ mode, onModeChange, onSuccess, returnUrl = '/run' }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoadingEmail, setIsLoadingEmail] = useState(false)
