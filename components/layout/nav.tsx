@@ -22,7 +22,6 @@ import { LogOut, User, ChevronDown, Menu, X, Moon, Sun, Monitor } from 'lucide-r
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/brand/Logo'
 import { useTheme } from 'next-themes'
-import { mutate } from 'swr'
 
 export function Nav() {
   const router = useRouter()
@@ -74,31 +73,6 @@ export function Nav() {
     }
   }
 
-  // Non-blocking prefetch on hover - doesn't delay clicks
-  const handleNavHover = (href: string) => {
-    // Use requestIdleCallback for non-blocking prefetch, fallback to setTimeout
-    if (typeof window !== 'undefined') {
-      const prefetchData = () => {
-        // Prefetch SWR data for the target route (non-blocking)
-        if (href === '/profile') {
-          mutate('profile').catch(() => {}) // Ignore errors
-        } else if (href === '/executions') {
-          mutate('batches').catch(() => {})
-        } else if (href === '/context') {
-          mutate('/api/context-files').catch(() => {})
-        }
-      }
-      
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(prefetchData, { timeout: 100 })
-      } else {
-        // Fallback for browsers without requestIdleCallback
-        setTimeout(prefetchData, 0)
-      }
-    }
-    // Next.js Link already handles route prefetching automatically
-  }
-
   // Reordered navigation: RUN (primary action) → CONTEXT → EXECUTIONS (history)
   const navLinks = [
     { href: '/context', label: 'CONTEXT' },
@@ -119,20 +93,14 @@ export function Nav() {
               key={link.href}
               href={link.href}
               prefetch={true}
-              onMouseEnter={() => handleNavHover(link.href)}
               className={cn(
-                'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer select-none touch-manipulation',
-                'active:scale-[0.98] transition-transform duration-75',
+                'px-3 py-2 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'pointer-events-auto cursor-pointer',
                 pathname === link.href
                   ? 'text-foreground bg-accent'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               )}
               aria-current={pathname === link.href ? 'page' : undefined}
-              style={{ 
-                WebkitTapHighlightColor: 'transparent',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
             >
               {link.label}
             </Link>
@@ -195,11 +163,7 @@ export function Nav() {
                   e.preventDefault()
                   router.push('/profile')
                 }}
-                onMouseEnter={() => handleNavHover('/profile')}
-                className="cursor-pointer select-none touch-manipulation"
-                style={{ 
-                  WebkitTapHighlightColor: 'transparent',
-                }}
+                className="cursor-pointer"
               >
                 <span className="text-xs">PROFILE</span>
               </DropdownMenuItem>
@@ -229,10 +193,7 @@ export function Nav() {
                   e.preventDefault()
                   handleSignOut()
                 }}
-                className="select-none touch-manipulation"
-                style={{ 
-                  WebkitTapHighlightColor: 'transparent',
-                }}
+                className="cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span className="text-xs">SIGN OUT</span>
@@ -262,24 +223,16 @@ export function Nav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => {
-                    // Immediate navigation - don't wait for anything
+                    // Immediate navigation
                     setMobileMenuOpen(false)
-                    // Let Next.js handle navigation immediately
                   }}
-                  onMouseEnter={() => handleNavHover(link.href)}
                   className={cn(
-                    'block px-4 py-3 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] flex items-center touch-manipulation cursor-pointer select-none',
-                    'active:scale-[0.98] transition-transform duration-75',
+                    'block px-4 py-3 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] flex items-center pointer-events-auto cursor-pointer',
                     pathname === link.href
                       ? 'text-foreground bg-accent'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent/50 active:bg-accent'
                   )}
                   aria-current={pathname === link.href ? 'page' : undefined}
-                  style={{ 
-                    WebkitTapHighlightColor: 'transparent',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                  }}
                 >
                   {link.label}
                 </Link>
