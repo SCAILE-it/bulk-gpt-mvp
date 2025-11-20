@@ -12,7 +12,7 @@ import { BulkProcessorErrorBoundary } from '@/components/ErrorBoundary'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Lazy load BulkProcessor - it's a large component (~80KB)
-// Only loads when user navigates to /agents/bulk
+// Only loads when user navigates to /run/bulk
 const BulkProcessor = dynamic(
   () => import('@/components/bulk/BulkProcessor'),
   {
@@ -32,10 +32,10 @@ export default function AgentPage() {
   const router = useRouter()
   const agentId = params?.agentId as string
 
-  // Only bulk agent is ready - redirect others to /agents/bulk
+  // Only bulk agent is ready - redirect others to /run/bulk
   useEffect(() => {
     if (agentId !== 'bulk') {
-      router.replace('/agents/bulk')
+      router.replace('/run/bulk')
     }
   }, [agentId, router])
 

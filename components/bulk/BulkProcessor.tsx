@@ -1880,7 +1880,7 @@ export default function BulkProcessor() {
           </div>
 
           {/* Desktop: Side-by-side panels */}
-          <div className="hidden md:grid h-full md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 overflow-hidden">
+          <div className="hidden lg:grid h-full grid-cols-2 overflow-hidden">
             {/* LEFT PANEL - Configuration */}
             <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
               <div className="flex-1 overflow-y-auto p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 xl:p-8 space-y-3 xs:space-y-3.5 sm:space-y-4 md:space-y-5 lg:space-y-6 min-h-0">

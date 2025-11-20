@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DataErrorBoundary } from '@/components/ErrorBoundary'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 
 // Lazy load CSV demo animation - contains framer-motion animations and heavy state management
 const CSVDemo = dynamic(
@@ -164,7 +164,8 @@ function HomePageContent() {
   }
 
   return (
-    <div className="relative p-3 sm:p-6 max-w-[1400px] mx-auto">
+    <TooltipProvider>
+      <div className="relative p-3 sm:p-6 max-w-[1400px] mx-auto">
       {/* Background Gradient for Depth */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-950/5 via-transparent to-amber-950/5 rounded-3xl pointer-events-none" />
 
@@ -515,5 +516,6 @@ function HomePageContent() {
         )}
       </div>
     </div>
+    </TooltipProvider>
   )
 }

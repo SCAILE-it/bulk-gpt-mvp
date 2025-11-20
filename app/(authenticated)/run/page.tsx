@@ -13,7 +13,7 @@ export default function AgentsPage() {
 
   useEffect(() => {
     // Redirect to bulk agent (only ready agent)
-    router.replace('/agents/bulk')
+    router.replace('/run/bulk')
   }, [router])
 
   return null
