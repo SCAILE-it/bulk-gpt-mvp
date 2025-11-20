@@ -2242,10 +2242,6 @@ export default function BulkProcessor() {
             </div>
           )}
 
-              </div>
-            </div>
-            </div>
-
             {/* RIGHT PANEL - Results */}
             <div className="h-full overflow-hidden flex flex-col bg-muted/20">
               {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
