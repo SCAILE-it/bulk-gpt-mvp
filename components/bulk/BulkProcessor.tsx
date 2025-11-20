@@ -2240,8 +2240,8 @@ export default function BulkProcessor() {
           )}
 
           {/* ACTIONS TOOLBAR - Bottom of LEFT panel only */}
-          <div className="flex-shrink-0 p-3 xs:p-4 sm:p-5 md:p-4 lg:p-5 xl:p-6 pb-safe xs:pb-3 sm:pb-3.5 md:pb-4 lg:pb-5 border-t border-border/50 bg-background/80 backdrop-blur-sm z-10">
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2.5 xs:gap-3 sm:gap-3.5 md:gap-4 lg:gap-5">
+          <div className="flex-shrink-0 p-2 md:p-3 lg:p-4 pb-safe border-t border-border/50 bg-background/80 backdrop-blur-sm z-10">
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2 md:gap-2.5 lg:gap-3">
               {/* Left side - Reset and Keyboard Help */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <TooltipProvider delayDuration={0}>
@@ -2278,7 +2278,7 @@ export default function BulkProcessor() {
               </div>
               
               {/* Primary action buttons */}
-              <div className="flex flex-col xs:flex-row gap-2.5 xs:gap-3 sm:gap-3.5 md:gap-4 items-stretch flex-1 justify-end">
+              <div className="flex flex-col xs:flex-row gap-2 items-stretch flex-1 justify-end">
                 <TooltipProvider delayDuration={0}>
                   <DisabledButtonTooltip
                     reason={getTestDisabledReason({
@@ -2291,7 +2291,7 @@ export default function BulkProcessor() {
                     <button
                       disabled={!csvParser.csvData || !prompt || isTesting || !variableValidation.isValid}
                       onClick={handleTest}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 xs:px-4 sm:px-5 py-2.5 xs:py-2.5 sm:py-2 md:py-2.5 min-h-[44px] xs:min-h-[42px] sm:min-h-[40px] md:min-h-[38px] bg-secondary/50 border border-border/50 rounded-md text-xs xs:text-sm sm:text-sm md:text-base font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                      className="flex-1 flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-3 lg:px-4 py-2 md:py-2.5 min-h-[38px] md:min-h-[40px] bg-secondary/50 border border-border/50 rounded-md text-xs md:text-sm font-medium text-foreground/80 hover:bg-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                       aria-label="Test prompt with first CSV row"
                     >
                       {isTesting ? <div className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -2309,7 +2309,7 @@ export default function BulkProcessor() {
                     <button
                       disabled={!csvParser.csvData || !prompt || batchProcessor.isProcessing || !variableValidation.isValid}
                       onClick={handleProcess}
-                      className="flex-[2] flex items-center justify-center gap-2 px-3 xs:px-4 sm:px-5 md:px-6 py-2.5 xs:py-2.5 sm:py-2 md:py-2.5 min-h-[44px] xs:min-h-[42px] sm:min-h-[40px] md:min-h-[38px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs xs:text-sm sm:text-sm md:text-base text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-[2] flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-3 lg:px-5 py-2 md:py-2.5 min-h-[38px] md:min-h-[40px] bg-primary hover:bg-primary/90 active:bg-primary/95 transition-colors duration-150 rounded-md text-xs md:text-sm font-medium text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                       data-testid="run-button"
                       aria-label={`Process all ${csvParser.csvData?.totalRows || 0} rows with AI${timeEstimate ? ` (estimated ${timeEstimate.formatted})` : ''}`}
                     >
@@ -2327,27 +2327,23 @@ export default function BulkProcessor() {
                       </span>
                     </button>
                   </DisabledButtonTooltip>
+                  <ScheduleWidget
+                    onScheduleCreated={() => {
+                      toast.success('Schedule created successfully')
+                    }}
+                    prompt={prompt}
+                    outputFields={outputFields.map(name => ({ name }))}
+                    selectedTools={selectedTools}
+                    selectedInputColumns={selectedInputColumns}
+                    csvData={csvParser.csvData ? {
+                      columns: csvParser.csvData.columns,
+                      rows: csvParser.csvData.rows.map(r => r.data),
+                      filename: csvParser.csvData.filename,
+                    } : undefined}
+                    csvFilename={csvParser.csvData?.filename}
+                    disabled={false}
+                  />
                 </TooltipProvider>
-              </div>
-              
-              {/* Schedule button - separate on the right, hidden on medium screens */}
-              <div className="hidden lg:flex items-center flex-shrink-0">
-                <ScheduleWidget
-                  onScheduleCreated={() => {
-                    toast.success('Schedule created successfully')
-                  }}
-                  prompt={prompt}
-                  outputFields={outputFields.map(name => ({ name }))}
-                  selectedTools={selectedTools}
-                  selectedInputColumns={selectedInputColumns}
-                  csvData={csvParser.csvData ? {
-                    columns: csvParser.csvData.columns,
-                    rows: csvParser.csvData.rows.map(r => r.data),
-                    filename: csvParser.csvData.filename,
-                  } : undefined}
-                  csvFilename={csvParser.csvData?.filename}
-                  disabled={false}
-                />
               </div>
             </div>
           </div>
