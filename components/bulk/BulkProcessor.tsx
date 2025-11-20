@@ -2240,8 +2240,8 @@ export default function BulkProcessor() {
           )}
 
           {/* ACTIONS TOOLBAR - Bottom of LEFT panel only */}
-          <div className="flex-shrink-0 p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 xl:p-8 pb-safe xs:pb-3 sm:pb-3.5 md:pb-4 lg:pb-5 border-t border-border/50 bg-background/80 backdrop-blur-sm z-10">
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between max-w-4xl mx-auto gap-2.5 xs:gap-3 sm:gap-3.5 md:gap-4 lg:gap-5">
+          <div className="flex-shrink-0 p-3 xs:p-4 sm:p-5 md:p-4 lg:p-5 xl:p-6 pb-safe xs:pb-3 sm:pb-3.5 md:pb-4 lg:pb-5 border-t border-border/50 bg-background/80 backdrop-blur-sm z-10">
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2.5 xs:gap-3 sm:gap-3.5 md:gap-4 lg:gap-5">
               {/* Left side - Reset and Keyboard Help */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <TooltipProvider delayDuration={0}>
