@@ -88,7 +88,7 @@ function DataRow({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.2, delay: index * 0.05 }}
-      className={`grid grid-cols-[100px_1fr_1fr] sm:grid-cols-[140px_1fr_1fr] border-b border-border/25 last:border-0 transition-colors duration-200 min-w-[600px] ${
+      className={`grid grid-cols-[100px_1fr_1fr] sm:grid-cols-[140px_1fr_1fr] border-b border-border/25 last:border-0 transition-colors duration-200 min-w-[600px] touch-pan-x ${
         row.status === 'processing' ? 'bg-primary/7' :
         row.status === 'completed' ? 'bg-green-500/7' :
         'bg-background'

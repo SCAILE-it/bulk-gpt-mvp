@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DataErrorBoundary } from '@/components/ErrorBoundary'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 // Lazy load CSV demo animation - contains framer-motion animations and heavy state management
 const CSVDemo = dynamic(
@@ -38,14 +39,34 @@ export default function HomePage() {
 }
 
 // Reusable traffic light indicator component
-function TrafficLightIndicator({ color = 'green' }: { color: 'green' | 'blue' }) {
-  const primaryColor = color === 'blue' ? 'bg-blue-500/70' : 'bg-green-500/70'
+function TrafficLightIndicator({ 
+  status = 'healthy',
+  label 
+}: { 
+  status: 'healthy' | 'warning' | 'error'
+  label: string 
+}) {
+  const statusConfig = {
+    healthy: { color: 'bg-green-500/70', text: 'All systems operational' },
+    warning: { color: 'bg-yellow-500/70', text: 'Some issues detected' },
+    error: { color: 'bg-red-500/70', text: 'Attention required' }
+  }
+  
+  const config = statusConfig[status]
+  
   return (
-    <div className="absolute top-4 right-4 flex gap-1">
-      <div className={`h-2 w-2 rounded-full ${primaryColor}`} />
-      <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-      <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="absolute top-4 right-4 flex gap-1 cursor-help">
+          <div className={`h-2 w-2 rounded-full ${config.color}`} />
+          <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+          <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="left">
+        <p className="text-xs">{label}: {config.text}</p>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -74,6 +95,12 @@ function HomePageContent() {
     resourceCounts: { leads: 0, keywords: 0, content: 0, campaigns: 0 },
     recentBatches: [],
   }, [stats])
+
+  // Calculate status for traffic lights based on metrics
+  const rowsStatus: 'healthy' | 'warning' | 'error' = safeStats.totalRowsProcessed > 0 ? 'healthy' : 'warning'
+  const successRateStatus: 'healthy' | 'warning' | 'error' = 
+    safeStats.successRate >= 90 ? 'healthy' : 
+    safeStats.successRate >= 70 ? 'warning' : 'error'
 
   const hasBatches = safeStats?.totalBatches ? safeStats.totalBatches > 0 : false
 
@@ -150,7 +177,13 @@ function HomePageContent() {
       >
         {(() => {
           const hour = new Date().getHours()
-          const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+          const greeting = hasBatches 
+            ? 'Welcome back'
+            : hour < 12 
+              ? 'Good morning' 
+              : hour < 18 
+                ? 'Good afternoon' 
+                : 'Good evening'
           return (
             <div className="space-y-4">
               <div className="flex flex-col gap-3">
@@ -162,11 +195,12 @@ function HomePageContent() {
                 </p>
               </div>
               
-              {/* CTA Button - Using design system */}
+              {/* CTA Buttons - Primary and Secondary */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col xs:flex-row gap-3"
               >
                 <button
                   onClick={() => router.push('/agents')}
@@ -187,6 +221,13 @@ function HomePageContent() {
                     />
                   </svg>
                 </button>
+                
+                <button
+                  onClick={() => router.push('/executions')}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 h-11 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <span>View Examples</span>
+                </button>
               </motion.div>
             </div>
           )
@@ -200,8 +241,23 @@ function HomePageContent() {
         transition={{ duration: 0.38, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
       >
+        {/* Success Rate - Make prominent */}
+        <div className="relative bg-primary/10 border-2 border-primary/30 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-primary/15 hover:border-primary/40 transition-all duration-200 cursor-default sm:col-span-2 lg:col-span-1">
+          <TrafficLightIndicator status={successRateStatus} label="Success Rate" />
+          <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Success Rate</div>
+          <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+            <span className="tabular-nums">{safeStats.successRate}%</span>
+          </div>
+          {safeStats.totalBatches > 0 && (
+            <div className="text-xs text-muted-foreground">
+              {safeStats.completedBatches}/{safeStats.totalBatches} batches
+            </div>
+          )}
+        </div>
+
         <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <TrafficLightIndicator color="green" />
+          <TrafficLightIndicator status="healthy" label="Total Batches" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Total Batches</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">{safeStats.totalBatches}</div>
           {safeStats.completedBatches > 0 && (
@@ -212,7 +268,7 @@ function HomePageContent() {
         </div>
 
         <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <TrafficLightIndicator color="green" />
+          <TrafficLightIndicator status={rowsStatus} label="Rows Processed" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Rows Processed</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
             {safeStats.totalRowsProcessed.toLocaleString()}
@@ -224,32 +280,30 @@ function HomePageContent() {
           )}
         </div>
 
-        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <TrafficLightIndicator color="blue" />
-          <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Success Rate</div>
-          <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-blue-500/70 flex-shrink-0" />
-            <span className="tabular-nums">{safeStats.successRate}%</span>
-          </div>
-          {safeStats.totalBatches > 0 && (
-            <div className="text-xs text-muted-foreground">
-              {safeStats.completedBatches}/{safeStats.totalBatches} batches
+        {safeStats.totalTokens > 0 ? (
+          <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+            <TrafficLightIndicator status="healthy" label="Token Usage" />
+            <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
+            <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
+              {safeStats.totalTokens.toLocaleString()}
             </div>
-          )}
-        </div>
-
-        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
-          <TrafficLightIndicator color="green" />
-          <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
-          <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
-            {safeStats.totalTokens.toLocaleString()}
+            {safeStats.averageProcessingTime > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {Math.round(safeStats.averageProcessingTime)}s avg time
+              </div>
+            )}
           </div>
-          {safeStats.averageProcessingTime > 0 && (
-            <div className="text-xs text-muted-foreground">
-              {Math.round(safeStats.averageProcessingTime)}s avg time
+        ) : (
+          <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default opacity-50">
+            <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
+            <div className="text-2xl sm:text-3xl font-semibold text-muted-foreground mb-1">
+              —
             </div>
-          )}
-        </div>
+            <div className="text-xs text-muted-foreground">
+              Not tracking yet
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Section Divider */}
@@ -258,12 +312,12 @@ function HomePageContent() {
           <div className="w-full border-t border-border/30"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-background px-4 text-xs text-muted-foreground uppercase tracking-widest font-medium">Live Demo</span>
+          <span className="bg-background px-4 text-xs text-muted-foreground uppercase tracking-widest font-medium">Recent Activity</span>
         </div>
       </div>
 
       {/* Cursor-style layered cards - Two separate cards with depth */}
-      <div className="mb-6 sm:mb-8 relative min-h-[500px] sm:min-h-[700px]">
+      <div className="mb-6 sm:mb-8 relative min-h-[500px] sm:min-h-[700px] overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0">
         {/* BACK CARD: processing.log - Positioned left and down - BIGGER width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
