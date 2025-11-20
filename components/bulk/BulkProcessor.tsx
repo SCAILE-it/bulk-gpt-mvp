@@ -2327,23 +2327,27 @@ export default function BulkProcessor() {
                       </span>
                     </button>
                   </DisabledButtonTooltip>
-                  <ScheduleWidget
-                    onScheduleCreated={() => {
-                      toast.success('Schedule created successfully')
-                    }}
-                    prompt={prompt}
-                    outputFields={outputFields.map(name => ({ name }))}
-                    selectedTools={selectedTools}
-                    selectedInputColumns={selectedInputColumns}
-                    csvData={csvParser.csvData ? {
-                      columns: csvParser.csvData.columns,
-                      rows: csvParser.csvData.rows.map(r => r.data),
-                      filename: csvParser.csvData.filename,
-                    } : undefined}
-                    csvFilename={csvParser.csvData?.filename}
-                    disabled={false}
-                  />
                 </TooltipProvider>
+              </div>
+              
+              {/* Schedule button - separate on the right, hidden on medium screens */}
+              <div className="hidden lg:flex items-center flex-shrink-0">
+                <ScheduleWidget
+                  onScheduleCreated={() => {
+                    toast.success('Schedule created successfully')
+                  }}
+                  prompt={prompt}
+                  outputFields={outputFields.map(name => ({ name }))}
+                  selectedTools={selectedTools}
+                  selectedInputColumns={selectedInputColumns}
+                  csvData={csvParser.csvData ? {
+                    columns: csvParser.csvData.columns,
+                    rows: csvParser.csvData.rows.map(r => r.data),
+                    filename: csvParser.csvData.filename,
+                  } : undefined}
+                  csvFilename={csvParser.csvData?.filename}
+                  disabled={false}
+                />
               </div>
             </div>
           </div>
