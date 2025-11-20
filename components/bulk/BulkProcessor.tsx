@@ -1879,11 +1879,9 @@ export default function BulkProcessor() {
             </Tabs>
           </div>
 
-          {/* Desktop: Side-by-side panels with bottom toolbar */}
-          <div className="hidden md:flex md:flex-col h-full overflow-hidden">
-            {/* Two-column grid area */}
-            <div className="flex-1 grid grid-cols-2 overflow-hidden min-h-0">
-            {/* LEFT PANEL - Configuration */}
+          {/* Desktop: Side-by-side panels */}
+          <div className="hidden md:grid h-full grid-cols-2 overflow-hidden">
+            {/* LEFT PANEL - Configuration with actions at bottom */}
             <div className="h-full border-r border-border bg-secondary flex flex-col min-h-0">
               <div className="flex-1 overflow-y-auto p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 xl:p-8 space-y-3 xs:space-y-3.5 sm:space-y-4 md:space-y-5 lg:space-y-6 min-h-0">
                 {/* Error - Use V2 error if available */}
@@ -2163,9 +2161,8 @@ export default function BulkProcessor() {
                 />
               )}
               </div>
-            </div>
 
-          {/* AI OPTIMIZATION - Global, above actions */}
+          {/* AI OPTIMIZATION - Inside LEFT panel, above actions */}
           {csvParser.csvData && prompt && (
             <div className="flex-shrink-0 border-t border-border bg-background/50">
               <CollapsibleSection
@@ -2242,47 +2239,7 @@ export default function BulkProcessor() {
             </div>
           )}
 
-            {/* RIGHT PANEL - Results */}
-            <div className="h-full overflow-hidden flex flex-col bg-muted/20">
-              {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
-            <ResultsTable
-              results={displayResults}
-              columns={selectedInputColumns.length > 0 ? selectedInputColumns : (csvParser.csvData?.columns || [])}
-              outputColumns={outputFields}
-              progress={batchProcessor.progress ?? undefined}
-              processingStartTime={processingStartTime}
-              onExport={handleExport}
-              onExportToGoogleSheets={handleExportToGoogleSheets}
-              onSaveToContext={handleSaveOutputToContext}
-              onRetry={handleRetryRow}
-              isTesting={isTesting}
-              testStartTime={testStartTime}
-              testEstimatedSeconds={isTesting && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
-              totalInputTokens={tokenTotals.input}
-              totalOutputTokens={tokenTotals.output}
-            />
-          ) : (
-            <EmptyState
-              icon={csvParser.csvData ? Play : FileText}
-              title={csvParser.csvData ? 'Ready to process' : 'No results yet'}
-              description={
-                csvParser.csvData
-                  ? `Click "Test" to try with the first row, or "Process All" to process all ${csvParser.csvData.totalRows} rows`
-                  : 'Upload a CSV file and configure your prompt to get started. Results will appear here after processing.'
-              }
-              size="sm"
-            >
-              {csvParser.csvData && (
-                <div className="mt-4 text-xs text-muted-foreground">
-                  <p>💡 Tip: Use &quot;Test&quot; to verify your prompt before processing all rows</p>
-                </div>
-              )}
-            </EmptyState>
-          )}
-          </div>
-          </div>
-          
-          {/* ACTIONS TOOLBAR - Spans full width below both panels */}
+          {/* ACTIONS TOOLBAR - Bottom of LEFT panel only */}
           <div className="flex-shrink-0 p-3 xs:p-4 sm:p-5 md:p-6 lg:p-7 xl:p-8 pb-safe xs:pb-3 sm:pb-3.5 md:pb-4 lg:pb-5 border-t border-border/50 bg-background/80 backdrop-blur-sm z-10">
             <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between max-w-4xl mx-auto gap-2.5 xs:gap-3 sm:gap-3.5 md:gap-4 lg:gap-5">
               {/* Left side - Reset and Keyboard Help */}
@@ -2389,6 +2346,46 @@ export default function BulkProcessor() {
                 </TooltipProvider>
               </div>
             </div>
+          </div>
+            </div>
+
+            {/* RIGHT PANEL - Results */}
+            <div className="h-full overflow-hidden flex flex-col bg-muted/20">
+              {displayResults.length > 0 || batchProcessor.isProcessing || isTesting ? (
+            <ResultsTable
+              results={displayResults}
+              columns={selectedInputColumns.length > 0 ? selectedInputColumns : (csvParser.csvData?.columns || [])}
+              outputColumns={outputFields}
+              progress={batchProcessor.progress ?? undefined}
+              processingStartTime={processingStartTime}
+              onExport={handleExport}
+              onExportToGoogleSheets={handleExportToGoogleSheets}
+              onSaveToContext={handleSaveOutputToContext}
+              onRetry={handleRetryRow}
+              isTesting={isTesting}
+              testStartTime={testStartTime}
+              testEstimatedSeconds={isTesting && prompt ? getTimeEstimate(1, prompt.length, selectedTools.length).seconds : undefined}
+              totalInputTokens={tokenTotals.input}
+              totalOutputTokens={tokenTotals.output}
+            />
+          ) : (
+            <EmptyState
+              icon={csvParser.csvData ? Play : FileText}
+              title={csvParser.csvData ? 'Ready to process' : 'No results yet'}
+              description={
+                csvParser.csvData
+                  ? `Click "Test" to try with the first row, or "Process All" to process all ${csvParser.csvData.totalRows} rows`
+                  : 'Upload a CSV file and configure your prompt to get started. Results will appear here after processing.'
+              }
+              size="sm"
+            >
+              {csvParser.csvData && (
+                <div className="mt-4 text-xs text-muted-foreground">
+                  <p>💡 Tip: Use &quot;Test&quot; to verify your prompt before processing all rows</p>
+                </div>
+              )}
+            </EmptyState>
+          )}
           </div>
           </div>
         </div>
