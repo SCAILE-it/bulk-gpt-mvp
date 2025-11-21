@@ -97,8 +97,16 @@ export async function GET() {
       ? totalRowsForSpeed / totalProcessingTime 
       : 0
 
-    // Use database aggregations for better performance
-    const totalTokens = 0 // TODO: Re-enable with optimized query in future
+    // Fetch token usage from batch_results
+    const { data: tokenData } = await supabase
+      .from('batch_results')
+      .select('input_tokens, output_tokens')
+      .eq('user_id', user.id)
+
+    const totalTokens = (tokenData || []).reduce((sum, result) => {
+      return sum + (result.input_tokens || 0) + (result.output_tokens || 0)
+    }, 0)
+
     const resourceCounts = {
       leads: 0,
       keywords: 0,

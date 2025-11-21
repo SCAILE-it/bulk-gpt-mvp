@@ -6,7 +6,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Activity, BarChart3, Clock } from 'lucide-react'
+import { Activity, Clock } from 'lucide-react'
 import { PageWithTabs } from '@/components/layout/PageWithTabs'
 import { DataErrorBoundary } from '@/components/ErrorBoundary'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -46,29 +46,6 @@ const ScheduleList = dynamic(
   }
 )
 
-// Lazy load analytics dashboard for charts tab
-const AnalyticsDashboard = dynamic(
-  () => import('@/components/dashboard/AnalyticsDashboard').then(mod => ({ default: mod.AnalyticsDashboard })),
-  {
-    loading: () => (
-      <div className="p-6">
-        <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-24 rounded-md" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Skeleton className="h-[300px] rounded-md" />
-            <Skeleton className="h-[300px] rounded-md" />
-          </div>
-        </div>
-      </div>
-    ),
-    ssr: false,
-  }
-)
-
 export default function ExecutionsPage() {
   return (
     <DataErrorBoundary
@@ -91,16 +68,6 @@ export default function ExecutionsPage() {
             content: (
               <div className="p-6">
                 <ScheduleList />
-              </div>
-            ),
-          },
-          {
-            value: 'analytics',
-            label: 'Analytics',
-            icon: <BarChart3 className="h-3.5 w-3.5" />,
-            content: (
-              <div className="p-6">
-                <AnalyticsDashboard />
               </div>
             ),
           },

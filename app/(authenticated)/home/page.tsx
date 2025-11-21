@@ -178,13 +178,11 @@ function HomePageContent() {
       >
         {(() => {
           const hour = new Date().getHours()
-          const greeting = hasBatches 
-            ? 'Welcome back'
-            : hour < 12 
-              ? 'Good morning' 
-              : hour < 18 
-                ? 'Good afternoon' 
-                : 'Good evening'
+          const greeting = hour < 12 
+            ? 'Good morning' 
+            : hour < 18 
+              ? 'Good afternoon' 
+              : 'Good evening'
           return (
             <div className="space-y-4">
               <div className="flex flex-col gap-3">
