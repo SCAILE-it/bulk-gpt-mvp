@@ -23,7 +23,7 @@ export function Logo({ className = '', showText = true, size = 'md' }: LogoProps
   }
 
   return (
-    <Link href="/home" className={`flex items-center gap-2 ${className}`}>
+    <Link href="/" className={`flex items-center gap-2 ${className}`}>
       <div className={`${sizeClasses[size]} relative flex-shrink-0`}>
         <Image
           src="/logo.svg"

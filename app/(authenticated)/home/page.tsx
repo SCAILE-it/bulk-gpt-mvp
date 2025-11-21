@@ -165,7 +165,7 @@ function HomePageContent() {
 
   return (
     <TooltipProvider>
-      <div className="relative p-3 sm:p-6 max-w-[1400px] mx-auto">
+      <div className="relative p-3 sm:p-4 lg:p-6 max-w-[1400px] mx-auto">
       {/* Background Gradient for Depth */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-950/5 via-transparent to-amber-950/5 rounded-3xl pointer-events-none" />
 
@@ -174,7 +174,7 @@ function HomePageContent() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="mb-4 sm:mb-6"
+        className="mb-3 sm:mb-4 lg:mb-6"
       >
         {(() => {
           const hour = new Date().getHours()
@@ -238,7 +238,7 @@ function HomePageContent() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.38, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-5 lg:mb-6"
       >
         {/* Success Rate */}
         <div className="relative bg-secondary/10 border border-border/80 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
@@ -306,7 +306,7 @@ function HomePageContent() {
       </motion.div>
 
       {/* Section Divider */}
-      <div className="relative py-4 sm:py-5 mb-3">
+      <div className="relative py-3 sm:py-4 lg:py-5 mb-2 sm:mb-3">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border/30"></div>
         </div>
@@ -316,7 +316,7 @@ function HomePageContent() {
       </div>
 
       {/* Cursor-style layered cards - Two separate cards with depth */}
-      <div className="mb-4 sm:mb-6 relative min-h-[360px] sm:min-h-[400px] overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0">
+      <div className="mb-3 sm:mb-4 lg:mb-6 relative min-h-[320px] sm:min-h-[360px] lg:min-h-[400px] overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0">
         {/* BACK CARD: processing.log - Positioned left and down - BIGGER width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
