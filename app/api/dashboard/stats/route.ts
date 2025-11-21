@@ -97,14 +97,14 @@ export async function GET() {
       ? totalRowsForSpeed / totalProcessingTime 
       : 0
 
-    // Fetch token usage from batch_results
+    // Fetch token usage from usage_tracking table
     const { data: tokenData } = await supabase
-      .from('batch_results')
-      .select('input_tokens, output_tokens')
+      .from('usage_tracking')
+      .select('total_tokens')
       .eq('user_id', user.id)
 
-    const totalTokens = (tokenData || []).reduce((sum, result) => {
-      return sum + (result.input_tokens || 0) + (result.output_tokens || 0)
+    const totalTokens = (tokenData || []).reduce((sum, usage) => {
+      return sum + (usage.total_tokens || 0)
     }, 0)
 
     const resourceCounts = {
