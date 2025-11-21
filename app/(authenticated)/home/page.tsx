@@ -174,7 +174,7 @@ function HomePageContent() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="mb-6 sm:mb-8"
+        className="mb-4 sm:mb-6"
       >
         {(() => {
           const hour = new Date().getHours()
@@ -238,10 +238,10 @@ function HomePageContent() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.38, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6"
       >
-        {/* Success Rate - Make prominent */}
-        <div className="relative bg-primary/10 border-2 border-primary/30 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-primary/15 hover:border-primary/40 transition-all duration-200 cursor-default sm:col-span-2 lg:col-span-1">
+        {/* Success Rate */}
+        <div className="relative bg-secondary/10 border border-border/80 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
           <TrafficLightIndicator status={successRateStatus} label="Success Rate" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Success Rate</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 flex items-center gap-2">
@@ -306,7 +306,7 @@ function HomePageContent() {
       </motion.div>
 
       {/* Section Divider */}
-      <div className="relative py-6 sm:py-8 mb-4">
+      <div className="relative py-4 sm:py-5 mb-3">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border/30"></div>
         </div>
@@ -316,7 +316,7 @@ function HomePageContent() {
       </div>
 
       {/* Cursor-style layered cards - Two separate cards with depth */}
-      <div className="mb-6 sm:mb-8 relative min-h-[420px] sm:min-h-[480px] overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0">
+      <div className="mb-4 sm:mb-6 relative min-h-[360px] sm:min-h-[400px] overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0">
         {/* BACK CARD: processing.log - Positioned left and down - BIGGER width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
