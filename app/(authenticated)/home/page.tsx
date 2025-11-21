@@ -241,7 +241,7 @@ function HomePageContent() {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
       >
         {/* Success Rate - Make prominent */}
-        <div className="relative bg-primary/10 border-2 border-primary/30 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-primary/15 hover:border-primary/40 transition-all duration-200 cursor-default sm:col-span-2 lg:col-span-1">
+        <div className="relative bg-primary/10 border-2 border-primary/30 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-primary/15 hover:border-primary/40 transition-all duration-200 cursor-default sm:col-span-2 lg:col-span-1">
           <TrafficLightIndicator status={successRateStatus} label="Success Rate" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Success Rate</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 flex items-center gap-2">
@@ -255,7 +255,7 @@ function HomePageContent() {
           )}
         </div>
 
-        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+        <div className="relative bg-secondary/10 border border-border/80 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
           <TrafficLightIndicator status="healthy" label="Total Batches" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Total Batches</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">{safeStats.totalBatches}</div>
@@ -266,7 +266,7 @@ function HomePageContent() {
           )}
         </div>
 
-        <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+        <div className="relative bg-secondary/10 border border-border/80 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
           <TrafficLightIndicator status={rowsStatus} label="Rows Processed" />
           <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Rows Processed</div>
           <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
@@ -280,7 +280,7 @@ function HomePageContent() {
         </div>
 
         {safeStats.totalTokens > 0 ? (
-          <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
+          <div className="relative bg-secondary/10 border border-border/80 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default">
             <TrafficLightIndicator status="healthy" label="Token Usage" />
             <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
             <div className="text-2xl sm:text-3xl font-semibold text-foreground mb-1 tabular-nums">
@@ -293,7 +293,7 @@ function HomePageContent() {
             )}
           </div>
         ) : (
-          <div className="relative bg-secondary/10 border border-border/80 rounded-xl p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default opacity-50">
+          <div className="relative bg-secondary/10 border border-border/80 rounded-lg p-4 sm:p-5 min-h-[120px] hover:bg-secondary/20 hover:border-border/90 transition-all duration-200 cursor-default opacity-50">
             <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider leading-[1.25]">Tokens Used</div>
             <div className="text-2xl sm:text-3xl font-semibold text-muted-foreground mb-1">
               —
@@ -316,7 +316,7 @@ function HomePageContent() {
       </div>
 
       {/* Cursor-style layered cards - Two separate cards with depth */}
-      <div className="mb-6 sm:mb-8 relative min-h-[500px] sm:min-h-[700px] overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0">
+      <div className="mb-6 sm:mb-8 relative min-h-[420px] sm:min-h-[480px] overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0">
         {/* BACK CARD: processing.log - Positioned left and down - BIGGER width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -324,7 +324,7 @@ function HomePageContent() {
           transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="absolute left-0 top-[80px] w-full sm:w-[55%] z-10"
         >
-          <div className="border border-border/80 rounded-xl sm:rounded-2xl overflow-hidden bg-card"
+          <div className="border border-border/80 rounded-lg sm:rounded-xl overflow-hidden bg-card"
           >
             {/* Compact Header */}
             <div className="border-b border-border/50 px-4 sm:px-6 py-2.5 xs:py-2.5 sm:py-3 md:py-3.5 lg:py-4 bg-background/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">

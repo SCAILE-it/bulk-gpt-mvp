@@ -98,14 +98,24 @@ export async function GET() {
       : 0
 
     // Fetch token usage from usage_tracking table
-    const { data: tokenData } = await supabase
+    const { data: tokenData, error: tokenError } = await supabase
       .from('usage_tracking')
       .select('total_tokens')
       .eq('user_id', user.id)
 
+    // Debug logging
+    if (tokenError) {
+      logError('Error fetching token data', tokenError)
+    }
+    console.log('[TOKENS DEBUG] User ID:', user.id)
+    console.log('[TOKENS DEBUG] Token data rows:', tokenData?.length || 0)
+    console.log('[TOKENS DEBUG] Token data:', JSON.stringify(tokenData, null, 2))
+
     const totalTokens = (tokenData || []).reduce((sum, usage) => {
       return sum + (usage.total_tokens || 0)
     }, 0)
+    
+    console.log('[TOKENS DEBUG] Total tokens calculated:', totalTokens)
 
     const resourceCounts = {
       leads: 0,
